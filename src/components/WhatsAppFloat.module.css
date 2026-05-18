@@ -1,0 +1,237 @@
+.container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+}
+
+.float {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(145deg, #25d366, #128C7E);
+  border-radius: 50%;
+  box-shadow: 0 8px 20px rgba(37, 211, 102, 0.3);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  text-decoration: none;
+  animation: pulse 2s infinite;
+  border: 2px solid white;
+}
+
+.float:hover {
+  transform: scale(1.1) rotate(5deg);
+  box-shadow: 0 12px 30px rgba(37, 211, 102, 0.5);
+  animation: none;
+}
+
+.tooltip {
+  position: absolute;
+  right: 70px;
+  background: var(--navy);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  pointer-events: none;
+}
+
+.float:hover .tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-5px);
+}
+
+.welcomeMessage {
+  position: absolute;
+  bottom: 80px;
+  right: 0;
+  width: 320px;
+  background: linear-gradient(135deg, var(--white), var(--gray-light));
+  border-radius: 16px;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  animation: slideUp 0.3s ease;
+  z-index: 1001;
+  border: 2px solid var(--navy);
+}
+
+.closeBtn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: var(--gray-light);
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: var(--navy);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  z-index: 2;
+  font-weight: bold;
+}
+
+.closeBtn:hover {
+  background: var(--gold);
+  color: white;
+  transform: scale(1.1);
+}
+
+.messageContent {
+  padding: 20px;
+  display: flex;
+  gap: 12px;
+}
+
+.messageIcon {
+  flex-shrink: 0;
+  width: 45px;
+  height: 45px;
+  background: linear-gradient(135deg, #25d366, #128C7E);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 22px;
+}
+
+.messageBody {
+  flex: 1;
+}
+
+.messageText {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--navy);
+  margin-bottom: 6px;
+}
+
+.messageSubText {
+  font-size: 12px;
+  color: var(--text-dark);
+  margin-bottom: 12px;
+  opacity: 0.8;
+}
+
+.messageButtons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.messageLink {
+  display: block;
+  padding: 8px 12px;
+  background: #0d65fb;
+  color: var(--gray-light);
+  text-decoration: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  text-align: center;
+  border: 1px solid rgba(13, 101, 251, 0.2);
+}
+
+.messageLink:hover {
+  background: var(--navy);
+  color: white;
+  border-color: var(--navy);
+  transform: translateX(3px);
+}
+
+.whatsappLink {
+  background: linear-gradient(135deg, #25d366, #128C7E);
+  color: white;
+  border-color: #25d366;
+}
+
+.whatsappLink:hover {
+  background: linear-gradient(135deg, #128C7E, #0e6e45);
+  color: white;
+  transform: translateX(3px);
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 8px 20px rgba(37, 211, 102, 0.3);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 12px 30px rgba(37, 211, 102, 0.5);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 8px 20px rgba(37, 211, 102, 0.3);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .welcomeMessage {
+    width: 280px;
+    right: -10px;
+  }
+  
+  .messageContent {
+    padding: 15px;
+  }
+  
+  .messageText {
+    font-size: 13px;
+  }
+  
+  .messageSubText {
+    font-size: 11px;
+  }
+  
+  .messageLink {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .float,
+  .float:hover,
+  .welcomeMessage,
+  .messageLink {
+    animation: none;
+    transition: none;
+    transform: none;
+  }
+  
+  @keyframes pulse {
+    0%, 50%, 100% {
+      transform: scale(1);
+      box-shadow: 0 8px 20px rgba(37, 211, 102, 0.3);
+    }
+  }
+}
