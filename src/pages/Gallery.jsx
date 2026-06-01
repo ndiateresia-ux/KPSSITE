@@ -386,7 +386,7 @@ function Gallery() {
       { id: 4, filename: "academics4", alt: "Computer class", category: "academics" },
       { id: 5, filename: "sports1", alt: "Football match", category: "sports" },
       { id: 6, filename: "sports2", alt: "Athletics", category: "sports" },
-      { id: 7, filename: "sports3", alt: "Netball", category: "sports" },
+      { id: 7, filename: "sports5", alt: "Netball", category: "sports" },
       { id: 8, filename: "sports4", alt: "Swimming gala", category: "sports" },
       { id: 9, filename: "cultural1", alt: "Traditional dance", category: "cultural" },
       { id: 10, filename: "cultural2", alt: "Music festival", category: "cultural" },
