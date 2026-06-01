@@ -326,7 +326,7 @@ function Dining() {
                 borderRadius: '20px'
               }}>
                 <OptimizedImage 
-                  src="/images/facilities/dining-hall-2.jpg"
+                  src="/images/facilities/dining-hall-1.webp"
                   alt="Students enjoying healthy meals in the school dining hall"
                   width="600"
                   height="400"
@@ -620,7 +620,7 @@ function Dining() {
           left: 0;
           right: 0;
           bottom: 0;
-          background-image: url('/images/optimized/practicals1.webp');
+          background-image: url('/images/facilities/dining-hall-2.webp');
           background-size: cover;
           background-position: center;
           background-repeat: no-repeat;

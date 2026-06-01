@@ -176,6 +176,69 @@ const BenefitCard = memo(({ icon, title, description }) => (
 
 BenefitCard.displayName = 'BenefitCard';
 
+// Terms Checkbox Component - FIXED: Proper label association using native elements
+const TermsCheckbox = memo(({ checked, onChange, required = true }) => {
+  const checkboxId = "agreeToTerms";
+  const errorId = `${checkboxId}-error`;
+  const [touched, setTouched] = useState(false);
+  
+  const isInvalid = required && !checked && touched;
+  
+  const handleBlur = useCallback(() => {
+    setTouched(true);
+  }, []);
+  
+  return (
+    <Form.Group className="mb-4">
+      <div className="d-flex align-items-start">
+        <input
+          type="checkbox"
+          id={checkboxId}
+          name="agreeToTerms"
+          checked={checked}
+          onChange={onChange}
+          onBlur={handleBlur}
+          required={required}
+          className="custom-checkbox-input"
+          style={{
+            width: '18px',
+            height: '18px',
+            marginTop: '2px',
+            cursor: 'pointer',
+            accentColor: '#050265'
+          }}
+          aria-invalid={isInvalid ? "true" : "false"}
+          aria-describedby={isInvalid ? errorId : undefined}
+          aria-required="true"
+        />
+        <label 
+          htmlFor={checkboxId} 
+          className="mb-0 ms-2"
+          style={{ cursor: 'pointer', fontSize: '0.9rem', lineHeight: '1.4' }}
+        >
+          I agree to the{' '}
+          <Link to="/terms-of-service" target="_blank" className="text-navy text-decoration-underline">
+            Terms
+          </Link>
+          {' '}and{' '}
+          <Link to="/privacy-policy" target="_blank" className="text-navy text-decoration-underline">
+            Privacy Policy
+          </Link>
+          <span className="visually-hidden"> (required)</span>
+          {required && <span className="text-danger ms-1" aria-hidden="true">*</span>}
+        </label>
+      </div>
+      {isInvalid && (
+        <div id={errorId} className="invalid-feedback d-block mt-1" style={{ fontSize: '0.875rem' }} role="alert">
+          You must agree to the Terms and Privacy Policy.
+        </div>
+      )}
+    </Form.Group>
+  );
+});
+
+TermsCheckbox.displayName = 'TermsCheckbox';
+
 const GetInTouch = () => {
   const [inquiryType, setInquiryType] = useState("general");
   const [formData, setFormData] = useState({
@@ -777,7 +840,7 @@ Kitale Progressive School
             <Col md={7}>
               <div className="form-container bg-white p-4 p-lg-5 rounded-4 shadow-sm">
                 <h3 className="h5 fw-bold text-navy mb-4">Send Us a Message</h3>
-                <Form noValidate validated={validated} onSubmit={handleSubmit} aria-label="Contact form">
+                <Form id="contactus" noValidate validated={validated} onSubmit={handleSubmit} aria-label="Contact form">
                   <FormInput 
                     label="I would like to"
                     as="select"
@@ -912,34 +975,12 @@ Kitale Progressive School
                     feedback="Please enter your message."
                   />
 
-                  {/* Terms Checkbox */}
-                  <Form.Group className="mb-4">
-                    <div className="custom-checkbox-wrapper">
-                      <Form.Check
-                        required
-                        type="checkbox"
-                        name="agreeToTerms"
-                        id="agreeToTerms"
-                        checked={formData.agreeToTerms}
-                        onChange={handleChange}
-                        className="custom-checkbox-input"
-                        label={
-                          <span style={{ fontSize: '0.9rem' }}>
-                            I agree to the{' '}
-                            <Link to="/terms-of-service" target="_blank" className="text-navy text-decoration-underline">
-                              Terms
-                            </Link>
-                            {' '}and{' '}
-                            <Link to="/privacy-policy" target="_blank" className="text-navy text-decoration-underline">
-                              Privacy Policy
-                            </Link>
-                            <span className="visually-hidden"> (required)</span>
-                          </span>
-                        }
-                        feedback="You must agree to the Terms and Privacy Policy."
-                      />
-                    </div>
-                  </Form.Group>
+                  {/* Terms Checkbox - Using the fixed component */}
+                  <TermsCheckbox 
+                    checked={formData.agreeToTerms}
+                    onChange={handleChange}
+                    required={true}
+                  />
 
                   <Button 
                     type="submit" 
@@ -1044,6 +1085,16 @@ Kitale Progressive School
         .guide-card:hover {
           transform: translateY(-5px);
           box-shadow: 0 12px 25px rgba(13, 101, 251, 0.15) !important;
+        }
+        
+        /* Custom checkbox styling */
+        .custom-checkbox-input {
+          accent-color: #050265;
+        }
+        
+        .custom-checkbox-input:focus {
+          outline: 2px solid #0d65fb;
+          outline-offset: 2px;
         }
         
         @media (max-width: 768px) {

@@ -1,4 +1,4 @@
-// pages/Sponsors.jsx - Updated with Hero Background Image
+// pages/Sponsors.jsx - Updated with Fixed Checkbox Labels
 import { Helmet } from "react-helmet-async";
 import { Container, Row, Col, Button, Form } from "react-bootstrap";
 import { useState, useCallback, lazy, Suspense, memo, useEffect } from "react";
@@ -134,10 +134,10 @@ const StepCard = memo(({ number, title, description }) => {
   
   return (
     <Col md={6} lg={3} className="mb-4">
-      <div className="card-custom step-card text-center p-4 h-100" role="article" aria-labelledby={stepId}>
-        <div className="step-number mb-2" style={{ fontSize: '2.5rem', fontWeight: '800', color: 'var(--gold)' }} aria-hidden="true">{number}</div>
-        <h3 id={stepId} className="card-title-navy h6 fw-bold mb-2">{title}</h3>
-        <p className="text-muted small mb-0">{description}</p>
+      <div className="card-custom step-card text-center p-3 h-100" role="article" aria-labelledby={stepId}>
+        <div className="step-number mb-2" style={{ fontSize: '2.5rem', fontWeight: '800', color: 'var(--navy)' }} aria-hidden="true">{number}</div>
+        <h3 id={stepId} className="card-title-navy h5 fw-bold mb-4">{title}</h3>
+        <p className="text-muted mb-2">{description}</p>
       </div>
     </Col>
   );
@@ -145,36 +145,68 @@ const StepCard = memo(({ number, title, description }) => {
 
 StepCard.displayName = 'StepCard';
 
-// Small Checkbox Component - Matching Apply page
-const SmallCheckbox = memo(({ label, name, checked, onChange, required = false, id }) => {
-  const checkboxId = id || `checkbox-${name}`;
+// Terms Checkbox Component - FIXED: Proper label association using native elements
+const TermsCheckbox = memo(({ checked, onChange, required = true }) => {
+  const checkboxId = "agreeToTerms";
+  const errorId = `${checkboxId}-error`;
+  const [touched, setTouched] = useState(false);
+  
+  const isInvalid = required && !checked && touched;
+  
+  const handleBlur = useCallback(() => {
+    setTouched(true);
+  }, []);
   
   return (
-    <Form.Group controlId={checkboxId} className="mb-3">
-      <div className="d-flex align-items-center">
-        <Form.Check 
+    <Form.Group className="mb-4">
+      <div className="d-flex align-items-start">
+        <input
           type="checkbox"
           id={checkboxId}
-          name={name}
+          name="agreeToTerms"
           checked={checked}
           onChange={onChange}
+          onBlur={handleBlur}
           required={required}
-          className="small-checkbox"
+          className="terms-checkbox-input"
+          style={{
+            width: '18px',
+            height: '18px',
+            marginTop: '2px',
+            cursor: 'pointer',
+            accentColor: '#050265'
+          }}
+          aria-invalid={isInvalid ? "true" : "false"}
+          aria-describedby={isInvalid ? errorId : undefined}
+          aria-required="true"
         />
-        <Form.Label 
+        <label 
           htmlFor={checkboxId} 
-          className="mb-0 ms-2 small"
-          style={{ cursor: 'pointer', color: 'var(--text-dark)' }}
+          className="mb-0 ms-2"
+          style={{ cursor: 'pointer', fontSize: '0.9rem', lineHeight: '1.4' }}
         >
-          {label}
-          {required && <span className="text-gold ms-1" aria-hidden="true">*</span>}
-        </Form.Label>
+          I agree to the{' '}
+          <Link to="/privacy-policy" target="_blank" className="text-navy text-decoration-underline">
+            Privacy Policy
+          </Link>
+          {' '}and{' '}
+          <Link to="/terms-of-service" target="_blank" className="text-navy text-decoration-underline">
+            Terms of Service
+          </Link>
+          <span className="visually-hidden"> (required)</span>
+          {required && <span className="text-danger ms-1" aria-hidden="true">*</span>}
+        </label>
       </div>
+      {isInvalid && (
+        <div id={errorId} className="invalid-feedback d-block mt-1" style={{ fontSize: '0.875rem' }} role="alert">
+          You must agree to the Privacy Policy and Terms of Service.
+        </div>
+      )}
     </Form.Group>
   );
 });
 
-SmallCheckbox.displayName = 'SmallCheckbox';
+TermsCheckbox.displayName = 'TermsCheckbox';
 
 // Alert component with theme
 const AlertMessage = memo(({ show, success, message, onClose }) => {
@@ -348,7 +380,7 @@ function Partner() {
             <tr><td style="padding: 10px; background-color: #f5f5f5; font-weight: bold; width: 140px;">Full Name:</td><td style="padding: 10px; border-bottom: 1px solid #eee;">${formData.fullName}Zoey</tr>
             <tr><td style="padding: 10px; background-color: #f5f5f5; font-weight: bold;">Email:</td><td style="padding: 10px; border-bottom: 1px solid #eee;"><a href="mailto:${formData.email}" style="color: #0d65fb;">${formData.email}</a>Zoey</tr>
             <tr><td style="padding: 10px; background-color: #f5f5f5; font-weight: bold;">Phone:</td><td style="padding: 10px; border-bottom: 1px solid #eee;">${formattedPhone}Zoey</td></tr>
-            ${formData.organization ? `<tr><td style="padding: 10px; background-color: #f5f5f5; font-weight: bold;">Organization:</td><td style="padding: 10px; border-bottom: 1px solid #eee;">${formData.organization}Zoey</td></tr>` : ''}
+            ${formData.organization ? `<tr><td style="padding: 10px; background-color: #f5f5f5; font-weight: bold;">Organization:</td><td style="padding: 10px; border-bottom: 1px solid #eee;">${formData.organization}Zoey</td><tr>` : ''}
             <tr><td style="padding: 10px; background-color: #f5f5f5; font-weight: bold;">Partnership Interest:</td><td style="padding: 10px; border-bottom: 1px solid #eee;">${displayInterest}Zoey</td></tr>
           </table>
           
@@ -617,190 +649,189 @@ function Partner() {
       </section>
 
       {/* An Opportunity to Make Lasting Impact */}
-     <section className="section-padding py-5" style={{ background: 'white' }}>
-          <Container>
-            <Row className="justify-content-center">
-              <Col lg={10} xl={8}>
-                <div className="text-center mb-5">
-                  <div className="d-inline-flex align-items-center justify-content-center mb-3" style={{
-                    width: '70px',
-                    height: '70px',
-                    background: 'linear-gradient(135deg, rgba(5,2,101,0.1), rgba(26,107,255,0.1))',
-                    borderRadius: '50%',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>
-                    <i className="fas fa-hand-holding-heart" style={{ fontSize: '1.8rem', color: '#050265' }} aria-hidden="true"></i>
-                  </div>
-                  <h2 className="section-heading mb-3 text-dark" style={{ fontSize: 'clamp(1.8rem, 4vw, 2.2rem)' }}>
-                    An Opportunity to Make Lasting Impact
-                  </h2>
-                  <div style={{ width: '60px', height: '3px', margin: '0 auto 1.5rem', borderRadius: '2px' }}></div>
-                  <p className="lead text-center text-muted mx-auto" style={{ maxWidth: '800px', fontSize: '1.1rem', lineHeight: '1.6' }}>
-                    We provide structured opportunities for partners to contribute meaningfully to education, not as charity, but as a strategic investment in future generations.
-                  </p>
+      <section className="section-padding py-5" style={{ background: 'white' }}>
+        <Container>
+          <Row className="justify-content-center">
+            <Col lg={10} xl={8}>
+              <div className="text-center mb-5">
+                <div className="d-inline-flex align-items-center justify-content-center mb-3" style={{
+                  width: '70px',
+                  height: '70px',
+                  background: 'linear-gradient(135deg, rgba(5,2,101,0.1), rgba(26,107,255,0.1))',
+                  borderRadius: '50%',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <i className="fas fa-hand-holding-heart" style={{ fontSize: '1.8rem', color: '#050265' }} aria-hidden="true"></i>
                 </div>
+                <h2 className="section-heading mb-3 text-dark" style={{ fontSize: 'clamp(1.8rem, 4vw, 2.2rem)' }}>
+                  An Opportunity to Make Lasting Impact
+                </h2>
+                <div style={{ width: '60px', height: '3px', margin: '0 auto 1.5rem', borderRadius: '2px' }}></div>
+                <p className="lead text-center text-muted mx-auto" style={{ maxWidth: '800px', fontSize: '1.1rem', lineHeight: '1.6' }}>
+                  We provide structured opportunities for partners to contribute meaningfully to education, not as charity, but as a strategic investment in future generations.
+                </p>
+              </div>
+              
+              <Row className="g-5 justify-content-center">
+                <Col md={4}>
+                  <div className="impact-card text-center p-4 h-100" style={{
+                    background: '#f8f9fa',
+                    borderRadius: '20px',
+                    transition: 'all 0.3s ease',
+                    border: '1px solid rgba(5,2,101,0.08)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
+                  }}>
+                    <div className="impact-icon mb-3" style={{
+                      width: '70px',
+                      height: '70px',
+                      background: 'linear-gradient(135deg, #050265, #1a6bff)',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      margin: '0 auto'
+                    }}>
+                      <i className="fas fa-graduation-cap" style={{ fontSize: '1.8rem', color: 'white' }} aria-hidden="true"></i>
+                    </div>
+                    <h3 className="h6 fw-bold mb-2 text-dark">Quality Education Access</h3>
+                    <p className="small text-muted mb-0">Support access to quality education for deserving learners</p>
+                  </div>
+                </Col>
                 
-                <Row className="g-4 justify-content-center">
-                  <Col md={4}>
-                    <div className="impact-card text-center p-4 h-100" style={{
-                      background: '#f8f9fa',
-                      borderRadius: '20px',
-                      transition: 'all 0.3s ease',
-                      border: '1px solid rgba(5,2,101,0.08)',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
+                <Col md={4}>
+                  <div className="impact-card text-center p-4 h-100" style={{
+                    background: '#f8f9fa',
+                    borderRadius: '20px',
+                    transition: 'all 0.3s ease',
+                    border: '1px solid rgba(5,2,101,0.08)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
+                  }}>
+                    <div className="impact-icon mb-3" style={{
+                      width: '70px',
+                      height: '70px',
+                      background: 'linear-gradient(135deg, #050265, #1a6bff)',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      margin: '0 auto'
                     }}>
-                      <div className="impact-icon mb-3" style={{
-                        width: '70px',
-                        height: '70px',
-                        background: 'linear-gradient(135deg, #050265, #1a6bff)',
-                        borderRadius: '50%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        margin: '0 auto'
-                      }}>
-                        <i className="fas fa-graduation-cap" style={{ fontSize: '1.8rem', color: 'white' }} aria-hidden="true"></i>
-                      </div>
-                      <h3 className="h6 fw-bold mb-2 text-dark">Quality Education Access</h3>
-                      <p className="small text-muted mb-0">Support access to quality education for deserving learners</p>
+                      <i className="fas fa-star" style={{ fontSize: '1.8rem', color: 'white' }} aria-hidden="true"></i>
                     </div>
-                  </Col>
-                  
-                  <Col md={4}>
-                    <div className="impact-card text-center p-4 h-100" style={{
-                      background: '#f8f9fa',
-                      borderRadius: '20px',
-                      transition: 'all 0.3s ease',
-                      border: '1px solid rgba(5,2,101,0.08)',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
+                    <h3 className="h6 fw-bold mb-2 text-dark">Character Development</h3>
+                    <p className="small text-muted mb-0">Contribute to character and leadership development programs</p>
+                  </div>
+                </Col>
+                
+                <Col md={4}>
+                  <div className="impact-card text-center p-4 h-100" style={{
+                    background: '#f8f9fa',
+                    borderRadius: '20px',
+                    transition: 'all 0.3s ease',
+                    border: '1px solid rgba(5,2,101,0.08)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
+                  }}>
+                    <div className="impact-icon mb-3" style={{
+                      width: '70px',
+                      height: '70px',
+                      background: 'linear-gradient(135deg, #050265, #1a6bff)',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      margin: '0 auto'
                     }}>
-                      <div className="impact-icon mb-3" style={{
-                        width: '70px',
-                        height: '70px',
-                        background: 'linear-gradient(135deg, #050265, #1a6bff)',
-                        borderRadius: '50%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        margin: '0 auto'
-                      }}>
-                        <i className="fas fa-star" style={{ fontSize: '1.8rem', color: 'white' }} aria-hidden="true"></i>
-                      </div>
-                      <h3 className="h6 fw-bold mb-2 text-dark" >Character Development</h3>
-                      <p className="small text-muted mb-0">Contribute to character and leadership development programs</p>
+                      <i className="fas fa-chart-line" style={{ fontSize: '1.8rem', color: 'white' }} aria-hidden="true"></i>
                     </div>
-                  </Col>
-                  
-                  <Col md={4}>
-                    <div className="impact-card text-center p-4 h-100" style={{
-                      background: '#f8f9fa',
-                      borderRadius: '20px',
-                      transition: 'all 0.3s ease',
-                      border: '1px solid rgba(5,2,101,0.08)',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
-                    }}>
-                      <div className="impact-icon mb-3" style={{
-                        width: '70px',
-                        height: '70px',
-                        background: 'linear-gradient(135deg, #050265, #1a6bff)',
-                        borderRadius: '50%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        margin: '0 auto'
-                      }}>
-                        <i className="fas fa-chart-line" style={{ fontSize: '1.8rem', color: 'white' }} aria-hidden="true"></i>
-                      </div>
-                      <h3 className="h6 fw-bold mb-2 text-dark">Long-term Transformation</h3>
-                      <p className="small text-muted mb-0">Participate in long-term transformation of young lives</p>
-                    </div>
-                  </Col>
-                </Row>
-              </Col>
-            </Row>
-          </Container>
-        </section>
+                    <h3 className="h6 fw-bold mb-2 text-dark">Long-term Transformation</h3>
+                    <p className="small text-muted mb-0">Participate in long-term transformation of young lives</p>
+                  </div>
+                </Col>
+              </Row>
+            </Col>
+          </Row>
+        </Container>
+      </section>
 
       {/* Ways to Partner With Us - 4 GRID LAYOUT */}
       <Container className='card-custom border-0 mb-5' fluid style={{
-          background: 'linear-gradient(135deg, #050265, #120b5d, #1a6bff)',
-          margin: '0 20px',
-          borderRadius: '20px',
-          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)',
-          width: 'calc(100% - 40px)'
-        }} aria-labelledby="partnership-ways-heading">
-          <div style={{ padding: '40px 20px' }}>
-            <div className="text-center mb-4">
-              <div className="d-inline-flex align-items-center justify-content-center mb-3" style={{
-                width: '60px',
-                height: '60px',
-                background: 'rgba(255,255,255,0.15)',
-                borderRadius: '50%',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <i className="fas fa-handshake" style={{ fontSize: '1.5rem', color: 'var(--gold)' }} aria-hidden="true"></i>
-              </div>
-              <h2 className="text-white" style={{
-                fontSize: 'clamp(1.3rem, 4vw, 1.8rem)',
-                fontWeight: 'bold',
-                marginBottom: '0.5rem'
-              }}>
-                Ways to Partner With Us
-              </h2>
-              <p className="text-white" style={{ opacity: 0.9, fontSize: '0.9rem', maxWidth: '600px', margin: '0 auto' }}>
-                Choose a partnership model that aligns with your organization's mission and goals
-              </p>
+        background: 'linear-gradient(135deg, #050265, #120b5d, #1a6bff)',
+        margin: '0 20px',
+        borderRadius: '20px',
+        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.1)',
+        width: 'calc(100% - 40px)'
+      }} aria-labelledby="partnership-ways-heading">
+        <div style={{ padding: '40px 20px' }}>
+          <div className="text-center mb-4">
+            <div className="d-inline-flex align-items-center justify-content-center mb-3" style={{
+              width: '60px',
+              height: '60px',
+              background: 'rgba(255,255,255,0.15)',
+              borderRadius: '50%',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <i className="fas fa-handshake" style={{ fontSize: '1.5rem', color: 'var(--gold)' }} aria-hidden="true"></i>
             </div>
-            
-            <Row className="g-4">
-              {partnershipCards.map((card, index) => (
-                <Col key={index} md={6} lg={3}>
-                  <div className="partnership-card-white h-100" style={{
-                    background: 'white',
-                    borderRadius: '20px',
-                    padding: '1.5rem',
-                    textAlign: 'center',
-                    transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-                    boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
-                    height: '100%'
-                  }}>
-                    <div className="partnership-icon mb-3" style={{ fontSize: '2.5rem' }} aria-hidden="true">{card.icon}</div>
-                    <h3 className="card-title-navy h6 fw-bold mb-2">{card.title}</h3>
-                    <p className="text-muted small mb-0">{card.description}</p>
-                  </div>
-                </Col>
-              ))}
-            </Row>
+            <h2 className="text-white" style={{
+              fontSize: 'clamp(1.3rem, 4vw, 1.8rem)',
+              fontWeight: 'bold',
+              marginBottom: '0.5rem'
+            }}>
+              Ways to Partner With Us
+            </h2>
+            <p className="text-white" style={{ opacity: 0.9, fontSize: '0.9rem', maxWidth: '600px', margin: '0 auto' }}>
+              Choose a partnership model that aligns with your organization's mission and goals
+            </p>
           </div>
-        </Container>
+          
+          <Row className="g-5">
+            {partnershipCards.map((card, index) => (
+              <Col key={index} md={6} lg={3}>
+                <div className="partnership-card-white h-100" style={{
+                  background: 'white',
+                  borderRadius: '20px',
+                  padding: '1.5rem',
+                  textAlign: 'center',
+                  transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                  boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
+                  height: '100%'
+                }}>
+                  <div className="partnership-icon mb-3" style={{ fontSize: '2.5rem' }} aria-hidden="true">{card.icon}</div>
+                  <h3 className="card-title-navy h6 fw-bold mb-2">{card.title}</h3>
+                  <p className="text-muted small mb-0">{card.description}</p>
+                </div>
+              </Col>
+            ))}
+          </Row>
+        </div>
+      </Container>
 
-        {/* Testimonial Section */}
-                <Container className="py-4">
-                  <div >
-                     <h2 id="partnership-steps-heading" className="section-heading mb-4 text-center"> What our partners say</h2>
-                  </div>
-                  <Row className="justify-content-center">
-                    <Col lg={10}>
-                      <div className="sponsor-testimonial p-4 text-center rounded-4" style={{ 
-                        background: 'linear-gradient(135deg, #fff9e6 0%, var(--white) 100%)',
-                        border: '1px solid rgba(255,0,128,0.2)',
-                        position: 'relative'
-                      }} role="complementary" aria-label="Partner testimonial">
-                        <div className="sponsor-testimonial-quote" style={{ fontSize: '4rem', color: 'var(--gold)', position: 'absolute', top: '10px', left: '20px', opacity: 0.3, fontFamily: 'Georgia, serif' }} aria-hidden="true">"</div>
-                        <p className="sponsor-testimonial-text text-dark fst-italic mb-3" style={{ fontSize: '1rem', lineHeight: 1.6 }}>
-                          "Kitale Progressive School provides a structured and transparent platform for meaningful impact in education. Partnering with the school has demonstrated how focused support can contribute to both academic excellence and holistic learner development."
-                        </p>
-                        <div className="sponsor-testimonial-author fw-bold text-navy">Ola Zlobinska</div>
-                        <div className="sponsor-testimonial-title text-muted small">Education Partner since 2010</div>
-                      </div>
-                    </Col>
-                  </Row>
-                </Container>
-              
+      {/* Testimonial Section */}
+      <Container className="py-4">
+        <div>
+          <h2 id="partnership-steps-heading" className="section-heading mb-4 text-center">What our partners say</h2>
+        </div>
+        <Row className="justify-content-center">
+          <Col lg={10}>
+            <div className="sponsor-testimonial p-4 text-center rounded-4" style={{ 
+              background: 'linear-gradient(135deg, #fff9e6 0%, var(--white) 100%)',
+              border: '1px solid rgba(255,0,128,0.2)',
+              position: 'relative'
+            }} role="complementary" aria-label="Partner testimonial">
+              <div className="sponsor-testimonial-quote" style={{ fontSize: '4rem', color: 'var(--gold)', position: 'absolute', top: '10px', left: '20px', opacity: 0.3, fontFamily: 'Georgia, serif' }} aria-hidden="true">"</div>
+              <p className="sponsor-testimonial-text text-dark fst-italic mb-3" style={{ fontSize: '1rem', lineHeight: 1.6 }}>
+                "Kitale Progressive School provides a structured and transparent platform for meaningful impact in education. Partnering with the school has demonstrated how focused support can contribute to both academic excellence and holistic learner development."
+              </p>
+              <div className="sponsor-testimonial-author fw-bold text-navy">Ola Zlobinska</div>
+              <div className="sponsor-testimonial-title text-muted small">Education Partner since 2010</div>
+            </div>
+          </Col>
+        </Row>
+      </Container>
 
       {/* Education with Purpose and Values */}
       <section className="section-padding" style={{ background: 'var(--white)' }}>
@@ -873,7 +904,7 @@ function Partner() {
             How Partnership Works
           </h2>
           
-          <Row className="g-4">
+          <Row className="g-5">
             {partnershipSteps.map((step, index) => (
               <StepCard key={index} {...step} />
             ))}
@@ -907,6 +938,7 @@ function Partner() {
                   <div className="mb-3">
                     <label htmlFor="input-fullName" className="form-label-custom fw-bold small text-navy mb-1">
                       Full Name <span className="text-gold" aria-hidden="true">*</span>
+                      <span className="visually-hidden"> (required)</span>
                     </label>
                     <input
                       type="text"
@@ -924,6 +956,7 @@ function Partner() {
                   <div className="mb-3">
                     <label htmlFor="input-email" className="form-label-custom fw-bold small text-navy mb-1">
                       Email Address <span className="text-gold" aria-hidden="true">*</span>
+                      <span className="visually-hidden"> (required)</span>
                     </label>
                     <input
                       type="email"
@@ -982,6 +1015,7 @@ function Partner() {
                   <div className="mb-3">
                     <label htmlFor="input-partnershipInterest" className="form-label-custom fw-bold small text-navy mb-1">
                       Partnership Interest <span className="text-gold" aria-hidden="true">*</span>
+                      <span className="visually-hidden"> (required)</span>
                     </label>
                     <select
                       id="input-partnershipInterest"
@@ -1002,6 +1036,7 @@ function Partner() {
                   <div className="mb-3">
                     <label htmlFor="input-message" className="form-label-custom fw-bold small text-navy mb-1">
                       Your Message <span className="text-gold" aria-hidden="true">*</span>
+                      <span className="visually-hidden"> (required)</span>
                     </label>
                     <textarea
                       id="input-message"
@@ -1016,30 +1051,12 @@ function Partner() {
                     />
                   </div>
 
-                  {/* Terms Checkbox - Matching Apply page styling */}
-                  <Row className="mb-4">
-                    <Col md={12}>
-                      <SmallCheckbox 
-                        label={
-                          <span className="small">
-                            I agree to the{' '}
-                            <Link to="/privacy-policy" target="_blank" className="text-navy text-decoration-underline">
-                              Privacy Policy
-                            </Link>
-                            {' '}and{' '}
-                            <Link to="/terms-of-service" target="_blank" className="text-navy text-decoration-underline">
-                              Terms of Service
-                            </Link>
-                          </span>
-                        }
-                        name="agreeToTerms"
-                        checked={formData.agreeToTerms}
-                        onChange={handleChange}
-                        required={true}
-                        id="agreeToTerms"
-                      />
-                    </Col>
-                  </Row>
+                  {/* Terms Checkbox - Using the fixed component */}
+                  <TermsCheckbox 
+                    checked={formData.agreeToTerms}
+                    onChange={handleChange}
+                    required={true}
+                  />
 
                   {/* Reassurance line */}
                   <div className="text-center mb-4">
@@ -1083,8 +1100,6 @@ function Partner() {
         </Container>
       </section>
 
-      
-
       <style dangerouslySetInnerHTML={{ __html: `
         .visually-hidden {
           position: absolute;
@@ -1116,7 +1131,7 @@ function Partner() {
           left: 0;
           right: 0;
           bottom: 0;
-          background-image: url('/images/optimized/gate3.webp');
+          background-image: url('/images/optimized/school.webp');
           background-size: cover;
           background-position: center;
           background-repeat: no-repeat;
@@ -1163,37 +1178,20 @@ function Partner() {
         }
 
         .partner-hero-content .hero-highlight {
-          color:rgba(255, 255, 255, 0.95);
+          color: rgba(255, 255, 255, 0.95);
           font-weight: 600;
           font-size: 1rem;
           margin-bottom: 0.5rem;
         }
 
-        /* Small Checkbox Styling - Matching Apply page */
-        .small-checkbox .form-check-input {
-          width: 18px !important;
-          height: 18px !important;
-          min-width: 18px !important;
-          min-height: 18px !important;
-          margin-top: 0 !important;
-          cursor: pointer;
+        /* Terms Checkbox Styling */
+        .terms-checkbox-input {
+          accent-color: #050265;
         }
         
-        .small-checkbox .form-check-input:checked {
-          background-color: var(--navy);
-          border-color: var(--navy);
-        }
-        
-        .small-checkbox .form-check-input:focus {
-          box-shadow: 0 0 0 3px rgba(13, 101, 251, 0.25);
-          border-color: var(--navy);
-        }
-        
-        .small-checkbox {
-          display: flex;
-          align-items: center;
-          min-height: auto !important;
-          padding-left: 0;
+        .terms-checkbox-input:focus {
+          outline: 2px solid #0d65fb;
+          outline-offset: 2px;
         }
         
         .partnership-card:hover,
@@ -1226,12 +1224,6 @@ function Partner() {
           }
           .partner-hero-content h1 {
             font-size: 1.8rem;
-          }
-          .small-checkbox .form-check-input {
-            width: 20px !important;
-            height: 20px !important;
-            min-width: 20px !important;
-            min-height: 20px !important;
           }
         }
         

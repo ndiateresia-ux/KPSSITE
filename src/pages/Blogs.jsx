@@ -474,7 +474,7 @@ function Blogs() {
             title: "The Benefits of Extracurricular Activities",
             excerpt: "How sports, arts, and clubs contribute to your child's holistic development beyond the classroom. Discover the transformative power of co-curricular engagement.",
             content: `<h2>Beyond the Classroom: The Power of Extracurriculars</h2><p>Education extends far beyond textbooks and examinations. At Kitale Progressive School, we believe that extracurricular activities are essential for developing well-rounded individuals.</p>`,
-            featuredImage: "/images/sports-blog.jpg",
+            featuredImage: "/images/optimized/gallery/sports2.webp",
             author: "Coach James Otieno",
             date: "February 28, 2025",
             category: "Co-Curricular",
@@ -697,7 +697,7 @@ function Blogs() {
           left: 0;
           right: 0;
           bottom: 0;
-          background-image: url('/images/optimized/ECDE3.webp');
+          background-image: url('/images/optimized/blog.webp');
           background-size: cover;
           background-position: center;
           transform: scale(1.05);

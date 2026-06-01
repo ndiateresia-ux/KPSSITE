@@ -123,6 +123,40 @@ const OptimizedImage = memo(({ src, alt, width, height, priority = false, catego
 
 OptimizedImage.displayName = 'OptimizedImage';
 
+// Scroll to contact function - same as homepage
+const scrollToContact = (event) => {
+  event?.preventDefault();
+  
+  let contactElement = document.getElementById('contactus');
+  
+  if (!contactElement) {
+    contactElement = document.querySelector('#get-in-touch-form, .get-in-touch-section form, [id*="contact"]');
+  }
+  
+  if (contactElement) {
+    const elementPosition = contactElement.getBoundingClientRect().top;
+    const offsetPosition = elementPosition + window.pageYOffset - 80;
+    
+    window.scrollTo({
+      top: offsetPosition,
+      behavior: 'smooth'
+    });
+    
+    setTimeout(() => {
+      const focusableElement = contactElement.querySelector('input, button, textarea, select, [tabindex="0"]');
+      if (focusableElement) {
+        focusableElement.focus();
+      } else {
+        contactElement.setAttribute('tabindex', '-1');
+        contactElement.focus();
+      }
+    }, 500);
+  } else {
+    // If contact element not found, navigate to contact page
+    window.location.href = '/contact';
+  }
+};
+
 // Pillar Card Component with theme
 const PillarCard = memo(({ icon, title, description }) => (
   <Col md={4}>
@@ -173,7 +207,7 @@ ActivityCard.displayName = 'ActivityCard';
 // Benefit Card Component with theme
 const BenefitCard = memo(({ icon, title, description }) => (
   <Col md={3} sm={6}>
-    <Card className="benefit-card h-100 border-0 shadow-sm" style={{
+    <Card className="approach-card h-100 border-0 shadow-sm" style={{
       borderRadius: '16px',
       overflow: 'hidden',
       transition: 'transform 0.3s ease, box-shadow 0.3s ease'
@@ -189,12 +223,12 @@ const BenefitCard = memo(({ icon, title, description }) => (
           justifyContent: 'center',
           margin: '0 auto',
           fontSize: '1.5rem',
-          color: 'var(--navy)'
+          color: 'white'
         }} aria-hidden="true">
           {icon}
         </div>
-        <h3 className="card-title-navy h6 fw-bold mb-1">{title}</h3>
-        <p className="text-muted small mb-0">{description}</p>
+        <h3 className="text-white h6 fw-bold mb-1">{title}</h3>
+        <p className="text-white small mb-0">{description}</p>
       </Card.Body>
     </Card>
   </Col>
@@ -207,11 +241,19 @@ const GalleryImage = memo(({ image, onClick, priority = false }) => {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
 
+  const handleKeyDown = useCallback((e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onClick(image);
+    }
+  }, [onClick, image]);
+
   if (error) {
     return (
       <div
         className="gallery-item"
         onClick={() => onClick(image)}
+        onKeyDown={handleKeyDown}
         role="button"
         tabIndex={0}
         style={{
@@ -239,12 +281,7 @@ const GalleryImage = memo(({ image, onClick, priority = false }) => {
     <div
       className="gallery-item"
       onClick={() => onClick(image)}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onClick(image);
-        }
-      }}
+      onKeyDown={handleKeyDown}
       role="button"
       tabIndex={0}
       aria-label={`View larger image of ${image.alt}`}
@@ -477,10 +514,10 @@ function ClubsSocieties() {
   const galleryImages = useMemo(() => [
     { id: 5, filename: "sports1", alt: "Students playing football during sports day", category: "sports" },
     { id: 6, filename: "sports2", alt: "Athletics competition at school field", category: "sports" },
-    { id: 1, filename: "academics1", alt: "Classroom learning activities", category: "academics" },
+    { id: 1, filename: "academics2", alt: "Classroom learning activities", category: "academics" },
     { id: 9, filename: "cultural1", alt: "Traditional dance performance", category: "cultural" },
     { id: 13, filename: "events1", alt: "Graduation ceremony celebration", category: "events" },
-    { id: 17, filename: "facilities1", alt: "Modern school library", category: "facilities" }
+    { id: 17, filename: "facilities5", alt: "Modern school library", category: "facilities" }
   ], []);
 
   // Three Pillars Data
@@ -533,7 +570,6 @@ function ClubsSocieties() {
     { icon: "💡", title: "Talent Discovery", description: "Learners discover and develop their unique abilities." }
   ], []);
 
- 
   const openLightbox = useCallback((image) => {
     setSelectedImage(image);
     const index = galleryImages.findIndex(img => img.id === image.id);
@@ -602,142 +638,301 @@ function ClubsSocieties() {
       </section>
 
       {/* Sports & Physical Development Section */}
-      <section className="py-6" style={{ background: 'var(--white)' }} aria-labelledby="sports-heading">
-        <Container>
-          <Row className="align-items-center g-5">
-            <Col lg={6}>
-              <div className="curriculum-image-wrapper" style={{ boxShadow: '0 8px 20px rgba(0,0,0,0.1)' }}>
-                <OptimizedImage 
-                  src="indoor-games"
-                  alt="Students participating in sports activities"
-                  width="600"
-                  height="400"
-                  priority={true}
-                />
-              </div>
-            </Col>
-            <Col lg={6}>
-              <h2 id="sports-heading" className="section-heading-left mb-3">
-                Sports and Physical Development
-              </h2>
-              <p className="lead mb-3 text-dark" style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>
-                Do you want your child to stay active, healthy, and build teamwork skills?
-              </p>
-              <p className="mb-4 text-muted" style={{ fontSize: '0.95rem', lineHeight: '1.8' }}>
-                Our sports program develops physical fitness, discipline, and teamwork through structured training and participation in various sports activities.
-              </p>
+      <section className="py-6"  aria-labelledby="sports-heading">
+       <Container style={{ 
+            backgroundColor: 'rgba(0, 0, 0, 0.04)', 
+            padding: '2rem clamp(1.5rem, 5vw, 3rem)', 
+            borderRadius: '24px',
+            marginBottom: '2rem',
+            transition: 'all 0.3s ease'
+          }}>
+            <Row className="align-items-center g-4 g-lg-5">
+              <Col lg={6} className="mb-4 mb-lg-0">
+                <div className="curriculum-image-wrapper" style={{ 
+                  boxShadow: '0 12px 28px rgba(0, 0, 0, 0.12)',
+                  borderRadius: '20px',
+                  overflow: 'hidden',
+                  transition: 'transform 0.3s ease, box-shadow 0.3s ease'
+                }}>
+                  <OptimizedImage 
+                    src="indoor-games"
+                    alt="Students participating in sports activities"
+                    width="600"
+                    height="400"
+                    priority={true}
+                    style={{ width: '100%', height: 'auto', display: 'block' }}
+                  />
+                </div>
+              </Col>
               
-              <Row className="g-5 mb-3">
-                {sportsActivities.map((sport, idx) => (
-                  <Col key={idx} xs={6} md={3}>
-                    <ActivityCard {...sport} />
-                  </Col>
-                ))}
-              </Row>
+              <Col lg={6}>
+                <div className="sports-content-wrapper">
+                  <span className="sports-badge" style={{
+                    display: 'inline-block',
+                    fontSize: '0.75rem',
+                    fontWeight: '600',
+                    textTransform: 'uppercase',
+                    letterSpacing: '1px',
+                    color: '#0d65fb',
+                    background: 'rgba(13, 101, 251, 0.1)',
+                    padding: '0.25rem 0.75rem',
+                    borderRadius: '50px',
+                    marginBottom: '1rem'
+                  }}>
+                    Physical Development
+                  </span>
+                  
+                  <h2 id="sports-heading" className="section-heading-left mb-3" style={{ fontWeight: '700' }}>
+                    Sports and Physical Development
+                  </h2>
+                  
+                  <p className="lead mb-3" style={{ 
+                    fontSize: '1.15rem', 
+                    fontWeight: '600',
+                    color: '#1e293b',
+                    lineHeight: '1.4'
+                  }}>
+                    Do you want your child to stay active, healthy, and build teamwork skills?
+                  </p>
+                  
+                  <p className="mb-4" style={{ 
+                    fontSize: '0.95rem', 
+                    lineHeight: '1.7',
+                    color: '#475569'
+                  }}>
+                    Our sports program develops physical fitness, discipline, and teamwork through structured 
+                    training and participation in various sports activities.
+                  </p>
+                  
+                  <Row className="g-3 g-md-4 mb-4">
+                    {sportsActivities.map((sport, idx) => (
+                      <Col key={idx} xs={6} md={3}>
+                        <ActivityCard {...sport} />
+                      </Col>
+                    ))}
+                  </Row>
 
-              <div className="p-3 bg-light-custom rounded-3" style={{ borderLeft: `4px solid var(--gold)` }}>
-                <p className="mb-0 fw-semibold text-navy">
-                  <i className="fas fa-trophy me-2 text-gold" aria-hidden="true"></i>
-                  Outcome: Learners develop discipline, teamwork, and confidence through sports.
-                </p>
-              </div>
-            </Col>
-          </Row>
-        </Container>
+                  <div className="p-3 p-md-4 rounded-3" style={{ 
+                    background: 'linear-gradient(135deg, rgba(13, 101, 251, 0.05), rgba(255, 0, 128, 0.03))',
+                    borderLeft: `4px solid #ff0080`,
+                    borderRadius: '12px',
+                    transition: 'all 0.3s ease'
+                  }}>
+                    <p className="mb-0 fw-semibold" style={{ color: '#0d65fb' }}>
+                      <i className="fas fa-trophy me-2" style={{ color: '#ff0080' }} aria-hidden="true"></i>
+                      Outcome: Learners develop discipline, teamwork, and confidence through sports.
+                    </p>
+                  </div>
+                </div>
+              </Col>
+            </Row>
+          </Container>
       </section>
 
       {/* Academic & Skills Development Clubs Section */}
       <section className="py-6 bg-light-custom" aria-labelledby="academic-clubs-heading">
-        <Container>
-          <Row className="align-items-center g-5 flex-row-reverse">
-            <Col lg={6}>
-              <div className="curriculum-image-wrapper" style={{ boxShadow: '0 8px 20px rgba(0,0,0,0.1)' }}>
-                <OptimizedImage 
-                  src="computer-club"
-                  alt="Students in coding and computer club"
-                  width="600"
-                  height="400"
-                />
+        <Container style={{ 
+  backgroundColor: 'rgba(0, 0, 0, 0.04)', 
+  padding: '2rem clamp(1.5rem, 5vw, 3rem)', 
+  borderRadius: '24px',
+  marginBottom: '2rem',
+  transition: 'all 0.3s ease'
+}}>
+  <Row className="align-items-center g-4 g-lg-5 flex-row-reverse">
+    <Col lg={6} className="mb-4 mb-lg-0">
+      <div className="curriculum-image-wrapper" style={{ 
+        boxShadow: '0 12px 28px rgba(0, 0, 0, 0.12)',
+        borderRadius: '20px',
+        overflow: 'hidden',
+        transition: 'transform 0.3s ease, box-shadow 0.3s ease'
+      }}>
+        <OptimizedImage 
+          src="computer-club"
+          alt="Students in coding and computer club"
+          width="600"
+          height="400"
+          style={{ width: '100%', height: 'auto', display: 'block' }}
+        />
+      </div>
+    </Col>
+    
+    <Col lg={6}>
+      <div className="clubs-content-wrapper">
+        <span className="clubs-badge" style={{
+          display: 'inline-block',
+          fontSize: '0.75rem',
+          fontWeight: '600',
+          textTransform: 'uppercase',
+          letterSpacing: '1px',
+          color: '#0d65fb',
+          background: 'rgba(13, 101, 251, 0.1)',
+          padding: '0.25rem 0.75rem',
+          borderRadius: '50px',
+          marginBottom: '1rem'
+        }}>
+          Co-Curricular Learning
+        </span>
+        
+        <h2 id="academic-clubs-heading" className="section-heading-left mb-3" style={{ fontWeight: '700' }}>
+          Academic and Skills Development Clubs
+        </h2>
+        
+        <p className="lead mb-3" style={{ 
+          fontSize: '1.15rem', 
+          fontWeight: '600',
+          color: '#1e293b',
+          lineHeight: '1.4'
+        }}>
+          Do you want your child to develop creativity, communication, and practical skills?
+        </p>
+        
+        <p className="mb-4" style={{ 
+          fontSize: '0.95rem', 
+          lineHeight: '1.7',
+          color: '#475569'
+        }}>
+          Our clubs allow learners to explore interests and develop important academic and life 
+          skills that complement their classroom learning.
+        </p>
+        
+        <Row className="g-3 g-md-4 mb-4">
+          {academicClubs.map((club, idx) => (
+            <Col key={idx} xs={12} sm={6} md={6}>
+              <div className="d-flex align-items-center gap-2 p-2 p-md-3 rounded-3 shadow-sm" style={{
+                background: 'white',
+                transition: 'all 0.2s ease',
+                cursor: 'default',
+                border: '1px solid rgba(13, 101, 251, 0.1)'
+              }}>
+                <div style={{ 
+                  fontSize: '1.3rem', 
+                  minWidth: '32px',
+                  textAlign: 'center'
+                }} aria-hidden="true">{club.icon}</div>
+                <span className="small fw-semibold" style={{ color: '#0d65fb' }}>{club.name}</span>
               </div>
             </Col>
-            <Col lg={6}>
-              <h2 id="academic-clubs-heading" className="section-heading-left mb-3">
-                Academic and Skills Development Clubs
-              </h2>
-              <p className="lead mb-3 text-dark" style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>
-                Do you want your child to develop creativity, communication, and practical skills?
-              </p>
-              <p className="mb-4 text-muted" style={{ fontSize: '0.95rem', lineHeight: '1.8' }}>
-                Our clubs allow learners to explore interests and develop important academic and life skills that complement their classroom learning.
-              </p>
-              
-              <Row className="g-5 mb-3">
-                {academicClubs.map((club, idx) => (
-                  <Col key={idx} xs={12} md={6}>
-                    <div className="d-flex align-items-center gap-2 p-2 bg-white rounded-3 shadow-sm">
-                      <div style={{ fontSize: '1.3rem' }} aria-hidden="true">{club.icon}</div>
-                      <span className="small fw-semibold text-navy">{club.name}</span>
-                    </div>
-                  </Col>
-                ))}
-              </Row>
+          ))}
+        </Row>
 
-              <div className="p-3 bg-light-custom rounded-3" style={{ borderLeft: `4px solid var(--gold)` }}>
-                <p className="mb-0 fw-semibold text-navy">
-                  <i className="fas fa-lightbulb me-2 text-gold" aria-hidden="true"></i>
-                  Outcome: Learners develop communication, creativity, and problem-solving skills.
-                </p>
-              </div>
-            </Col>
-          </Row>
-        </Container>
+        <div className="p-3 p-md-4 rounded-3" style={{ 
+          background: 'linear-gradient(135deg, rgba(13, 101, 251, 0.05), rgba(255, 0, 128, 0.03))',
+          borderLeft: `4px solid #ff0080`,
+          borderRadius: '12px',
+          transition: 'all 0.3s ease'
+        }}>
+          <p className="mb-0 fw-semibold" style={{ color: '#0d65fb' }}>
+            <i className="fas fa-lightbulb me-2" style={{ color: '#ff0080' }} aria-hidden="true"></i>
+            Outcome: Learners develop communication, creativity, and problem-solving skills.
+          </p>
+        </div>
+      </div>
+    </Col>
+  </Row>
+</Container>
       </section>
 
       {/* Leadership & Personal Development Section */}
       <section className="py-6" style={{ background: 'var(--white)' }} aria-labelledby="leadership-heading">
-        <Container>
-          <Row className="align-items-center g-5">
-            <Col lg={6}>
-              <div className="curriculum-image-wrapper" style={{ boxShadow: '0 8px 20px rgba(0,0,0,0.1)' }}>
-                <OptimizedImage 
-                  src="events1"
-                  alt="Students in leadership and scouting activities"
-                  width="600"
-                  height="400"
-                />
+     <Container style={{ 
+  backgroundColor: 'rgba(0, 0, 0, 0.04)', 
+  padding: '2rem clamp(1.5rem, 5vw, 3rem)', 
+  borderRadius: '24px',
+  marginBottom: '2rem',
+  transition: 'all 0.3s ease'
+}}>
+  <Row className="align-items-center g-4 g-lg-5">
+    <Col lg={6} className="mb-4 mb-lg-0">
+      <div className="curriculum-image-wrapper" style={{ 
+        boxShadow: '0 12px 28px rgba(0, 0, 0, 0.12)',
+        borderRadius: '20px',
+        overflow: 'hidden',
+        transition: 'transform 0.3s ease, box-shadow 0.3s ease'
+      }}>
+        <OptimizedImage 
+          src="events1"
+          alt="Students in leadership and scouting activities"
+          width="600"
+          height="400"
+          style={{ width: '100%', height: 'auto', display: 'block' }}
+        />
+      </div>
+    </Col>
+    
+    <Col lg={6}>
+      <div className="leadership-content-wrapper">
+        <span className="leadership-badge" style={{
+          display: 'inline-block',
+          fontSize: '0.75rem',
+          fontWeight: '600',
+          textTransform: 'uppercase',
+          letterSpacing: '1px',
+          color: '#0d65fb',
+          background: 'rgba(13, 101, 251, 0.1)',
+          padding: '0.25rem 0.75rem',
+          borderRadius: '50px',
+          marginBottom: '1rem'
+        }}>
+          Character Development
+        </span>
+        
+        <h2 id="leadership-heading" className="section-heading-left mb-3" style={{ fontWeight: '700' }}>
+          Leadership and Personal Growth
+        </h2>
+        
+        <p className="lead mb-3" style={{ 
+          fontSize: '1.15rem', 
+          fontWeight: '600',
+          color: '#1e293b',
+          lineHeight: '1.4'
+        }}>
+          Are you looking for a school that builds confidence and responsibility?
+        </p>
+        
+        <p className="mb-4" style={{ 
+          fontSize: '0.95rem', 
+          lineHeight: '1.7',
+          color: '#475569'
+        }}>
+          We guide learners to develop leadership, discipline, and responsibility through structured 
+          programs that prepare them for future success.
+        </p>
+        
+        <Row className="g-3 g-md-4 mb-4">
+          {leadershipActivities.map((activity, idx) => (
+            <Col key={idx} xs={12} sm={6} md={6}>
+              <div className="d-flex align-items-center gap-2 p-2 p-md-3 rounded-3 shadow-sm" style={{
+                background: 'white',
+                transition: 'all 0.2s ease',
+                cursor: 'default',
+                border: '1px solid rgba(13, 101, 251, 0.1)'
+              }}>
+                <div style={{ 
+                  fontSize: '1.3rem', 
+                  minWidth: '32px',
+                  textAlign: 'center'
+                }} aria-hidden="true">{activity.icon}</div>
+                <span className="small fw-semibold" style={{ color: '#0d65fb' }}>{activity.name}</span>
               </div>
             </Col>
-            <Col lg={6}>
-              <h2 id="leadership-heading" className="section-heading-left mb-3">
-                Leadership and Personal Growth
-              </h2>
-              <p className="lead mb-3 text-dark" style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>
-                Are you looking for a school that builds confidence and responsibility?
-              </p>
-              <p className="mb-4 text-muted" style={{ fontSize: '0.95rem', lineHeight: '1.8' }}>
-                We guide learners to develop leadership, discipline, and responsibility through structured programs that prepare them for future success.
-              </p>
-              
-              <Row className="g-5 mb-3">
-                {leadershipActivities.map((activity, idx) => (
-                  <Col key={idx} xs={12} md={6}>
-                   <div className="d-flex align-items-center gap-2 p-2 bg-white rounded-3 shadow-sm">
-                      <div style={{ fontSize: '1.3rem' }} aria-hidden="true">{activity.icon}</div>
-                      <span className="small fw-semibold text-navy">{activity.name}</span>
-                    </div>
-                  </Col>
-                ))}
-              </Row>
+          ))}
+        </Row>
 
-              <div className="p-3 bg-light-custom rounded-3" style={{ borderLeft: `4px solid var(--gold)` }}>
-                <p className="mb-0 fw-semibold text-navy">
-                  <i className="fas fa-chart-line me-2 text-gold" aria-hidden="true"></i>
-                  Outcome: Learners grow into confident and responsible individuals ready for leadership.
-                </p>
-              </div>
-            </Col>
-          </Row>
-        </Container>
+        <div className="p-3 p-md-4 rounded-3" style={{ 
+          background: 'linear-gradient(135deg, rgba(13, 101, 251, 0.05), rgba(255, 0, 128, 0.03))',
+          borderLeft: `4px solid #ff0080`,
+          borderRadius: '12px',
+          transition: 'all 0.3s ease'
+        }}>
+          <p className="mb-0 fw-semibold" style={{ color: '#0d65fb' }}>
+            <i className="fas fa-chart-line me-2" style={{ color: '#ff0080' }} aria-hidden="true"></i>
+            Outcome: Learners grow into confident and responsible individuals ready for leadership.
+          </p>
+        </div>
+      </div>
+    </Col>
+  </Row>
+</Container>
       </section>
 
       {/* Spiritual & Values Development Section */}
@@ -835,16 +1030,16 @@ function ClubsSocieties() {
             ))}
           </Row>
           <div className="text-center mt-5">
-          <Button 
-            as="a" 
-            href="/school-life/gallery"
-            className="btn-navy"
-            variant="outline-primary"
-            size="lg"
-          >
-            View Full Gallery
-          </Button>
-        </div>
+            <Button 
+              as="a" 
+              href="/school-life/gallery"
+              className="btn-navy"
+              variant="outline-primary"
+              size="lg"
+            >
+              View Full Gallery
+            </Button>
+          </div>
         </Container>
       </section>
 
@@ -858,7 +1053,7 @@ function ClubsSocieties() {
         />
       )}
 
-      {/* Final CTA Section */}
+      {/* Final CTA Section - Updated with scroll to contact functionality */}
       <section className="cta-section cta-primary py-4">
         <Container>
           <div className="cta-content text-center">
@@ -872,12 +1067,8 @@ function ClubsSocieties() {
               <Link to="/admissions/apply">
                 <button className="btn-navy">Apply Now</button>
               </Link>
-              <Link to="/contact">
-                <button className="btn-navy">Book a School Visit</button>
-              </Link>
-              <Link to="/contact">
-                <button className="btn-navy">Contact Admissions</button>
-              </Link>
+              <button onClick={scrollToContact} className="btn-navy">Book a School Visit</button>
+              <button onClick={scrollToContact} className="btn-navy">Contact Admissions</button>
             </div>
           </div>
         </Container>
@@ -908,7 +1099,7 @@ function ClubsSocieties() {
           left: 0;
           right: 0;
           bottom: 0;
-          background-image: url('/images/optimized/extracurricular1.webp');
+          background-image: url('/images/optimized/gallery/sports2.webp');
           background-size: cover;
           background-position: center;
           background-repeat: no-repeat;

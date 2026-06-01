@@ -330,7 +330,7 @@ const BlogSection = ({ limit, showViewAll, variant, showHeadingLine = true }) =>
               {/* View All Button */}
               {showViewAll && (
                 <div className="text-center mt-5">
-                  <Link to="/school-life/news#blog-section">
+                  <Link to="/school-life/blogs">
                     <button
                       className="btn-navy"
                       style={{

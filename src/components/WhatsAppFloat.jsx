@@ -50,7 +50,7 @@ const WhatsAppFloat = memo(function WhatsAppFloat() {
   }, []);
 
   const handleClose = useCallback((e) => {
-    e.stopPropagation();
+    e?.stopPropagation();
     setShowWelcome(false);
     sessionStorage.setItem('whatsappShown', 'true');
   }, []);
@@ -111,7 +111,6 @@ const WhatsAppFloat = memo(function WhatsAppFloat() {
             aria-label="Close message"
           >
             ×
-            <span className="visually-hidden">Close</span>
           </button>
           
           <div className={styles.messageContent}>
@@ -134,14 +133,14 @@ const WhatsAppFloat = memo(function WhatsAppFloat() {
                   onClick={() => {
                     handleClose();
                     if (typeof window.gtag !== 'undefined') {
-                      window.gtag('event', 'fees_click', {
+                      window.gtag('event', 'programs_click', {
                         'event_category': 'engagement',
-                        'event_label': 'whatsapp_fees'
+                        'event_label': 'whatsapp_programs'
                       });
                     }
                   }}
                 >
-                  Our Programs
+                  📚 Our Programs
                 </Link>
                 
                 <Link 
@@ -159,6 +158,7 @@ const WhatsAppFloat = memo(function WhatsAppFloat() {
                 >
                   💰 Download Fee Structure
                 </Link>
+
                 <Link 
                   to="/admissions/apply"
                   className={styles.messageLink}
@@ -174,7 +174,6 @@ const WhatsAppFloat = memo(function WhatsAppFloat() {
                 >
                   📝 Apply Now
                 </Link>
-                
               </div>
             </div>
           </div>

@@ -395,23 +395,29 @@ function Gallery() {
       { id: 13, filename: "events1", alt: "Graduation", category: "events" },
       { id: 14, filename: "events2", alt: "Prize giving day", category: "events" },
       { id: 15, filename: "events3", alt: "Parents day", category: "events" },
-      { id: 16, filename: "events4", alt: "Open day", category: "events" },
+      { id: 16, filename: "events5", alt: "Open day", category: "events" },
       { id: 17, filename: "facilities1", alt: "School library", category: "facilities" },
       { id: 18, filename: "facilities2", alt: "Science lab", category: "facilities" },
       { id: 19, filename: "facilities3", alt: "Playground", category: "facilities" },
       { id: 20, filename: "facilities4", alt: "Computer lab", category: "facilities" },
-      { id: 21, filename: "facilities5", alt: "School van", category: "facilities" },
+      { id: 21, filename: "facilities5", alt: "Dorm", category: "facilities" },
+       { id: 22, filename: "facilities6", alt: "dorm", category: "facilities"  },
+      { id: 23, filename: "facilities7", alt: "playground", category: "facilities"  },
+      { id: 24, filename: "slide2", alt: "School van" , category: "facilities" },
+      
     ],
     academics: [
       { id: 1, filename: "academics1", alt: "Classroom learning" },
       { id: 2, filename: "academics2", alt: "Science experiment" },
       { id: 3, filename: "academics3", alt: "Library reading" },
       { id: 4, filename: "academics4", alt: "Computer class" },
+      { id: 25, filename: "academics5", alt: "Academic tour" },
+      { id: 26, filename: "practicals2", alt: "practicals" },
     ],
     sports: [
       { id: 5, filename: "sports1", alt: "Football match" },
       { id: 6, filename: "sports2", alt: "Athletics" },
-      { id: 7, filename: "sports3", alt: "Netball" },
+      { id: 7, filename: "sports5", alt: "Netball" },
       { id: 8, filename: "sports4", alt: "Swimming gala" },
     ],
     cultural: [
@@ -424,14 +430,18 @@ function Gallery() {
       { id: 13, filename: "events1", alt: "Graduation" },
       { id: 14, filename: "events2", alt: "Prize giving day" },
       { id: 15, filename: "events3", alt: "Parents day" },
-      { id: 16, filename: "events4", alt: "Open day" },
+      { id: 16, filename: "events5", alt: "Open day" },
     ],
     facilities: [
       { id: 17, filename: "facilities1", alt: "School library" },
       { id: 18, filename: "facilities2", alt: "Science lab" },
       { id: 19, filename: "facilities3", alt: "Playground" },
       { id: 20, filename: "facilities4", alt: "Computer lab" },
-      { id: 21, filename: "facilities5", alt: "School van" },
+      { id: 21, filename: "facilities5", alt: "Dorm" },
+      { id: 22, filename: "facilities6", alt: "dorm" },
+      { id: 23, filename: "facilities7", alt: "playground" },
+      { id: 24, filename: "slide2", alt: "School van" },
+      { id: 24, filename: "facilities8", alt: "School van" },
     ]
   }), []);
 

@@ -156,10 +156,10 @@ function BoardingLife() {
   
   // Boarding images
   const boardingImages = useMemo(() => ({
-    dormitory: "/images/boardingblog.webp",
+    dormitory: "/images/optimized/boarding.webp",
     commonRoom: "/images/optimized/gate2.webp",
     studyArea: "/images/optimized/jss.webp",
-    recreation: "/images/optimized/ECDE1.webp"
+    recreation: "/images/optimized/ecde.webp"
   }), []);
 
   const boardingItemsImage = useMemo(() => "/images/optimized/boarding-items.webp", []);
@@ -677,7 +677,7 @@ function BoardingLife() {
           left: 0;
           right: 0;
           bottom: 0;
-          background-image: url('/images/boardingblog.webp');
+          background-image: url('/images/optimized/boarding.webp');
            background-size: cover;
           background-position: center;
           background-repeat: no-repeat;

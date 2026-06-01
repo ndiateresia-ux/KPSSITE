@@ -1,6 +1,6 @@
-// pages/Apply.jsx - Updated with Hero Background Image
+// pages/Apply.jsx - Complete Fixed Page with Proper Label Associations
 import { Helmet } from "react-helmet-async";
-import { Container, Row, Col, Form, Button, Card, Alert, Badge } from "react-bootstrap";
+import { Container, Row, Col, Form, Button, Card, Alert } from "react-bootstrap";
 import { useState, useEffect, useCallback, memo, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
 import { useGoogleLogin } from '@react-oauth/google';
@@ -10,14 +10,6 @@ import parsePhoneNumber from 'libphonenumber-js';
 
 // Lazy load non-critical components
 const GetInTouch = lazy(() => import("../components/GetInTouch"));
-
-// Lazy load jspdf only when needed
-const loadPDFLibrary = () => import("jspdf");
-const loadAutoTable = async () => {
-  const { default: jsPDF } = await import("jspdf");
-  await import("jspdf-autotable");
-  return jsPDF;
-};
 
 // Helper function for Unicode-safe base64 encoding
 const utf8ToBase64 = (str) => {
@@ -121,19 +113,20 @@ const FormInput = memo(({
 
 FormInput.displayName = 'FormInput';
 
-// Phone input component with theme styling
+// FIXED: Phone input component with proper label association using htmlFor
 const PhoneInputField = memo(({ phone, onChange, error, validated }) => {
-  const id = "phone";
+  const id = "phone-input-field";
   const errorId = `${id}-error`;
   const helpId = `${id}-help`;
   
   return (
-    <Form.Group controlId={id} className="mb-3">
-      <Form.Label className="fw-bold small text-navy">
+    <div className="mb-3">
+      <label htmlFor={id} className="fw-bold small text-navy mb-2 d-block">
         Phone Number <span className="text-gold" aria-hidden="true">*</span>
         <span className="visually-hidden"> (required)</span>
-      </Form.Label>
+      </label>
       <PhoneInput
+        id={id}
         international
         defaultCountry="KE"
         value={phone}
@@ -146,19 +139,19 @@ const PhoneInputField = memo(({ phone, onChange, error, validated }) => {
         aria-required="true"
       />
       {validated && !phone && (
-        <Form.Control.Feedback type="invalid" id={errorId} style={{ display: 'block' }} role="alert">
+        <div id={errorId} className="invalid-feedback d-block mt-1" role="alert" style={{ display: 'block' }}>
           Phone number is required.
-        </Form.Control.Feedback>
+        </div>
       )}
       {error && (
-        <Form.Control.Feedback type="invalid" id={errorId} style={{ display: 'block' }} role="alert">
+        <div id={errorId} className="invalid-feedback d-block mt-1" role="alert" style={{ display: 'block' }}>
           {error}
-        </Form.Control.Feedback>
+        </div>
       )}
-      <Form.Text id={helpId} className="text-muted small d-block">
+      <div id={helpId} className="text-muted small mt-1">
         Enter 9 digits after country code (e.g., 712345678)
-      </Form.Text>
-    </Form.Group>
+      </div>
+    </div>
   );
 });
 
@@ -240,39 +233,139 @@ const ProgressIndicator = memo(({ currentStep, totalSteps = 4 }) => {
 
 ProgressIndicator.displayName = 'ProgressIndicator';
 
-// Small checkbox component
+// FIXED: Proper checkbox component with correct label association using htmlFor
 const SmallCheckbox = memo(({ label, name, checked, onChange, required = false, id }) => {
   const checkboxId = id || `checkbox-${name}`;
   
   return (
-    <Form.Group controlId={checkboxId} className="mb-3">
-      <div className="d-flex align-items-center">
-        <Form.Check 
+    <div className="mb-3">
+      <div className="d-flex align-items-start">
+        <input
           type="checkbox"
           id={checkboxId}
           name={name}
           checked={checked}
           onChange={onChange}
           required={required}
-          className="small-checkbox"
+          className="small-checkbox-input"
           style={{
-            '--checkbox-size': '18px'
+            width: '18px',
+            height: '18px',
+            marginTop: '2px',
+            cursor: 'pointer',
+            accentColor: 'var(--navy)'
+          }}
+          aria-invalid={required && !checked ? "true" : "false"}
+          aria-describedby={required && !checked ? `${checkboxId}-error` : undefined}
+        />
+        <label 
+          htmlFor={checkboxId} 
+          className="mb-0 ms-2 small"
+          style={{ cursor: 'pointer', color: 'var(--text-dark)', lineHeight: '1.4' }}
+        >
+          {label}
+          {required && <span className="text-gold ms-1" aria-hidden="true">*</span>}
+          {required && <span className="visually-hidden"> (required)</span>}
+        </label>
+      </div>
+      {required && !checked && (
+        <div id={`${checkboxId}-error`} className="invalid-feedback d-block mt-1" style={{ fontSize: '0.875rem' }} role="alert">
+          Please agree to the terms and conditions
+        </div>
+      )}
+    </div>
+  );
+});
+
+SmallCheckbox.displayName = 'SmallCheckbox';
+
+// FIXED: Simple checkbox component with proper label association
+const SimpleCheckbox = memo(({ label, name, checked, onChange, id }) => {
+  const checkboxId = id || `checkbox-${name}`;
+  
+  return (
+    <div className="mb-3">
+      <div className="d-flex align-items-center">
+        <input
+          type="checkbox"
+          id={checkboxId}
+          name={name}
+          checked={checked}
+          onChange={onChange}
+          className="small-checkbox-input"
+          style={{
+            width: '18px',
+            height: '18px',
+            marginTop: '0',
+            cursor: 'pointer',
+            accentColor: 'var(--navy)'
           }}
         />
-        <Form.Label 
+        <label 
           htmlFor={checkboxId} 
           className="mb-0 ms-2 small"
           style={{ cursor: 'pointer', color: 'var(--text-dark)' }}
         >
           {label}
-          {required && <span className="text-gold ms-1" aria-hidden="true">*</span>}
-        </Form.Label>
+        </label>
       </div>
-    </Form.Group>
+    </div>
   );
 });
 
-SmallCheckbox.displayName = 'SmallCheckbox';
+SimpleCheckbox.displayName = 'SimpleCheckbox';
+
+// FIXED: Terms checkbox component with separate links for better accessibility
+const TermsCheckbox = memo(({ checked, onChange, required = false }) => {
+  const checkboxId = "agreeToTerms";
+  
+  return (
+    <div className="mb-4">
+      <div className="d-flex align-items-start">
+        <input
+          type="checkbox"
+          id={checkboxId}
+          name="agreeToTerms"
+          checked={checked}
+          onChange={onChange}
+          required={required}
+          style={{
+            width: '18px',
+            height: '18px',
+            marginTop: '2px',
+            cursor: 'pointer',
+            accentColor: 'var(--navy)'
+          }}
+          aria-describedby="terms-description"
+          aria-invalid={required && !checked ? "true" : "false"}
+        />
+        <label htmlFor={checkboxId} className="mb-0 ms-2 small" style={{ cursor: 'pointer', color: 'var(--text-dark)', lineHeight: '1.4' }}>
+          I confirm that the information provided is accurate and I agree to the Terms of Service and Privacy Policy
+          {required && <span className="text-gold ms-1" aria-hidden="true">*</span>}
+          {required && <span className="visually-hidden"> (required)</span>}
+        </label>
+      </div>
+      <div id="terms-description" className="visually-hidden">
+        Please review our Terms of Service and Privacy Policy before agreeing
+      </div>
+      <div className="mt-2 ms-4">
+        <Link to="/terms-of-service" target="_blank" className="text-navy me-3 small" aria-label="View Terms of Service (opens in new tab)">
+          View Terms of Service
+        </Link>
+        <Link to="/privacy-policy" target="_blank" className="text-navy small" aria-label="View Privacy Policy (opens in new tab)">
+          View Privacy Policy
+        </Link>
+      </div>
+      {required && !checked && (
+        <div className="invalid-feedback d-block mt-1" role="alert">
+          Please agree to the terms and conditions
+        </div>
+      )}
+    </div>
+  );
+});
+
+TermsCheckbox.displayName = 'TermsCheckbox';
 
 // Initial form state
 const INITIAL_FORM_STATE = {
@@ -467,7 +560,7 @@ function Apply() {
     } else {
       setValidated(true);
       let errorMessage = "Please complete all required fields before proceeding.";
-      if (dateError) {
+      if (dateError && dateError.includes("future")) {
         errorMessage = dateError;
       }
       setSubmitStatus({
@@ -485,11 +578,200 @@ function Apply() {
     setCurrentStep(prev => Math.max(prev - 1, 1));
   }, []);
 
-  // PDF generation (keep your existing implementation)
+  // Generate PDF function
   const generatePDF = useCallback(async () => {
-    // ... (keep your existing PDF generation code)
-    // For brevity, I'm not repeating the entire function here
+    try {
+      const jsPDFModule = await import("jspdf");
+      await import("jspdf-autotable");
+      const jsPDF = jsPDFModule.default;
+      
+      const doc = new jsPDF();
+      
+      // Add logo if available
+      if (logoBase64) {
+        doc.addImage(logoBase64, 'JPEG', 14, 10, 40, 40);
+      }
+      
+      // Title
+      doc.setFontSize(20);
+      doc.setTextColor(13, 101, 251);
+      doc.text('Kitale Progressive School', 60, 25);
+      doc.setFontSize(12);
+      doc.setTextColor(100, 100, 100);
+      doc.text('Admission Application Form', 60, 35);
+      
+      // Application Number
+      doc.setFontSize(10);
+      doc.setTextColor(0, 0, 0);
+      doc.text(`Application #: KPS/${new Date().getFullYear()}/${String(applicationCounter).padStart(4, '0')}`, 14, 55);
+      doc.text(`Date: ${new Date().toLocaleDateString()}`, 14, 62);
+      
+      // Parent Info Section
+      let yPos = 75;
+      doc.setFontSize(12);
+      doc.setTextColor(13, 101, 251);
+      doc.text('Parent/Guardian Information', 14, yPos);
+      yPos += 8;
+      doc.setFontSize(10);
+      doc.setTextColor(0, 0, 0);
+      doc.text(`Name: ${formData.parentName || 'Not provided'}`, 14, yPos);
+      yPos += 6;
+      doc.text(`Email: ${formData.email || 'Not provided'}`, 14, yPos);
+      yPos += 6;
+      doc.text(`Phone: ${formData.phone || 'Not provided'}`, 14, yPos);
+      yPos += 6;
+      doc.text(`Relationship: ${formData.relationship || 'Not provided'}`, 14, yPos);
+      yPos += 6;
+      doc.text(`Address: ${formData.address || 'Not provided'}`, 14, yPos);
+      
+      // Child Info Section
+      yPos += 12;
+      doc.setFontSize(12);
+      doc.setTextColor(13, 101, 251);
+      doc.text('Child Information', 14, yPos);
+      yPos += 8;
+      doc.setFontSize(10);
+      doc.setTextColor(0, 0, 0);
+      doc.text(`Name: ${formData.childName || 'Not provided'}`, 14, yPos);
+      yPos += 6;
+      doc.text(`Date of Birth: ${formData.dateOfBirth || 'Not provided'}`, 14, yPos);
+      yPos += 6;
+      doc.text(`Gender: ${formData.gender || 'Not provided'}`, 14, yPos);
+      yPos += 6;
+      doc.text(`Nationality: ${formData.nationality === 'Other' ? formData.otherNationality : formData.nationality || 'Not provided'}`, 14, yPos);
+      yPos += 6;
+      doc.text(`Previous School: ${formData.previousSchool || 'Not provided'}`, 14, yPos);
+      yPos += 6;
+      doc.text(`Grade Applying: ${formData.gradeApplying || 'Not provided'}`, 14, yPos);
+      yPos += 6;
+      if (formData.stayStatus) {
+        doc.text(`Stay Status: ${formData.stayStatus === 'full-day' ? 'Full Day' : formData.stayStatus === 'half-day' ? 'Half Day' : formData.stayStatus === 'boarding' ? 'Boarding' : 'Day Scholar'}`, 14, yPos);
+        yPos += 6;
+      }
+      
+      // Medical Info Section
+      yPos += 12;
+      doc.setFontSize(12);
+      doc.setTextColor(13, 101, 251);
+      doc.text('Medical Information', 14, yPos);
+      yPos += 8;
+      doc.setFontSize(10);
+      doc.setTextColor(0, 0, 0);
+      doc.text(`Allergies: ${formData.hasAllergies ? 'Yes' : 'No'}`, 14, yPos);
+      yPos += 6;
+      if (formData.medicalConditions) {
+        doc.text(`Medical Conditions: ${formData.medicalConditions}`, 14, yPos);
+        yPos += 6;
+      }
+      
+      // Footer
+      doc.setFontSize(8);
+      doc.setTextColor(150, 150, 150);
+      doc.text('This is an automatically generated application confirmation.', 14, 280);
+      doc.text('Please keep this for your records.', 14, 286);
+      
+      return doc;
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      throw error;
+    }
   }, [formData, applicationCounter, logoBase64]);
+
+  // Send email via Gmail API
+  const sendEmailViaGmail = useCallback(async (accessToken, pdfDoc) => {
+    const pdfOutput = pdfDoc.output('datauristring');
+    const pdfBase64 = pdfOutput.split(',')[1];
+    
+    const currentDate = new Date().toLocaleDateString();
+    const applicationRef = `KPS/${new Date().getFullYear()}/${String(applicationCounter).padStart(4, '0')}`;
+    
+    // Email content
+    const emailContent = `
+      <html>
+        <head></head>
+        <body>
+          <h2 style="color: #0d65fb;">Kitale Progressive School - Application Received</h2>
+          <p>Dear ${formData.parentName},</p>
+          <p>Thank you for submitting an admission application for <strong>${formData.childName}</strong> to Kitale Progressive School.</p>
+          
+          <h3>Application Summary</h3>
+          <ul>
+            <li><strong>Application Reference:</strong> ${applicationRef}</li>
+            <li><strong>Student Name:</strong> ${formData.childName}</li>
+            <li><strong>Grade Applying For:</strong> ${formData.gradeApplying}</li>
+            <li><strong>Submission Date:</strong> ${currentDate}</li>
+          </ul>
+          
+          <h3>Next Steps</h3>
+          <ol>
+            <li>Our admissions team will review your application within 2-3 business days.</li>
+            <li>You will receive a follow-up call or email to discuss the next steps.</li>
+            <li>We may invite you for a school tour or assessment depending on the grade level.</li>
+          </ol>
+          
+          <p>Please find attached a copy of your application for your records.</p>
+          
+          <p>If you have any questions, please contact our admissions office at:</p>
+          <p>
+            📞 Phone: +254 (0) 123 456 789<br>
+            📧 Email: admissions@kitaleprogressiveschool.ac.ke
+          </p>
+          
+          <p>Warm regards,<br>
+          <strong>Admissions Office</strong><br>
+          Kitale Progressive School</p>
+          
+          <hr>
+          <small>This is an automated confirmation. Please do not reply to this email.</small>
+        </body>
+      </html>
+    `;
+    
+    const emailBoundary = `boundary_${Date.now()}`;
+    const emailData = [
+      `From: Kitale Progressive School <${ADMISSIONS_EMAIL}>`,
+      `To: ${formData.email}`,
+      `Cc: ${ADMISSIONS_EMAIL}`,
+      `Subject: Application Received - ${formData.childName} - ${applicationRef}`,
+      'MIME-Version: 1.0',
+      `Content-Type: multipart/mixed; boundary="${emailBoundary}"`,
+      '',
+      `--${emailBoundary}`,
+      'Content-Type: text/html; charset="UTF-8"',
+      'Content-Transfer-Encoding: 7bit',
+      '',
+      emailContent,
+      '',
+      `--${emailBoundary}`,
+      'Content-Type: application/pdf; name="application_form.pdf"',
+      'Content-Transfer-Encoding: base64',
+      'Content-Disposition: attachment; filename="application_form.pdf"',
+      '',
+      pdfBase64,
+      '',
+      `--${emailBoundary}--`
+    ].join('\r\n');
+    
+    const encodedEmail = utf8ToBase64(emailData);
+    
+    const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        raw: encodedEmail
+      })
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error?.message || 'Failed to send email');
+    }
+    
+    return await response.json();
+  }, [formData, applicationCounter, ADMISSIONS_EMAIL]);
 
   // Google Login configuration
   const login = useGoogleLogin({
@@ -497,7 +779,39 @@ function Apply() {
     scope: GMAIL_SCOPES,
     redirectUri: `${SITE_URL}/auth/callback`,
     onSuccess: async (tokenResponse) => {
-      // ... (keep your existing submission logic)
+      setSubmitting(true);
+      try {
+        // Save application number for next time
+        localStorage.setItem('lastApplicationNumber', applicationCounter.toString());
+        
+        // Generate PDF
+        const pdfDoc = await generatePDF();
+        
+        // Send email
+        await sendEmailViaGmail(tokenResponse.access_token, pdfDoc);
+        
+        setFormSubmitted(true);
+        setSubmitStatus({
+          show: true,
+          success: true,
+          message: "Application submitted successfully! Check your email for confirmation."
+        });
+        
+        // Reset form
+        setFormData(INITIAL_FORM_STATE);
+        setPhone("");
+        setCurrentStep(1);
+        
+      } catch (error) {
+        console.error('Submission error:', error);
+        setSubmitStatus({
+          show: true,
+          success: false,
+          message: error.message || "Failed to submit application. Please try again."
+        });
+      } finally {
+        setSubmitting(false);
+      }
     },
     onError: (errorResponse) => {
       console.error('Login Failed:', errorResponse);
@@ -531,7 +845,7 @@ function Apply() {
       return;
     }
     
-    if (dateError) {
+    if (dateError && dateError.includes("future")) {
       setSubmitStatus({
         show: true,
         success: false,
@@ -567,7 +881,7 @@ function Apply() {
   // Trust strip data - Why Parents Choose KPS
   const trustPoints = [
     { icon: "fa fa-graduation-cap", text: "Clear learning pathway from ECD to Junior school" },
-    { icon: "fa fa-chalkboard-user", text: "Experienced and supportive teachers who guide &amp; support your learner" },
+    { icon: "fa fa-chalkboard-user", text: "Experienced and supportive teachers who guide & support your learner" },
     { icon: "fa fa-shield-heart", text: "Safe and nurturing school environment" },
     { icon: "fa fa-futbol", text: "Balanced academic and co-curricular development" }
   ];
@@ -637,7 +951,7 @@ function Apply() {
                   <i className="fas fa-handshake" aria-hidden="true"></i>
                 </div>
                 <h3 className="card-title-navy h5 fw-bold mb-3">4. Assessment/School Visit</h3>
-                <p className="text-muted mb-0"> Your child may have a brief interaction or assessment depending on level.</p>
+                <p className="text-muted mb-0">Your child may have a brief interaction or assessment depending on level.</p>
               </div>
             </Col>
           </Row>
@@ -906,7 +1220,7 @@ function Apply() {
                                   name="stayStatus"
                                   value={formData.stayStatus}
                                   onChange={handleChange}
-                                  required
+                                  required={formData.gradeApplying === "Playgroup"}
                                   options={stayStatusOptions}
                                   feedback="Please select stay status"
                                 />
@@ -922,7 +1236,7 @@ function Apply() {
                           <h3 className="text-navy fw-bold h5 mb-3 pb-2 border-bottom">Medical Information</h3>
                           <Row className="mb-3">
                             <Col md={12}>
-                              <SmallCheckbox 
+                              <SimpleCheckbox 
                                 label="Does the child have any allergies?"
                                 name="hasAllergies"
                                 checked={formData.hasAllergies}
@@ -938,45 +1252,42 @@ function Apply() {
                                 name="medicalConditions"
                                 value={formData.medicalConditions}
                                 onChange={handleChange}
-                                placeholder="E.g., Asthma, Diabetes"
+                                placeholder="E.g., Asthma, Diabetes, Epilepsy"
                               />
+                              <Form.Text className="text-muted small">
+                                Please list any medical conditions, ongoing treatments, or medications.
+                              </Form.Text>
                             </Col>
                           </Row>
                         </div>
                       )}
 
-                      {/* Step 4: Review & Submit */}
+                      {/* Step 4: Review & Submit - Using TermsCheckbox component with proper label association */}
                       {currentStep === 4 && (
                         <div className="step-content">
                           <h3 className="text-navy fw-bold h5 mb-3 pb-2 border-bottom">Review & Submit</h3>
                           <div className="review-section bg-light-custom p-3 rounded-3 mb-3">
                             <p className="fw-bold mb-1 text-navy">Parent: {formData.parentName || "Not provided"}</p>
                             <p className="mb-1">Email: {formData.email || "Not provided"}</p>
+                            <p className="mb-1">Phone: {formData.phone || "Not provided"}</p>
                             <p className="mb-1">Child: {formData.childName || "Not provided"}</p>
                             <p className="mb-1">Grade: {formData.gradeApplying || "Not selected"}</p>
+                            {formData.stayStatus && (
+                              <p className="mb-1">Stay Status: {
+                                formData.stayStatus === 'full-day' ? 'Full Day' : 
+                                formData.stayStatus === 'half-day' ? 'Half Day' : 
+                                formData.stayStatus === 'boarding' ? 'Boarding' : 'Day Scholar'
+                              }</p>
+                            )}
                           </div>
-                          <Row className="mb-4">
-                            <Col md={12}>
-                              <SmallCheckbox 
-                                label={
-                                  <span className="small">
-                                    I confirm that the information provided is accurate and I agree to the{' '}
-                                    <Link to="/terms-of-service" target="_blank" className="text-navy">
-                                      Terms
-                                    </Link> and{' '}
-                                    <Link to="/privacy-policy" target="_blank" className="text-navy">
-                                      Privacy Policy
-                                    </Link>
-                                  </span>
-                                }
-                                name="agreeToTerms"
-                                checked={formData.agreeToTerms}
-                                onChange={handleChange}
-                                required={true}
-                                id="agreeToTerms"
-                              />
-                            </Col>
-                          </Row>
+                          
+                          {/* Using the dedicated TermsCheckbox component with proper accessibility */}
+                          <TermsCheckbox 
+                            checked={formData.agreeToTerms}
+                            onChange={handleChange}
+                            required={true}
+                          />
+                          
                           <p className="text-muted small">
                             <i className="fas fa-lock me-1" aria-hidden="true"></i>
                             You'll sign in with Google to verify your identity and receive your confirmation email.
@@ -1025,60 +1336,61 @@ function Apply() {
         </section>
       )}
 
-      {/* What Happens After You Apply Section - Always visible */}
-
+      {/* What Happens After You Apply Section */}
+      <section className="after-apply-section section-padding" style={{ background: 'var(--gray-light)' }}>
         <Container>
-           
-              <div className="card-custom p-4 p-lg-5" style={{backgroundColor:'#0d65fb'}}>
+          <Row className="justify-content-center">
+            <Col lg={10}>
+              <div className="card-custom p-4 p-lg-5" style={{ backgroundColor: '#0d65fb' }}>
                 <h3 className="h4 fw-bold mb-4 text-white">What Happens After You Apply</h3>
                 <div className="step-list">
                   <div className="step-item d-flex gap-3 mb-4">
-                    <div className="step-number bg-navy text-white" style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', flexShrink: 0 }}>1.</div>
+                    <div className="step-number bg-white text-navy" style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', flexShrink: 0 }}>1</div>
                     <div>
                       <h4 className="h6 fw-bold mb-1 text-white">Application Review</h4>
                       <p className="text-white mb-0">Our admissions team will review your details within 2-3 business days.</p>
                     </div>
                   </div>
                   <div className="step-item d-flex gap-3 mb-4">
-                    <div className="step-number bg-navy text-white" style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', flexShrink: 0 }}>2.</div>
+                    <div className="step-number bg-white text-navy" style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', flexShrink: 0 }}>2</div>
                     <div>
                       <h4 className="h6 fw-bold mb-1 text-white">Receive Confirmation</h4>
                       <p className="text-white mb-0">You will receive a confirmation email with your application details.</p>
                     </div>
                   </div>
                   <div className="step-item d-flex gap-3 mb-4">
-                    <div className="step-number bg-navy text-white" style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', flexShrink: 0 }}>3.</div>
+                    <div className="step-number bg-white text-navy" style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', flexShrink: 0 }}>3</div>
                     <div>
                       <h4 className="h6 fw-bold mb-1 text-white">School Follow-Up</h4>
                       <p className="text-white mb-0">We will contact you to guide you through the next steps.</p>
                     </div>
                   </div>
                   <div className="step-item d-flex gap-3">
-                    <div className="step-number bg-navy text-white" style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', flexShrink: 0 }}>4.</div>
+                    <div className="step-number bg-white text-navy" style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', flexShrink: 0 }}>4</div>
                     <div>
                       <h4 className="h6 fw-bold mb-1 text-white">School Visit/Assessment</h4>
-                      <p className="text-white mb-0 text-white">You may be invited for a school visit or interaction with your child.</p>
+                      <p className="text-white mb-0">You may be invited for a school visit or interaction with your child.</p>
                     </div>
                   </div>
                 </div>
                 <div className="contact-options mt-4 pt-3 text-center">
-                  <p className="mb-0 text-white">
+                  <p className="mb-3 text-white">
                     Have questions? Contact our admissions office
                   </p>
-              <a 
-                href="/contact" 
-                className="btn-navy" 
-                aria-label="Contact Us"
-                style={{ textDecoration: 'none' }}
-              >
-                Contact Us
-              </a>
+                  <Link 
+                    to="/contact" 
+                    className="btn-navy" 
+                    aria-label="Contact Us"
+                    style={{ textDecoration: 'none', background: 'white', color: '#0d65fb' }}
+                  >
+                    Contact Us
+                  </Link>
                 </div>
               </div>
-          
-         
+            </Col>
+          </Row>
         </Container>
-  
+      </section>
 
       {/* What Happens Next Section - AFTER form submission (Success Message) */}
       {formSubmitted && (
@@ -1094,6 +1406,13 @@ function Apply() {
                   <p className="lead text-dark">
                     Thank you for choosing Kitale Progressive School.
                   </p>
+                  <p className="text-muted">
+                    A confirmation email has been sent to <strong>{formData.email}</strong>. 
+                    Our admissions team will review your application and contact you within 2-3 business days.
+                  </p>
+                  <Link to="/" className="btn-navy mt-3">
+                    Return to Homepage
+                  </Link>
                 </div>
               </Col>
             </Row>
@@ -1105,9 +1424,9 @@ function Apply() {
         <GetInTouch />
       </Suspense>
 
-      {/* Additional CSS for hero section and small checkboxes */}
+      {/* Additional CSS */}
       <style dangerouslySetInnerHTML={{ __html: `
-        /* Hero Section with Background Image - Matching Other Pages */
+        /* Hero Section with Background Image */
         .apply-hero-section {
           position: relative;
           background: linear-gradient(135deg, #0d65fb 0%, #0a55d6 100%);
@@ -1174,7 +1493,7 @@ function Apply() {
 
         .apply-hero-content .hero-badge {
           display: inline-block;
-          background: #031a41;
+          background: rgba(3, 26, 65, 0.8);
           backdrop-filter: blur(10px);
           padding: 8px 20px;
           border-radius: 40px;
@@ -1184,45 +1503,81 @@ function Apply() {
           text-shadow: none;
         }
 
-        .small-checkbox .form-check-input {
-          width: 18px !important;
-          height: 18px !important;
-          min-width: 18px !important;
-          min-height: 18px !important;
-          margin-top: 0 !important;
-          cursor: pointer;
+        .small-checkbox-input {
+          accent-color: var(--navy);
         }
         
-        .small-checkbox .form-check-input:checked {
-          background-color: var(--navy);
-          border-color: var(--navy);
-        }
-        
-        .small-checkbox .form-check-input:focus {
-          box-shadow: 0 0 0 3px rgba(13, 101, 251, 0.25);
-          border-color: var(--navy);
-        }
-        
-        .small-checkbox {
-          display: flex;
-          align-items: center;
-          min-height: auto !important;
-          padding-left: 0;
+        .small-checkbox-input:focus {
+          outline: 2px solid var(--navy);
+          outline-offset: 2px;
         }
         
         .journey-step-card {
           transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
+        
         .journey-step-card:hover {
           transform: translateY(-5px);
           box-shadow: 0 16px 24px -8px rgba(0,35,70,0.15) !important;
         }
+        
         .step-circle.completed {
           background-color: var(--navy);
           color: white;
         }
-        .fade-in { animation: fadeIn 0.3s ease; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        .fade-in { 
+          animation: fadeIn 0.3s ease; 
+        }
+        
+        @keyframes fadeIn { 
+          from { opacity: 0; } 
+          to { opacity: 1; } 
+        }
+        
+        .review-section {
+          background-color: #f8f9fa;
+          border-left: 4px solid var(--gold);
+        }
+        
+        .bg-light-custom {
+          background-color: #f8f9fa;
+        }
+        
+        /* Style for phone input to match form controls */
+        .PhoneInput {
+          display: flex;
+          align-items: center;
+          border: 1px solid #ced4da;
+          border-radius: 0.375rem;
+          padding: 0.375rem 0.75rem;
+          background-color: #fff;
+          transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+        
+        .PhoneInput:focus-within {
+          border-color: var(--navy);
+          outline: 0;
+          box-shadow: 0 0 0 0.2rem rgba(13, 101, 251, 0.25);
+        }
+        
+        .PhoneInputInput {
+          border: none;
+          outline: none;
+          flex: 1;
+          padding: 0.375rem 0;
+          background: transparent;
+        }
+        
+        .form-control-custom.is-invalid,
+        .PhoneInput.is-invalid {
+          border-color: #dc3545;
+          padding-right: calc(1.5em + 0.75rem);
+          background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+          background-repeat: no-repeat;
+          background-position: right calc(0.375em + 0.1875rem) center;
+          background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+        }
         
         @media (max-width: 768px) {
           .apply-hero-content {
@@ -1244,8 +1599,13 @@ function Apply() {
         }
         
         @media (prefers-reduced-motion: reduce) {
-          * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
-          .journey-step-card:hover { transform: none; }
+          * { 
+            animation-duration: 0.01ms !important; 
+            transition-duration: 0.01ms !important; 
+          }
+          .journey-step-card:hover { 
+            transform: none; 
+          }
           .apply-hero-section::before {
             filter: blur(0px);
             transform: none;

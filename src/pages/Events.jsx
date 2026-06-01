@@ -730,8 +730,7 @@ function Events() {
           left: 0;
           right: 0;
           bottom: 0;
-          background-image: url('/images/optimized/tour1.webp');
-          background-size: 100% 100%;;
+          background-image: url('/images/optimized/school.webp');
           background-position: center;
           background-repeat: no-repeat;
           filter: blur(0px);

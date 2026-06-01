@@ -82,7 +82,10 @@ const OptimizedImage = memo(({
             left: 0,
             right: 0,
             bottom: 0,
-            zIndex: 1
+            zIndex: 1,
+            background: 'linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)',
+            backgroundSize: '200% 100%',
+            animation: 'shimmer 1.5s infinite'
           }}
           aria-hidden="true"
         />
@@ -234,27 +237,81 @@ const InfoCard = memo(({ title, items, icon, bgColor = 'var(--gray-light)' }) =>
 
 InfoCard.displayName = 'InfoCard';
 
-// Updated CTA Banner Component using theme CSS classes
-const CTABanner = memo(({ title, description, primaryText, primaryLink, secondaryText, secondaryLink }) => (
-  <div className="cta-section cta-primary" style={{ marginTop: '1rem' }}>
-    <div className="cta-content" style={{ padding: '20px 20px' }}>
-      <h3 className="cta-title" style={{ fontSize: '1.3rem', marginBottom: '0.75rem' }}>{title}</h3>
-      <p className="cta-description" style={{ fontSize: '0.9rem', marginBottom: '0.75rem', lineHeight: '1.6' }}>{description}</p>
-      <div className="cta-buttons">
-        <Link to={primaryLink}>
-          <button className="btn-navy" style={{ padding: '6px 20px', fontSize: '0.85rem' }}>
+// Scroll to contact function - same as homepage
+const scrollToContact = (event) => {
+  event?.preventDefault();
+  
+  let contactElement = document.getElementById('contactus');
+  
+  if (!contactElement) {
+    contactElement = document.querySelector('#get-in-touch-form, .get-in-touch-section form, [id*="contact"]');
+  }
+  
+  if (contactElement) {
+    const elementPosition = contactElement.getBoundingClientRect().top;
+    const offsetPosition = elementPosition + window.pageYOffset - 80;
+    
+    window.scrollTo({
+      top: offsetPosition,
+      behavior: 'smooth'
+    });
+    
+    setTimeout(() => {
+      const focusableElement = contactElement.querySelector('input, button, textarea, select, [tabindex="0"]');
+      if (focusableElement) {
+        focusableElement.focus();
+      } else {
+        contactElement.setAttribute('tabindex', '-1');
+        contactElement.focus();
+      }
+    }, 500);
+  } else {
+    // If contact element not found, navigate to contact page
+    window.location.href = '/contact';
+  }
+};
+
+// Updated CTA Banner Component with scroll to contact functionality
+const CTABanner = memo(({ title, description, primaryText, primaryLink, secondaryText }) => {
+  const handlePrimaryClick = useCallback((e) => {
+    e.preventDefault();
+    if (primaryLink === '/contact') {
+      scrollToContact(e);
+    } else {
+      window.location.href = primaryLink;
+    }
+  }, [primaryLink]);
+
+  const handleSecondaryClick = useCallback((e) => {
+    e.preventDefault();
+    scrollToContact(e);
+  }, []);
+
+  return (
+    <div className="cta-section cta-primary" style={{ marginTop: '1rem' }}>
+      <div className="cta-content" style={{ padding: '20px 20px' }}>
+        <h3 className="cta-title" style={{ fontSize: '1.3rem', marginBottom: '0.75rem' }}>{title}</h3>
+        <p className="cta-description" style={{ fontSize: '0.9rem', marginBottom: '0.75rem', lineHeight: '1.6' }}>{description}</p>
+        <div className="cta-buttons">
+          <button 
+            onClick={handlePrimaryClick}
+            className="btn-navy" 
+            style={{ padding: '6px 20px', fontSize: '0.85rem' }}
+          >
             {primaryText}
           </button>
-        </Link>
-        <Link to={secondaryLink}>
-          <button className="btn-navy" style={{ padding: '6px 20px', fontSize: '0.85rem' }}>
+          <button 
+            onClick={handleSecondaryClick}
+            className="btn-navy" 
+            style={{ padding: '6px 20px', fontSize: '0.85rem' }}
+          >
             {secondaryText}
           </button>
-        </Link>
+        </div>
       </div>
     </div>
-  </div>
-));
+  );
+});
 
 CTABanner.displayName = 'CTABanner';
 
@@ -354,7 +411,6 @@ const ECDSection = memo(() => {
               primaryText="Apply Now"
               primaryLink="/admissions/apply"
               secondaryText="Book a School Visit"
-              secondaryLink="/contact"
             />
           </Col>
         </Row>
@@ -459,7 +515,6 @@ const PrimarySection = memo(() => {
               primaryText="Apply Now"
               primaryLink="/admissions/apply"
               secondaryText="Book a School Visit"
-              secondaryLink="/contact"
             />
           </Col>
         </Row>
@@ -564,7 +619,6 @@ const JuniorSecondarySection = memo(() => {
               primaryText="Apply Now"
               primaryLink="/admissions/apply"
               secondaryText="Book a School Visit"
-              secondaryLink="/contact"
             />
           </Col>
         </Row>
@@ -661,7 +715,7 @@ function Curriculum() {
             Academics
           </h1>
           <p className="lead" style={{ fontSize: '1.2rem' }}>
-            our paths to building confident scholars
+            Our paths to building confident scholars
           </p>
         </div>
       </section>
@@ -675,8 +729,8 @@ function Curriculum() {
                 The CBE Pathway
               </h2>
               <p className="lead text-dark" style={{ fontSize: '1rem', maxWidth: '700px', margin: '0 auto' }}>
-                  We follow the Competency-Based Education (CBE) approved by (KICD), guiding learners
-                  from early years through junior school.          
+                We follow the Competency-Based Education (CBE) approved by (KICD), guiding learners
+                from early years through junior school.          
               </p>
             </Col>
           </Row>
@@ -742,9 +796,6 @@ function Curriculum() {
                   </div>
                   <h3 className="h5 fw-semibold mb-1">{item.activity}</h3>
                   <p className="small text-secondary mb-0">{item.time}</p>
-                  {item.description && (
-                    <p className="small text-muted mt-2 mb-0">{item.description}</p>
-                  )}
                 </div>
               </Col>
             ))}
@@ -752,7 +803,7 @@ function Curriculum() {
         </Container>
       </section>
 
-      <Suspense fallback={<div />}>
+      <Suspense fallback={<div className="section-loader" aria-hidden="true"></div>}>
         <GetInTouch />
       </Suspense>
 
@@ -781,6 +832,7 @@ function Curriculum() {
           transition: transform 0.2s ease, box-shadow 0.2s ease;
           border-radius: 14px;
           overflow: hidden;
+          cursor: pointer;
         }
         .curriculum-nav-card:focus-within,
         .curriculum-nav-card:hover {
@@ -811,7 +863,6 @@ function Curriculum() {
           background: #2196F3;
           color: white;
         }
-       
         .pillar-item {
           transition: transform 0.2s ease, box-shadow 0.2s ease;
           border-radius: 12px;
@@ -829,6 +880,19 @@ function Curriculum() {
         }
         .tracking-wide {
           letter-spacing: 0.5px;
+        }
+        .bg-light-custom {
+          background-color: var(--gray-light);
+        }
+        .text-navy {
+          color: var(--navy);
+        }
+        .text-gold {
+          color: var(--gold);
+        }
+        @keyframes shimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
         }
         @media (max-width: 768px) {
           .section-heading {

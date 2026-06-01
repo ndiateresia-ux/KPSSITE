@@ -1,9 +1,10 @@
-// pages/Home.jsx - Fully Optimized with Proper Heading Hierarchy
+// pages/Home.jsx - Complete Homepage with Fixed Carousel
 import { Helmet } from "react-helmet-async";
-import { Carousel, Container, Row, Col, Card } from "react-bootstrap";
+import { Container, Row, Col, Card } from "react-bootstrap";
 import { useLocation, useNavigate } from "react-router-dom";
 import React, { useEffect, lazy, Suspense, useCallback, useMemo, useState, useRef } from 'react';
 import BlogSection from '../components/BlogSection';
+import '../theme.css';
 
 // Lazy load non-critical components
 const GetInTouch = lazy(() => import("../components/GetInTouch"));
@@ -56,74 +57,153 @@ const StarRating = ({ rating }) => {
   );
 };
 
-// Optimized count-up hook
-const useCountUp = (end, duration = 2000) => {
-  const [count, setCount] = useState(0);
-  const [isVisible, setIsVisible] = useState(false);
-  const elementRef = useRef(null);
-  const rafRef = useRef(null);
-  const observerRef = useRef(null);
+// Fixed Carousel Component - No buttons, overlay visible, uniform height, noticeable zoom
+const FixedCarousel = ({ images, onNavigate }) => {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const autoPlayInterval = useRef(null);
 
+  // Preload all images for better performance
   useEffect(() => {
-    observerRef.current = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-          if (observerRef.current) observerRef.current.disconnect();
-        }
-      },
-      { threshold: 0.3, rootMargin: '50px' }
-    );
+    images.forEach((img) => {
+      const imgElement = new Image();
+      imgElement.src = img.jpg;
+    });
+  }, [images]);
 
-    if (elementRef.current) observerRef.current.observe(elementRef.current);
+  const startAutoPlay = useCallback(() => {
+    stopAutoPlay();
+    autoPlayInterval.current = setInterval(() => {
+      if (!isTransitioning) {
+        nextSlide();
+      }
+    }, 6000);
+  }, [isTransitioning]);
 
-    return () => {
-      if (observerRef.current) observerRef.current.disconnect();
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    };
+  const stopAutoPlay = useCallback(() => {
+    if (autoPlayInterval.current) {
+      clearInterval(autoPlayInterval.current);
+      autoPlayInterval.current = null;
+    }
   }, []);
 
-  useEffect(() => {
-    if (!isVisible) return;
-    
-    let startTime;
-    let lastProgress = 0;
-    
-    const animate = (timestamp) => {
-      if (!startTime) startTime = timestamp;
-      const elapsed = timestamp - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      
-      if (Math.abs(progress - lastProgress) > 0.01 || progress === 1) {
-        setCount(Math.floor(progress * end));
-        lastProgress = progress;
-      }
-      
-      if (progress < 1) rafRef.current = requestAnimationFrame(animate);
-    };
-    
-    rafRef.current = requestAnimationFrame(animate);
-    
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    };
-  }, [isVisible, end, duration]);
+  const nextSlide = useCallback(() => {
+    if (isTransitioning) return;
+    setIsTransitioning(true);
+    setActiveIndex((current) => (current + 1) % images.length);
+    setTimeout(() => setIsTransitioning(false), 1000);
+  }, [isTransitioning, images.length]);
 
-  return { count, elementRef };
+  // Start auto-play only once on mount
+  useEffect(() => {
+    startAutoPlay();
+    return () => stopAutoPlay();
+  }, [startAutoPlay, stopAutoPlay]);
+
+  return (
+    <section className="fixed-carousel-section" aria-label="Hero carousel showcasing school facilities">
+      {/* Main Carousel Container */}
+      <div className="fixed-carousel-container">
+        {images.map((item, index) => (
+          <div 
+            key={index} 
+            className={`fixed-carousel-slide ${index === activeIndex ? 'active' : ''}`}
+          >
+            <picture>
+              <source srcSet={item.webp} type="image/webp" />
+              <img
+                className="fixed-carousel-image"
+                src={item.jpg}
+                alt={item.alt}
+                loading={index === 0 ? "eager" : "lazy"}
+                fetchpriority={index === 0 ? "high" : "auto"}
+                decoding="async"
+              />
+            </picture>
+            {/* Gradient overlay for text readability */}
+            <div className="fixed-image-gradient-overlay"></div>
+          </div>
+        ))}
+      </div>
+
+      {/* Overlay Content - Visible */}
+      <div className="fixed-carousel-overlay">
+        <div className="fixed-overlay-content">
+          <div className="fixed-welcome-header">
+            <h1 className="fixed-welcome-title animate-title">
+              Give Your Child the Foundation to Lead
+            </h1>
+            <p className="fixed-welcome-subtitle animate-subtitle">
+              Excellence in CBE education, grounded in Christian values and the warmth of the Kenyan spirit. 
+              A safe haven where curiosity thrives.
+            </p>
+          </div>
+          <div className="fixed-overlay-buttons animate-buttons">
+            <button 
+              onClick={() => onNavigate('/admissions/apply')} 
+              className="fixed-btn-primary"
+              aria-label="Apply for Admissions"
+            >
+              Apply for Admissions
+            </button>
+            <button 
+              onClick={() => onNavigate('/academics/curriculum')} 
+              className="fixed-btn-primary"
+              aria-label="Explore our Programs"
+            >
+              Explore our Programs
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
 };
 
-// Stat Component
-const StatItem = ({ value, label, suffix = "" }) => {
-  const { count, elementRef } = useCountUp(value);
-  
+// Stat Item Component with animation
+const StatItemContent = ({ value, label, suffix }) => {
+  const [count, setCount] = useState(0);
+  const [hasAnimated, setHasAnimated] = useState(false);
+  const elementRef = useRef(null);
+
+  useEffect(() => {
+    const checkIfVisible = () => {
+      if (!hasAnimated && elementRef.current) {
+        const rect = elementRef.current.getBoundingClientRect();
+        const isVisible = rect.top < window.innerHeight - 100;
+        
+        if (isVisible) {
+          setHasAnimated(true);
+          let start = 0;
+          const duration = 2000;
+          
+          const step = (timestamp) => {
+            if (!start) start = timestamp;
+            const progress = Math.min((timestamp - start) / duration, 1);
+            const easedProgress = 1 - Math.pow(1 - progress, 3);
+            const currentCount = Math.floor(easedProgress * value);
+            setCount(currentCount);
+            
+            if (progress < 1) {
+              requestAnimationFrame(step);
+            }
+          };
+          
+          requestAnimationFrame(step);
+        }
+      }
+    };
+    
+    checkIfVisible();
+    window.addEventListener('scroll', checkIfVisible);
+    return () => window.removeEventListener('scroll', checkIfVisible);
+  }, [value, hasAnimated]);
+
   return (
-    <Col md={3} sm={6} className="mb-4">
-      <div ref={elementRef} className="stat-item-card">
-        <h3 className="stat-number">{count}{suffix}</h3>
-        <p className="stat-label">{label}</p>
-        <span className="visually-hidden">{count}{suffix} {label}</span>
-      </div>
-    </Col>
+    <div ref={elementRef}>
+      <div className="stat-number">{count}{suffix}</div>
+      <div className="stat-label">{label}</div>
+    </div>
   );
 };
 
@@ -131,31 +211,60 @@ const StatItem = ({ value, label, suffix = "" }) => {
 function Home() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [activeIndex, setActiveIndex] = useState(0);
-  
+  const contactFormRef = useRef(null);
+
+  // Optimized scroll to contact function
+  const scrollToContact = useCallback((event) => {
+    event?.preventDefault();
+    
+    let contactElement = document.getElementById('contactus');
+    
+    if (!contactElement) {
+      contactElement = document.querySelector('#get-in-touch-form, .get-in-touch-section form, [id*="contact"]');
+    }
+    
+    if (contactElement) {
+      const elementPosition = contactElement.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - 80;
+      
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
+      
+      setTimeout(() => {
+        const focusableElement = contactElement.querySelector('input, button, textarea, select, [tabindex="0"]');
+        if (focusableElement) {
+          focusableElement.focus();
+        } else {
+          contactElement.setAttribute('tabindex', '-1');
+          contactElement.focus();
+        }
+      }, 500);
+    } else {
+      navigate('/contact');
+    }
+  }, [navigate]);
+
+  // Handle hash navigation
   useEffect(() => {
-    if (location.hash === '#contact-section') {
-      const contactSection = document.getElementById('contact-section');
-      if (contactSection) {
-        requestAnimationFrame(() => {
-          contactSection.scrollIntoView({ behavior: 'smooth' });
-          contactSection.setAttribute('tabindex', '-1');
-          contactSection.focus({ preventScroll: true });
-        });
-      }
+    if (location.hash === '#contact-section' || location.hash === '#contactus') {
+      setTimeout(() => {
+        scrollToContact();
+      }, 100);
     } else if (location.hash === '') {
       requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
     }
-  }, [location]);
+  }, [location, scrollToContact]);
 
-  const handleLinkClick = useCallback((path) => {
-    navigate(path);
-    requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
-  }, [navigate]);
-
-  const goToSlide = (index) => setActiveIndex(index);
-  const nextSlide = () => setActiveIndex((current) => (current + 1) % testimonials.length);
-  const prevSlide = () => setActiveIndex((current) => (current - 1 + testimonials.length) % testimonials.length);
+  const handleLinkClick = useCallback((path, scrollToForm = false) => {
+    if (scrollToForm && (path === '/contact' || path === 'contact')) {
+      scrollToContact();
+    } else {
+      navigate(path);
+      requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
+    }
+  }, [navigate, scrollToContact]);
 
   const testimonials = useMemo(() => [
     {
@@ -205,12 +314,17 @@ function Home() {
     }
   ], []);
   
+  const [testimonialIndex, setTestimonialIndex] = useState(0);
+
   useEffect(() => {
     const interval = setInterval(() => {
-      setActiveIndex((current) => (current + 1) % testimonials.length);
+      setTestimonialIndex((current) => (current + 1) % testimonials.length);
     }, 5000);
     return () => clearInterval(interval);
   }, [testimonials.length]);
+
+  const nextTestimonial = () => setTestimonialIndex((current) => (current + 1) % testimonials.length);
+  const prevTestimonial = () => setTestimonialIndex((current) => (current - 1 + testimonials.length) % testimonials.length);
 
   const whyChooseUsItems = useMemo(() => [
     { icon: "👩‍🏫", title: "Teachers Who Know and Support Every Child", description: "Your child is not just another student here. Our teachers take time to understand each learner's strengths, guide their progress, and provide the support they need to grow with confidence." },
@@ -223,7 +337,7 @@ function Home() {
 
   const academicPathways = useMemo(() => [
     { level: "ECDE", summary: "Our ECD program builds strong foundations through play-based and structured learning that develops curiosity, creativity, and confidence.", image: "ECDE3", section: "ecde-section", btnText: "Explore ECDE" },
-    { level: "Primary", summary: "Our primary program strengthens literacy, numeracy, and critical thinking while encouraging creativity and independent learning.", image: "computer1", section: "primary-section", btnText: "Explore Primary" },
+    { level: "Primary", summary: "Our primary program strengthens literacy, numeracy, and critical thinking while encouraging creativity and independent learning.", image: "primary", section: "primary-section", btnText: "Explore Primary" },
     { level: "Junior Secondary", summary: "Our Junior Secondary program prepares learners for future academic and career pathways through advanced curriculum and leadership development.", image: "jss", section: "jss-section", btnText: "Explore JSS" },
   ], []);
 
@@ -243,8 +357,26 @@ function Home() {
     { webp: "/images/optimized/gate3.webp", jpg: "/images/optimized/gate3.jpg", alt: "Kitale Progressive School Main Gate" },
     { webp: "/images/optimized/slide2.webp", jpg: "/images/optimized/slide2.jpg", alt: "School Activities" },
     { webp: "/images/optimized/gate.webp", jpg: "/images/optimized/gate.jpg", alt: "Campus" },
-    { webp: "/images/optimized/classroom2.webp", jpg: "/images/optimized/classroom2.jpg", alt: "Classroom" }
+    { webp: "/images/optimized/admin.webp", jpg: "/images/optimized/admin.jpg", alt: "admin block" },
+    { webp: "/images/optimized/classroom2.webp", jpg: "/images/optimized/classroom2.jpg", alt: "Classroom" },
+    { webp: "/images/optimized/classroom3.webp", jpg: "/images/optimized/classroom3.jpg", alt: "Classroom" },
+    { webp: "/images/optimized/school.webp", jpg: "/images/optimized/school.jpg", alt: "school aerial view" },
   ], []);
+
+  const buttonStyle = useMemo(() => ({
+    minHeight: '44px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'white',
+    border: 'none',
+    color: '#050265',
+    padding: '12px 32px',
+    borderRadius: '50px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+  }), []);
 
   return (
     <>
@@ -256,64 +388,29 @@ function Home() {
         <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
       </Helmet>
 
-      {/* HERO CAROUSEL */}
-      <section className="hero-carousel-section" aria-label="Hero carousel showcasing school facilities">
-        <Carousel   
-          fade 
-          interval={5000}
-          controls={false}
-          pause={false}
-          wrap={true}
-          indicators={false}
-          className="hero-carousel"
-        >
-          {carouselImages.map((item, index) => (
-            <Carousel.Item key={index}>
-              <div className="carousel-image-wrapper">
-                <picture>
-                  <source srcSet={item.webp} type="image/webp" />
-                  <img 
-                    className="d-block w-100 h-100 carousel-zoom" 
-                    src={item.jpg}
-                    srcSet={`${item.jpg} 1x, ${item.webp} 2x`}
-                    alt={item.alt}
-                    loading={index === 0 ? "eager" : "lazy"}
-                    fetchpriority={index === 0 ? "high" : "auto"}
-                    width="1920"
-                    height="1080"
-                    decoding="async"
-                    style={{ 
-                      objectFit: 'cover', 
-                      width: '100%', 
-                      height: '100%',
-                      position: 'absolute',
-                      top: 0,
-                      left: 0
-                    }}
-                  />
-                </picture>
-              </div>
-            </Carousel.Item>
-          ))}
-        </Carousel>
-        
-        <div className="carousel-overlay-simple" aria-label="School welcome message">
-          <div className="overlay-content">
-            <div className="welcome-header-simple">
-              <h1 className="welcome-title-simple">Give Your Child the Foundation to Lead</h1>
-              <p className="welcome-subtitle-simple">Excellence in CBE education, grounded in Christian values and the warmth of the Kenyan spirit. A safe haven where curiosity thrives.</p>
-            </div>
-            <div className="overlay-buttons">
-              <button onClick={() => handleLinkClick('/admissions/apply')} className="btn-overlay-primary" aria-label="Apply for Admissions">
-                Apply for Admissions
-              </button>
-              <button onClick={() => handleLinkClick('/academics/curriculum')} className="btn-overlay-primary" aria-label="Explore our Programs">
-                Explore our Programs
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* CRITICAL INLINE STYLES */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        html { scroll-behavior: smooth; }
+        .animate-title { animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+        .animate-subtitle { animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.2s forwards; opacity: 0; }
+        .animate-buttons { animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.4s forwards; opacity: 0; }
+      `}} />
+
+      {/* FIXED CAROUSEL - WITH OVERLAY, NO BUTTONS, UNIFORM HEIGHT, NOTICEABLE ZOOM */}
+      <FixedCarousel 
+        images={carouselImages} 
+        onNavigate={handleLinkClick}
+      />
 
       {/* ABOUT SECTION */}
       <section className="about-section section-padding" aria-labelledby="about-heading">
@@ -346,7 +443,11 @@ function Home() {
           </Row>
           <Row className="justify-content-center g-5">
             {stats.map((stat, index) => (
-              <StatItem key={index} value={stat.value} label={stat.label} suffix={stat.suffix} />
+              <Col md={4} sm={6} key={index} className="mb-4">
+                <div className="stat-item-card">
+                  <StatItemContent value={stat.value} label={stat.label} suffix={stat.suffix} />
+                </div>
+              </Col>
             ))}
           </Row>
           <Row className="justify-content-center mt-2">
@@ -381,57 +482,39 @@ function Home() {
                     <Row className="align-items-center mb-3">
                       <Col xs="auto">
                         <div className="testimonial-avatar">
-                          {testimonials[activeIndex].image ? (
-                            <ImageWithFallback 
-                              src={testimonials[activeIndex].image}
-                              alt={testimonials[activeIndex].name}
-                              width={60}
-                              height={60}
-                              className="testimonial-avatar-img"
-                            />
-                          ) : (
-                            <div className="testimonial-avatar-initials" style={{
-                              width: '60px',
-                              height: '60px',
-                              borderRadius: '50%',
-                              background: 'linear-gradient(135deg, #0a0a2a, #050515)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              color: 'white',
-                              fontSize: '1.2rem',
-                              fontWeight: 'bold'
-                            }}>
-                              {testimonials[activeIndex].name.split(' ').map(n => n[0]).join('')}
-                            </div>
-                          )}
+                          <div className="testimonial-avatar-initials" style={{
+                            width: '60px',
+                            height: '60px',
+                            borderRadius: '50%',
+                            background: 'linear-gradient(135deg, #0a0a2a, #050515)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'white',
+                            fontSize: '1.2rem',
+                            fontWeight: 'bold'
+                          }}>
+                            {testimonials[testimonialIndex].name.split(' ').map(n => n[0]).join('')}
+                          </div>
                         </div>
                       </Col>
                       <Col>
-                        <h3 className="testimonial-name">{testimonials[activeIndex].title} {testimonials[activeIndex].name}</h3>
-                        <p className="testimonial-parent-type">{testimonials[activeIndex].parentType}</p>
-                        <p className="testimonial-section">{testimonials[activeIndex].section}</p>
+                        <h3 className="testimonial-name">{testimonials[testimonialIndex].title} {testimonials[testimonialIndex].name}</h3>
+                        <p className="testimonial-parent-type">{testimonials[testimonialIndex].parentType}</p>
+                        <p className="testimonial-section">{testimonials[testimonialIndex].section}</p>
                       </Col>
                     </Row>
-                    <StarRating rating={testimonials[activeIndex].rating} />
+                    <StarRating rating={testimonials[testimonialIndex].rating} />
                     <blockquote className="testimonial-quote">
-                      "{testimonials[activeIndex].quote}"
+                      "{testimonials[testimonialIndex].quote}"
                     </blockquote>
                     <div className="testimonial-social-snapshot">
-                      <div className="testimonial-avatars">
-                        {[1,2,3].map((_, i) => (
-                          <div key={i} className="testimonial-avatar-stack">
-                            {i === 2 ? '+12' : ''}
-                          </div>
-                        ))}
-                      </div>
                       <span className="testimonial-shared-count"><strong>15+ parents</strong> shared similar experiences</span>
                     </div>
                   </div>
                 </div>
-
-                <button onClick={prevSlide} className="testimonial-prev" aria-label="Previous testimonial">‹</button>
-                <button onClick={nextSlide} className="testimonial-next" aria-label="Next testimonial">›</button>
+                <button onClick={prevTestimonial} className="testimonial-prev" aria-label="Previous testimonial">‹</button>
+                <button onClick={nextTestimonial} className="testimonial-next" aria-label="Next testimonial">›</button>
               </div>
             </Col>
           </Row>
@@ -483,7 +566,7 @@ function Home() {
             <h2 className="cta-title">Interested in enrolling your child at Kitale Progressive School?</h2>
             <div className="cta-buttons">
               <button onClick={() => handleLinkClick('/admissions/apply')} className="btn-navy" aria-label="Apply Now">Apply Now</button>
-              <button onClick={() => handleLinkClick('/contact')} className="btn-navy" aria-label="Book A Tour">Book A Tour</button>
+              <button onClick={scrollToContact} className="btn-navy" aria-label="Book A Tour">Book A Tour</button>
               <button onClick={() => handleLinkClick('/admissions/fee-structure')} className="btn-navy" aria-label="View Fees">View Fees</button>
             </div>
             <p className="cta-description mt-3">Our goal is to develop learners who are confident, capable, and prepared for the next stage of their education and life.</p>
@@ -513,7 +596,7 @@ function Home() {
         </Container>
       </section>
 
-      {/* CTA SECTION 2 - Card Style */}
+      {/* CTA SECTION 2 */}
       <section className="py-5" style={{ background: '#f8f9fa' }}>
         <Container>
           <Row className="justify-content-center">
@@ -525,50 +608,12 @@ function Home() {
                 overflow: 'hidden'
               }}>
                 <Card.Body className="p-4 p-lg-5 text-center">
-                  <div className="cta-content">
-                    <h2 className="cta-title" style={{ color: 'white', marginBottom: '1rem', fontSize: '1.3rem' }}>
-                      Ready to give your child a school environment where they will truly grow and succeed?
-                    </h2>
-                    <div className="cta-buttons d-flex gap-3 justify-content-center flex-wrap">
-                      <button 
-                        onClick={() => handleLinkClick('/admissions/apply')} 
-                        className="btn-navy"
-                        style={{
-                          minHeight: '44px',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          background: 'white',
-                          border: 'none',
-                          color: '#050265',
-                          padding: '12px 32px',
-                          borderRadius: '50px',
-                          fontWeight: '600'
-                        }}
-                        aria-label="Apply Now"
-                      >
-                        Apply Now
-                      </button>
-                      <button 
-                        onClick={() => handleLinkClick('/contact')} 
-                        className="btn-navy"
-                        style={{
-                          minHeight: '44px',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          background: 'white',
-                          border: 'none',
-                          color: '#050265',
-                          padding: '12px 32px',
-                          borderRadius: '50px',
-                          fontWeight: '600'
-                        }}
-                        aria-label="Book A Tour"
-                      >
-                        Book A Tour
-                      </button>
-                    </div>
+                  <h2 className="cta-title" style={{ color: 'white', marginBottom: '1rem', fontSize: '1.3rem' }}>
+                    Ready to give your child a school environment where they will truly grow and succeed?
+                  </h2>
+                  <div className="d-flex gap-3 justify-content-center flex-wrap">
+                    <button onClick={() => handleLinkClick('/admissions/apply')} className="btn-navy" style={buttonStyle}>Apply Now</button>
+                    <button onClick={scrollToContact} className="btn-navy" style={buttonStyle}>Book A Tour</button>
                   </div>
                 </Card.Body>
               </Card>
@@ -578,39 +623,39 @@ function Home() {
       </section>
       
       {/* YOUTUBE VIDEO SECTION */}
-        <section className="video-section" aria-labelledby="video-heading">
-          <Container>
-            <Row className="align-items-center g-5">
-              <Col lg={6}>
-                <h2 id="video-heading" className="video-section-title mb-4">
-                  Do you want your child to enjoy a balanced school experience — 
-                  growing in confidence, building real friendships, and discovering their hidden talents?
-                </h2>
-                <p className="video-section-text mb-4">
-                  Education is more than textbooks and exams. At our school, children thrive through 
-                  <strong> sports, creative arts, leadership roles, and team activities</strong> — 
-                  all designed to build confidence and social skills. 
-                  Every day, learners uncover new talents, form lasting friendships, 
-                  and develop a deep sense of belonging.
-                </p>
-              </Col>
+      <section className="video-section" aria-labelledby="video-heading">
+        <Container>
+          <Row className="align-items-center g-5">
+            <Col lg={6}>
+              <h2 id="video-heading" className="video-section-title mb-4">
+                Do you want your child to enjoy a balanced school experience — 
+                growing in confidence, building real friendships, and discovering their hidden talents?
+              </h2>
+              <p className="video-section-text mb-4">
+                Education is more than textbooks and exams. At our school, children thrive through 
+                <strong> sports, creative arts, leadership roles, and team activities</strong> — 
+                all designed to build confidence and social skills. 
+                Every day, learners uncover new talents, form lasting friendships, 
+                and develop a deep sense of belonging.
+              </p>
+            </Col>
 
-              <Col lg={6}>
-                <p className="video-caption fst-italic text-secondary mb-3">
-                  Take a glimpse into daily school life — where learning, friendship, and discovery happen every day.
-                </p>
-                <div className="video-wrapper">
-                  <iframe 
-                    src="https://www.youtube-nocookie.com/embed/Vomydkvag_w" 
-                    title="School Life at Kitale Progressive School" 
-                    loading="lazy" 
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                    allowFullScreen 
-                  />
-                </div>
-              </Col>
-            </Row>
-           <Row className="mt-5">
+            <Col lg={6}>
+              <p className="video-caption fst-italic text-secondary mb-3">
+                Take a glimpse into daily school life — where learning, friendship, and discovery happen every day.
+              </p>
+              <div className="video-wrapper">
+                <iframe 
+                  src="https://www.youtube-nocookie.com/embed/Vomydkvag_w" 
+                  title="School Life at Kitale Progressive School" 
+                  loading="lazy" 
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                  allowFullScreen 
+                />
+              </div>
+            </Col>
+          </Row>
+          <Row className="mt-5">
             <Col lg={12}>
               <h3 className="highlights-title text-center mb-4">School Life Highlights</h3>
               <Row className="g-5">
@@ -659,8 +704,8 @@ function Home() {
           <Row className="g-5 justify-content-center" role="list" aria-label="Learning approaches">
             {learningApproaches.map((point, index) => (
               <Col md={6} lg={4} key={index} role="listitem">
-                <Card className="approach-card h-100 border-0 shadow-sm">
-                  <Card.Body className="text-center p-4">
+                <Card className="approach-card h-100 border-0">
+                  <Card.Body className="card-body p-4 p-lg-5">
                     <Card.Title as="h3" className="approach-card-title mb-3">
                       {point.title}
                     </Card.Title>
@@ -675,7 +720,7 @@ function Home() {
         </Container>
       </section>
       
-      {/* CTA SECTION 3 - Curriculum */}
+      {/* CTA SECTION 3 */}
       <section className="py-5" style={{ background: '#f8f9fa' }}>
         <Container>
           <Row className="justify-content-center">
@@ -687,32 +732,12 @@ function Home() {
                 overflow: 'hidden'
               }}>
                 <Card.Body className="p-4 p-lg-5 text-center">
-                  <div className="cta-content">
-                    <h2 className="cta-title" style={{ color: 'white', marginBottom: '1rem', fontSize: '1.3rem' }}>
-                      Ready to explore our complete academic curriculum?
-                    </h2>
-                    <div className="cta-buttons">
-                      <button 
-                        onClick={() => handleLinkClick('/academics/curriculum')} 
-                        className="btn-navy"
-                        style={{
-                          minHeight: '44px',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          background: 'white',
-                          border: 'none',
-                          color: '#050265',
-                          padding: '12px 32px',
-                          borderRadius: '50px',
-                          fontWeight: '600'
-                        }}
-                        aria-label="Explore Full Curriculum"
-                      >
-                        Explore Full Curriculum
-                      </button>
-                    </div>
-                  </div>
+                  <h2 className="cta-title" style={{ color: 'white', marginBottom: '1rem', fontSize: '1.3rem' }}>
+                    Ready to explore our complete academic curriculum?
+                  </h2>
+                  <button onClick={() => handleLinkClick('/academics/curriculum')} className="btn-navy" style={buttonStyle}>
+                    Explore Full Curriculum
+                  </button>
                 </Card.Body>
               </Card>
             </Col>
@@ -737,56 +762,15 @@ function Home() {
                 overflow: 'hidden'
               }}>
                 <Card.Body className="p-4 p-lg-5 text-center">
-                  <div className="admissions-cta-content">
-                    <h2 className="admissions-cta-title" style={{ color: 'white', marginBottom: '1rem' }}>
-                      Are you ready to give your child the best start in their educational journey?
-                    </h2>
-                    <p className="admissions-cta-text" style={{ color: 'rgba(255,255,255,0.9)', marginBottom: '1rem' }}>
-                      We welcome families seeking a supportive and inspiring learning environment. Start the admissions process today or schedule a visit to experience our school community.
-                    </p>
-                    <p className="admissions-cta-quote fst-italic" style={{ color: 'rgba(255,255,255,0.85)', marginBottom: '1.5rem' }}>
-                      "Our admissions team will guide you through every step of the enrollment process."
-                    </p>
-                    <div className="admissions-cta-buttons d-flex gap-3 justify-content-center flex-wrap">
-                      <button 
-                        onClick={() => handleLinkClick('/admissions/apply')} 
-                        className="btn-navy"
-                        style={{
-                          minHeight: '44px',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          background: 'white',
-                          border: 'none',
-                          color: '#050265',
-                          padding: '12px 32px',
-                          borderRadius: '50px',
-                          fontWeight: '600'
-                        }}
-                        aria-label="Apply Now"
-                      >
-                        Apply Now
-                      </button>
-                      <button 
-                        onClick={() => handleLinkClick('/contact')} 
-                        className="btn-navy"
-                        style={{
-                          minHeight: '44px',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          background: 'white',
-                          border: 'none',
-                          color: '#050265',
-                          padding: '12px 32px',
-                          borderRadius: '50px',
-                          fontWeight: '600'
-                        }}
-                        aria-label="Contact Us"
-                      >
-                        Contact Us
-                      </button>
-                    </div>
+                  <h2 className="admissions-cta-title" style={{ color: 'white', marginBottom: '1rem' }}>
+                    Are you ready to give your child the best start in their educational journey?
+                  </h2>
+                  <p className="admissions-cta-text" style={{ color: 'rgba(255,255,255,0.9)', marginBottom: '1rem' }}>
+                    We welcome families seeking a supportive and inspiring learning environment.
+                  </p>
+                  <div className="d-flex gap-3 justify-content-center flex-wrap">
+                    <button onClick={() => handleLinkClick('/admissions/apply')} className="btn-navy" style={buttonStyle}>Apply Now</button>
+                    <button onClick={scrollToContact} className="btn-navy" style={buttonStyle}>Contact Us</button>
                   </div>
                 </Card.Body>
               </Card>
@@ -796,19 +780,11 @@ function Home() {
       </section>
 
       {/* GET IN TOUCH SECTION */}
-      <Suspense fallback={<SectionLoader />}>
-        <GetInTouch />
-      </Suspense>
-
-      {/* Critical inline styles for animations only */}
-      <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes zoomOut{0%{transform:scale(1.2)}100%{transform:scale(1)}}
-        .carousel-zoom{animation:zoomOut 8s ease forwards}
-        @media (max-width:768px){.carousel-zoom{animation:zoomOut 6s ease forwards}}
-        @media (prefers-reduced-motion:reduce){.carousel-zoom{animation:none!important}}
-        .hero-carousel .carousel-indicators,
-        .carousel-indicators { display: none !important; }
-      `}} />
+      <div id="contactus-wrapper" ref={contactFormRef}>
+        <Suspense fallback={<SectionLoader />}>
+          <GetInTouch />
+        </Suspense>
+      </div>
     </>
   );
 }
