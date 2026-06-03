@@ -1,4 +1,4 @@
-// pages/Home.jsx - Complete Homepage with Fixed Carousel
+// pages/Home.jsx - Complete Homepage with Seamless Hero Carousel
 import { Helmet } from "react-helmet-async";
 import { Container, Row, Col, Card } from "react-bootstrap";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -33,9 +33,9 @@ const ImageWithFallback = ({ src, alt, width, height, className, fetchpriority }
   }, [hasError, alt, width, height]);
 
   return (
-    <img 
-      src={imgSrc} 
-      alt={alt} 
+    <img
+      src={imgSrc}
+      alt={alt}
       className={className}
       width={width}
       height={height}
@@ -46,7 +46,7 @@ const ImageWithFallback = ({ src, alt, width, height, className, fetchpriority }
   );
 };
 
-// Star Rating Component
+
 const StarRating = ({ rating }) => {
   return (
     <div className="star-rating">
@@ -57,98 +57,136 @@ const StarRating = ({ rating }) => {
   );
 };
 
-// Fixed Carousel Component - No buttons, overlay visible, uniform height, noticeable zoom
-const FixedCarousel = ({ images, onNavigate }) => {
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  const autoPlayInterval = useRef(null);
+const HeroCarousel = ({ images, onNavigate }) => {
+  const [activeSlot,     setActiveSlot]     = useState(0);
+  const [slotA,          setSlotA]          = useState(0);
+  const [slotB,          setSlotB]          = useState(null);
+  const [keyA,           setKeyA]           = useState(0);
+  const [keyB,           setKeyB]           = useState(0);
+  const [overlayVisible, setOverlayVisible] = useState(false);
+  const autoPlayRef  = useRef(null);
+  const advanceRef   = useRef(null);
 
-  // Preload all images for better performance
+  // Preload all images up front
   useEffect(() => {
     images.forEach((img) => {
-      const imgElement = new Image();
-      imgElement.src = img.jpg;
+      const el = new window.Image();
+      el.src = img.jpg;
     });
   }, [images]);
 
-  const startAutoPlay = useCallback(() => {
-    stopAutoPlay();
-    autoPlayInterval.current = setInterval(() => {
-      if (!isTransitioning) {
-        nextSlide();
-      }
-    }, 6000);
-  }, [isTransitioning]);
+  const advance = useCallback(() => {
+    setActiveSlot((curSlot) => {
+      const nextSlot = curSlot === 0 ? 1 : 0;
 
-  const stopAutoPlay = useCallback(() => {
-    if (autoPlayInterval.current) {
-      clearInterval(autoPlayInterval.current);
-      autoPlayInterval.current = null;
-    }
+      if (curSlot === 0) {
+        // A is active → load next image into B, make B active
+        setSlotA((curA) => {
+          const nextImg = (curA + 1) % images.length;
+          setSlotB(nextImg);
+          setKeyB((k) => k + 1); // restart zoom on B
+          return curA;
+        });
+      } else {
+        // B is active → load next image into A, make A active
+        setSlotB((curB) => {
+          const nextImg = ((curB ?? 0) + 1) % images.length;
+          setSlotA(nextImg);
+          setKeyA((k) => k + 1); // restart zoom on A
+          return curB;
+        });
+      }
+
+      return nextSlot;
+    });
+  }, [images.length]);
+
+  useEffect(() => {
+    autoPlayRef.current = setInterval(advance, 6000);
+    return () => clearInterval(autoPlayRef.current);
+  }, [advance]);
+
+  const handleFirstLoad = useCallback(() => {
+    setOverlayVisible(true);
   }, []);
 
-  const nextSlide = useCallback(() => {
-    if (isTransitioning) return;
-    setIsTransitioning(true);
-    setActiveIndex((current) => (current + 1) % images.length);
-    setTimeout(() => setIsTransitioning(false), 1000);
-  }, [isTransitioning, images.length]);
-
-  // Start auto-play only once on mount
-  useEffect(() => {
-    startAutoPlay();
-    return () => stopAutoPlay();
-  }, [startAutoPlay, stopAutoPlay]);
+  const FADE = '1.4s ease';
 
   return (
-    <section className="fixed-carousel-section" aria-label="Hero carousel showcasing school facilities">
-      {/* Main Carousel Container */}
-      <div className="fixed-carousel-container">
-        {images.map((item, index) => (
-          <div 
-            key={index} 
-            className={`fixed-carousel-slide ${index === activeIndex ? 'active' : ''}`}
-          >
-            <picture>
-              <source srcSet={item.webp} type="image/webp" />
-              <img
-                className="fixed-carousel-image"
-                src={item.jpg}
-                alt={item.alt}
-                loading={index === 0 ? "eager" : "lazy"}
-                fetchpriority={index === 0 ? "high" : "auto"}
-                decoding="async"
-              />
-            </picture>
-            {/* Gradient overlay for text readability */}
-            <div className="fixed-image-gradient-overlay"></div>
-          </div>
-        ))}
+    <section
+      className="hero-section"
+      aria-label="Hero carousel showcasing school facilities"
+    >
+      <div className="hero-carousel-container">
+
+        {/* Slot A */}
+        {slotA !== null && (
+          <img
+            key={`a-${keyA}`}
+            className="hero-carousel-slot"
+            src={images[slotA].jpg}
+            alt={images[slotA].alt}
+            loading="eager"
+            fetchpriority="high"
+            decoding="sync"
+            onLoad={slotA === 0 && keyA === 0 ? handleFirstLoad : undefined}
+            style={{
+              opacity:    activeSlot === 0 ? 1 : 0,
+              transition: `opacity ${FADE}`,
+              zIndex:     activeSlot === 0 ? 1 : 0,
+            }}
+          />
+        )}
+
+        {/* Slot B */}
+        {slotB !== null && (
+          <img
+            key={`b-${keyB}`}
+            className="hero-carousel-slot"
+            src={images[slotB].jpg}
+            alt={images[slotB].alt}
+            loading="eager"
+            fetchpriority="auto"
+            decoding="async"
+            style={{
+              opacity:    activeSlot === 1 ? 1 : 0,
+              transition: `opacity ${FADE}`,
+              zIndex:     activeSlot === 1 ? 1 : 0,
+            }}
+          />
+        )}
+
+        <div className="hero-image-gradient-overlay" />
       </div>
 
-      {/* Overlay Content - Visible */}
-      <div className="fixed-carousel-overlay">
-        <div className="fixed-overlay-content">
-          <div className="fixed-welcome-header">
-            <h1 className="fixed-welcome-title animate-title">
-              Give Your Child the Foundation to Lead
-            </h1>
-            <p className="fixed-welcome-subtitle animate-subtitle">
-              Excellence in CBE education, grounded in Christian values and the warmth of the Kenyan spirit. 
-              A safe haven where curiosity thrives.
-            </p>
-          </div>
-          <div className="fixed-overlay-buttons animate-buttons">
-            <button 
-              onClick={() => onNavigate('/admissions/apply')} 
-              className="fixed-btn-primary"
+      {/* Overlay — revealed once first image loads */}
+      <div
+        className="hero-overlay"
+        style={{
+          opacity:       overlayVisible ? 1 : 0,
+          transition:    'opacity 0.6s ease',
+          pointerEvents: overlayVisible ? 'auto' : 'none',
+        }}
+      >
+        <div className="hero-overlay-content">
+          <h1 className="hero-title hero-animate-title">
+            Give Your Child the Foundation to Lead
+          </h1>
+          <p className="hero-subtitle hero-animate-subtitle">
+            Excellence in CBE education, grounded in Christian values and the warmth of the Kenyan spirit.
+            A safe haven where curiosity thrives.
+          </p>
+          <div className="hero-buttons-wrapper hero-animate-buttons">
+            <button
+              onClick={() => onNavigate('/admissions/apply')}
+              className="hero-btn-primary"
               aria-label="Apply for Admissions"
             >
               Apply for Admissions
             </button>
-            <button 
-              onClick={() => onNavigate('/academics/curriculum')} 
-              className="fixed-btn-primary"
+            <button
+              onClick={() => onNavigate('/academics/curriculum')}
+              className="hero-btn-primary"
               aria-label="Explore our Programs"
             >
               Explore our Programs
@@ -159,7 +197,6 @@ const FixedCarousel = ({ images, onNavigate }) => {
     </section>
   );
 };
-
 // Stat Item Component with animation
 const StatItemContent = ({ value, label, suffix }) => {
   const [count, setCount] = useState(0);
@@ -171,29 +208,26 @@ const StatItemContent = ({ value, label, suffix }) => {
       if (!hasAnimated && elementRef.current) {
         const rect = elementRef.current.getBoundingClientRect();
         const isVisible = rect.top < window.innerHeight - 100;
-        
+
         if (isVisible) {
           setHasAnimated(true);
           let start = 0;
           const duration = 2000;
-          
+
           const step = (timestamp) => {
             if (!start) start = timestamp;
             const progress = Math.min((timestamp - start) / duration, 1);
             const easedProgress = 1 - Math.pow(1 - progress, 3);
             const currentCount = Math.floor(easedProgress * value);
             setCount(currentCount);
-            
-            if (progress < 1) {
-              requestAnimationFrame(step);
-            }
+            if (progress < 1) requestAnimationFrame(step);
           };
-          
+
           requestAnimationFrame(step);
         }
       }
     };
-    
+
     checkIfVisible();
     window.addEventListener('scroll', checkIfVisible);
     return () => window.removeEventListener('scroll', checkIfVisible);
@@ -207,31 +241,29 @@ const StatItemContent = ({ value, label, suffix }) => {
   );
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
 // Main Home Component
+// ─────────────────────────────────────────────────────────────────────────────
 function Home() {
   const location = useLocation();
   const navigate = useNavigate();
   const contactFormRef = useRef(null);
 
-  // Optimized scroll to contact function
   const scrollToContact = useCallback((event) => {
     event?.preventDefault();
-    
+
     let contactElement = document.getElementById('contactus');
-    
+
     if (!contactElement) {
       contactElement = document.querySelector('#get-in-touch-form, .get-in-touch-section form, [id*="contact"]');
     }
-    
+
     if (contactElement) {
       const elementPosition = contactElement.getBoundingClientRect().top;
-      const offsetPosition = elementPosition + window.pageYOffset - 80;
-      
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth'
-      });
-      
+      const offsetPosition  = elementPosition + window.pageYOffset - 80;
+
+      window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
+
       setTimeout(() => {
         const focusableElement = contactElement.querySelector('input, button, textarea, select, [tabindex="0"]');
         if (focusableElement) {
@@ -246,12 +278,9 @@ function Home() {
     }
   }, [navigate]);
 
-  // Handle hash navigation
   useEffect(() => {
     if (location.hash === '#contact-section' || location.hash === '#contactus') {
-      setTimeout(() => {
-        scrollToContact();
-      }, 100);
+      setTimeout(() => scrollToContact(), 100);
     } else if (location.hash === '') {
       requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
     }
@@ -313,7 +342,7 @@ function Home() {
       rating: 5
     }
   ], []);
-  
+
   const [testimonialIndex, setTestimonialIndex] = useState(0);
 
   useEffect(() => {
@@ -353,14 +382,14 @@ function Home() {
     { value: 35, label: "Expert Teachers", suffix: "+" },
   ], []);
 
-  const carouselImages = useMemo(() => [
+  const heroImages = useMemo(() => [
     { webp: "/images/optimized/gate3.webp", jpg: "/images/optimized/gate3.jpg", alt: "Kitale Progressive School Main Gate" },
     { webp: "/images/optimized/slide2.webp", jpg: "/images/optimized/slide2.jpg", alt: "School Activities" },
-    { webp: "/images/optimized/gate.webp", jpg: "/images/optimized/gate.jpg", alt: "Campus" },
-    { webp: "/images/optimized/admin.webp", jpg: "/images/optimized/admin.jpg", alt: "admin block" },
-    { webp: "/images/optimized/classroom2.webp", jpg: "/images/optimized/classroom2.jpg", alt: "Classroom" },
-    { webp: "/images/optimized/classroom3.webp", jpg: "/images/optimized/classroom3.jpg", alt: "Classroom" },
-    { webp: "/images/optimized/school.webp", jpg: "/images/optimized/school.jpg", alt: "school aerial view" },
+    { webp: "/images/optimized/gate.webp",  jpg: "/images/optimized/gate.jpg",  alt: "School Campus" },
+    { webp: "/images/optimized/admin.webp", jpg: "/images/optimized/admin.jpg", alt: "Administration Block" },
+    { webp: "/images/optimized/classroom2.webp", jpg: "/images/optimized/classroom2.jpg", alt: "Modern Classroom" },
+    { webp: "/images/optimized/classroom3.webp", jpg: "/images/optimized/classroom3.jpg", alt: "Classroom Learning Environment" },
+    { webp: "/images/optimized/school.webp", jpg: "/images/optimized/school.jpg", alt: "School Aerial View" },
   ], []);
 
   const buttonStyle = useMemo(() => ({
@@ -388,50 +417,128 @@ function Home() {
         <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
       </Helmet>
 
-      {/* CRITICAL INLINE STYLES */}
+      {/* ── CRITICAL INLINE STYLES ── */}
       <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+        @keyframes heroFadeInUp {
+          from { opacity: 0; transform: translateY(30px); }
+          to   { opacity: 1; transform: translateY(0); }
         }
+
+        @keyframes heroZoomSmooth {
+          0%   { transform: scale(1); }
+          100% { transform: scale(1.15); }
+        }
+
         html { scroll-behavior: smooth; }
-        .animate-title { animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
-        .animate-subtitle { animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.2s forwards; opacity: 0; }
-        .animate-buttons { animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.4s forwards; opacity: 0; }
+
+        /* Hero section */
+        .hero-section {
+          position: relative;
+          width: 100%;
+          height: 100vh;
+          overflow: hidden;
+          background-color: #0a0a2a;
+          margin: 0;
+          padding: 0;
+        }
+
+        .hero-carousel-container {
+          position: relative;
+          width: 100%;
+          height: 100%;
+          overflow: hidden;
+        }
+
+        /* Both slots share these base styles.
+           opacity and z-index are set inline per-slot by React
+           so the crossfade is driven entirely in JS. */
+        .hero-carousel-slot {
+          position: absolute;
+          top: 0; left: 0;
+          width: 100%; height: 100%;
+          object-fit: cover;
+          object-position: center;
+          transform-origin: center center;
+          will-change: transform, opacity;
+          display: block;
+          animation: heroZoomSmooth 12s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+        }
+
+        .hero-image-gradient-overlay {
+          position: absolute;
+          top: 0; left: 0; right: 0; bottom: 0;
+          background: linear-gradient(
+            135deg,
+            rgba(0,0,0,0.5) 0%,
+            rgba(0,0,0,0.2) 40%,
+            rgba(0,0,0,0.3) 70%,
+            rgba(0,0,0,0.6) 100%
+          );
+          pointer-events: none;
+          z-index: 2;
+        }
+
+        /* Overlay opacity is controlled inline by React */
+        .hero-overlay {
+          position: absolute;
+          top: 0; left: 0; right: 0; bottom: 0;
+          background: rgba(10, 10, 42, 0.5);
+          z-index: 10;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        /* Reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+          .hero-carousel-slot,
+          .hero-btn-primary { transition: none; animation: none; }
+          .hero-carousel-slot { transform: scale(1); }
+          .hero-animate-title,
+          .hero-animate-subtitle,
+          .hero-animate-buttons { animation: none; opacity: 1; }
+        }
       `}} />
 
-      {/* FIXED CAROUSEL - WITH OVERLAY, NO BUTTONS, UNIFORM HEIGHT, NOTICEABLE ZOOM */}
-      <FixedCarousel 
-        images={carouselImages} 
+      {/* ── HERO CAROUSEL ── */}
+      <HeroCarousel
+        images={heroImages}
         onNavigate={handleLinkClick}
       />
 
-      {/* ABOUT SECTION */}
+      {/* ── ABOUT SECTION ── */}
       <section className="about-section section-padding" aria-labelledby="about-heading">
         <Container>
           <Row className="align-items-center g-5">
             <Col lg={6} className="order-2 order-lg-1">
               <picture>
                 <source srcSet="/images/optimized/gate1.webp" type="image/webp" />
-                <img src="/images/optimized/gate1.jpg" alt="Kitale Progressive School Campus" className="img-fluid rounded w-100" loading="lazy" width="600" height="400" decoding="async" />
+                <img
+                  src="/images/optimized/gate1.jpg"
+                  alt="Kitale Progressive School Campus"
+                  className="img-fluid rounded w-100"
+                  loading="lazy"
+                  width="600"
+                  height="400"
+                  decoding="async"
+                />
               </picture>
             </Col>
             <Col lg={6} className="order-1 order-lg-2">
-              <h2 id="about-heading" className="section-heading-left mb-4">Are you looking for a school where your child will be known, nurtured, and inspired to succeed?</h2>
-              <p className="about-text" style={{lineHeight:'1.8'}}>At Kitale Progressive School, we believe every child carries unique potential. Our learning environment is designed to nurture curiosity, strengthen character, and build a strong academic foundation that prepares learners for the future.</p>
-              <p className="about-text" style={{lineHeight:'1.8'}}>As a trusted private school in Kitale, on the north-rift of Kenya, we serve families seeking quality CBE education from Early Childhood Development to Junior Secondary, providing a safe and nurturing environment where every learner is supported to succeed.</p>
+              <h2 id="about-heading" className="section-heading-left mb-4">
+                Are you looking for a school where your child will be known, nurtured, and inspired to succeed?
+              </h2>
+              <p className="about-text" style={{ lineHeight: '1.8' }}>
+                At Kitale Progressive School, we believe every child carries unique potential. Our learning environment is designed to nurture curiosity, strengthen character, and build a strong academic foundation that prepares learners for the future.
+              </p>
+              <p className="about-text" style={{ lineHeight: '1.8' }}>
+                As a trusted private school in Kitale, on the north-rift of Kenya, we serve families seeking quality CBE education from Early Childhood Development to Junior Secondary, providing a safe and nurturing environment where every learner is supported to succeed.
+              </p>
             </Col>
           </Row>
         </Container>
       </section>
 
-      {/* STATISTICS SECTION */}
+      {/* ── STATISTICS SECTION ── */}
       <section className="statistics-section" aria-labelledby="stats-heading">
         <Container>
           <h2 id="stats-heading" className="visually-hidden">School Statistics</h2>
@@ -462,7 +569,7 @@ function Home() {
         </Container>
       </section>
 
-      {/* TESTIMONIALS SECTION */}
+      {/* ── TESTIMONIALS SECTION ── */}
       <section className="testimonials-section" aria-labelledby="testimonials-heading">
         <Container>
           <Row className="justify-content-center text-center mb-4">
@@ -483,16 +590,10 @@ function Home() {
                       <Col xs="auto">
                         <div className="testimonial-avatar">
                           <div className="testimonial-avatar-initials" style={{
-                            width: '60px',
-                            height: '60px',
-                            borderRadius: '50%',
+                            width: '60px', height: '60px', borderRadius: '50%',
                             background: 'linear-gradient(135deg, #0a0a2a, #050515)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: 'white',
-                            fontSize: '1.2rem',
-                            fontWeight: 'bold'
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            color: 'white', fontSize: '1.2rem', fontWeight: 'bold'
                           }}>
                             {testimonials[testimonialIndex].name.split(' ').map(n => n[0]).join('')}
                           </div>
@@ -521,20 +622,20 @@ function Home() {
         </Container>
       </section>
 
-      {/* ACADEMIC PATHWAY SECTION */}
+      {/* ── ACADEMIC PATHWAY SECTION ── */}
       <section className="academic-pathway-section" aria-labelledby="pathway-heading">
         <Container>
           <h2 id="pathway-heading" className="pathway-main-title text-center mb-5">Academic Pathway at KPS</h2>
           <h3 className="pathway-subtitle text-center">Are you seeking a school that gives your child a strong educational foundation?</h3>
           <p className="pathway-intro text-center">Our academic program provides a clear pathway for learners to grow step by step:</p>
-          
+
           <Row className="g-5">
             {academicPathways.map((pathway, index) => (
               <Col md={4} key={index}>
                 <div className="academic-card">
                   <div className="academic-image-container">
-                    <ImageWithFallback 
-                      src={`/images/optimized/${pathway.image}.webp`} 
+                    <ImageWithFallback
+                      src={`/images/optimized/${pathway.image}.webp`}
                       alt={pathway.level}
                       width="100%"
                       height="160"
@@ -544,7 +645,11 @@ function Home() {
                   <div className="academic-card-body">
                     <h3 className="academic-card-title">{pathway.level}</h3>
                     <p className="academic-card-text">{pathway.summary}</p>
-                    <button onClick={() => handleLinkClick(`/academics/curriculum#${pathway.section}`)} className="btn-navy btn-lg" aria-label={`Explore ${pathway.level}`}>
+                    <button
+                      onClick={() => handleLinkClick(`/academics/curriculum#${pathway.section}`)}
+                      className="btn-navy btn-lg"
+                      aria-label={`Explore ${pathway.level}`}
+                    >
                       {pathway.btnText}
                     </button>
                   </div>
@@ -552,14 +657,14 @@ function Home() {
               </Col>
             ))}
           </Row>
-          
+
           <p className="pathway-footer-note text-center mt-6">
             Each stage builds on the previous one, helping learners develop knowledge, discipline, and independent thinking that prepares them for future success.
           </p>
         </Container>
       </section>
 
-      {/* CTA SECTION 1 */}
+      {/* ── CTA SECTION 1 ── */}
       <section className="cta-section cta-primary" aria-label="Call to action">
         <Container>
           <div className="cta-content text-center">
@@ -574,7 +679,7 @@ function Home() {
         </Container>
       </section>
 
-      {/* WHY CHOOSE US SECTION */}
+      {/* ── WHY CHOOSE US SECTION ── */}
       <section className="why-choose-us-section" aria-labelledby="why-heading">
         <Container>
           <h2 id="why-heading" className="section-heading text-center mb-4">Why Parents Choose Kitale Progressive School</h2>
@@ -596,16 +701,14 @@ function Home() {
         </Container>
       </section>
 
-      {/* CTA SECTION 2 */}
+      {/* ── CTA SECTION 2 ── */}
       <section className="py-5" style={{ background: '#f8f9fa' }}>
         <Container>
           <Row className="justify-content-center">
             <Col lg={10}>
               <Card className="card-custom border-0 shadow-lg" style={{
                 background: 'linear-gradient(135deg, #050265, #1a6bff)',
-                color: 'white',
-                borderRadius: '24px',
-                overflow: 'hidden'
+                color: 'white', borderRadius: '24px', overflow: 'hidden'
               }}>
                 <Card.Body className="p-4 p-lg-5 text-center">
                   <h2 className="cta-title" style={{ color: 'white', marginBottom: '1rem', fontSize: '1.3rem' }}>
@@ -621,36 +724,35 @@ function Home() {
           </Row>
         </Container>
       </section>
-      
-      {/* YOUTUBE VIDEO SECTION */}
+
+      {/* ── YOUTUBE VIDEO SECTION ── */}
       <section className="video-section" aria-labelledby="video-heading">
         <Container>
           <Row className="align-items-center g-5">
             <Col lg={6}>
               <h2 id="video-heading" className="video-section-title mb-4">
-                Do you want your child to enjoy a balanced school experience — 
+                Do you want your child to enjoy a balanced school experience —
                 growing in confidence, building real friendships, and discovering their hidden talents?
               </h2>
               <p className="video-section-text mb-4">
-                Education is more than textbooks and exams. At our school, children thrive through 
-                <strong> sports, creative arts, leadership roles, and team activities</strong> — 
-                all designed to build confidence and social skills. 
-                Every day, learners uncover new talents, form lasting friendships, 
+                Education is more than textbooks and exams. At our school, children thrive through
+                <strong> sports, creative arts, leadership roles, and team activities</strong> —
+                all designed to build confidence and social skills.
+                Every day, learners uncover new talents, form lasting friendships,
                 and develop a deep sense of belonging.
               </p>
             </Col>
-
             <Col lg={6}>
               <p className="video-caption fst-italic text-secondary mb-3">
                 Take a glimpse into daily school life — where learning, friendship, and discovery happen every day.
               </p>
               <div className="video-wrapper">
-                <iframe 
-                  src="https://www.youtube-nocookie.com/embed/Vomydkvag_w" 
-                  title="School Life at Kitale Progressive School" 
-                  loading="lazy" 
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                  allowFullScreen 
+                <iframe
+                  src="https://www.youtube-nocookie.com/embed/Vomydkvag_w"
+                  title="School Life at Kitale Progressive School"
+                  loading="lazy"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
                 />
               </div>
             </Col>
@@ -689,7 +791,7 @@ function Home() {
         </Container>
       </section>
 
-      {/* OUR LEARNING APPROACH SECTION */}
+      {/* ── LEARNING APPROACH SECTION ── */}
       <section className="learning-approach-section" aria-labelledby="approach-heading">
         <Container>
           <h2 id="approach-heading" className="section-heading text-center mb-4">
@@ -719,17 +821,15 @@ function Home() {
           </Row>
         </Container>
       </section>
-      
-      {/* CTA SECTION 3 */}
+
+      {/* ── CTA SECTION 3 ── */}
       <section className="py-5" style={{ background: '#f8f9fa' }}>
         <Container>
           <Row className="justify-content-center">
             <Col lg={8}>
               <Card className="card-custom border-0 shadow-lg" style={{
                 background: 'linear-gradient(135deg, #050265, #1a6bff)',
-                color: 'white',
-                borderRadius: '24px',
-                overflow: 'hidden'
+                color: 'white', borderRadius: '24px', overflow: 'hidden'
               }}>
                 <Card.Body className="p-4 p-lg-5 text-center">
                   <h2 className="cta-title" style={{ color: 'white', marginBottom: '1rem', fontSize: '1.3rem' }}>
@@ -745,21 +845,19 @@ function Home() {
         </Container>
       </section>
 
-      {/* Blog Section */}
+      {/* ── BLOG SECTION ── */}
       <Suspense fallback={<SectionLoader />}>
         <BlogSection limit={3} showViewAll={true} variant="navy" />
       </Suspense>
 
-      {/* ADMISSIONS CTA SECTION */}
+      {/* ── ADMISSIONS CTA SECTION ── */}
       <section className="py-5" style={{ background: '#f8f9fa' }}>
         <Container>
           <Row className="justify-content-center">
             <Col lg={10}>
               <Card className="card-custom border-0 shadow-lg" style={{
                 background: 'linear-gradient(135deg, #050265, #1a6bff)',
-                color: 'white',
-                borderRadius: '24px',
-                overflow: 'hidden'
+                color: 'white', borderRadius: '24px', overflow: 'hidden'
               }}>
                 <Card.Body className="p-4 p-lg-5 text-center">
                   <h2 className="admissions-cta-title" style={{ color: 'white', marginBottom: '1rem' }}>
@@ -779,7 +877,7 @@ function Home() {
         </Container>
       </section>
 
-      {/* GET IN TOUCH SECTION */}
+      {/* ── GET IN TOUCH SECTION ── */}
       <div id="contactus-wrapper" ref={contactFormRef}>
         <Suspense fallback={<SectionLoader />}>
           <GetInTouch />

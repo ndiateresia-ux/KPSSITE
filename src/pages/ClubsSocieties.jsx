@@ -718,7 +718,7 @@ function ClubsSocieties() {
                     borderRadius: '12px',
                     transition: 'all 0.3s ease'
                   }}>
-                    <p className="mb-0 fw-semibold" style={{ color: '#0d65fb' }}>
+                    <p className="mb-0 fw-semibold">
                       <i className="fas fa-trophy me-2" style={{ color: '#ff0080' }} aria-hidden="true"></i>
                       Outcome: Learners develop discipline, teamwork, and confidence through sports.
                     </p>
@@ -809,7 +809,7 @@ function ClubsSocieties() {
                   minWidth: '32px',
                   textAlign: 'center'
                 }} aria-hidden="true">{club.icon}</div>
-                <span className="small fw-semibold" style={{ color: '#0d65fb' }}>{club.name}</span>
+                <span className="small fw-semibold">{club.name}</span>
               </div>
             </Col>
           ))}
@@ -821,7 +821,7 @@ function ClubsSocieties() {
           borderRadius: '12px',
           transition: 'all 0.3s ease'
         }}>
-          <p className="mb-0 fw-semibold" style={{ color: '#0d65fb' }}>
+          <p className="mb-0 fw-semibold" >
             <i className="fas fa-lightbulb me-2" style={{ color: '#ff0080' }} aria-hidden="true"></i>
             Outcome: Learners develop communication, creativity, and problem-solving skills.
           </p>
@@ -912,7 +912,7 @@ function ClubsSocieties() {
                   minWidth: '32px',
                   textAlign: 'center'
                 }} aria-hidden="true">{activity.icon}</div>
-                <span className="small fw-semibold" style={{ color: '#0d65fb' }}>{activity.name}</span>
+                <span className="small fw-semibold">{activity.name}</span>
               </div>
             </Col>
           ))}
@@ -924,7 +924,7 @@ function ClubsSocieties() {
           borderRadius: '12px',
           transition: 'all 0.3s ease'
         }}>
-          <p className="mb-0 fw-semibold" style={{ color: '#0d65fb' }}>
+          <p className="mb-0 fw-semibold">
             <i className="fas fa-chart-line me-2" style={{ color: '#ff0080' }} aria-hidden="true"></i>
             Outcome: Learners grow into confident and responsible individuals ready for leadership.
           </p>

@@ -1,4 +1,3 @@
-// pages/Sponsors.jsx - Updated with Fixed Checkbox Labels
 import { Helmet } from "react-helmet-async";
 import { Container, Row, Col, Button, Form } from "react-bootstrap";
 import { useState, useCallback, lazy, Suspense, memo, useEffect } from "react";
@@ -170,8 +169,8 @@ const TermsCheckbox = memo(({ checked, onChange, required = true }) => {
           required={required}
           className="terms-checkbox-input"
           style={{
-            width: '18px',
-            height: '18px',
+            width: '16px',
+            height: '16px',
             marginTop: '2px',
             cursor: 'pointer',
             accentColor: '#050265'
