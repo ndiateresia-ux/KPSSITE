@@ -540,7 +540,7 @@ function Home() {
           <h2 id="stats-heading" className="visually-hidden">School Statistics</h2>
           <Row className="justify-content-center">
             <Col lg={10} className="text-center">
-              <h3 className="stats-intro-title">Are you looking for a reputable and established school where your child will thrive?</h3>
+              <h2 className="stats-intro-title">Are you looking for a reputable and established school where your child will thrive?</h2>
               <div className="stats-title-underline"></div>
             </Col>
           </Row>
