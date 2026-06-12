@@ -384,7 +384,7 @@ function Home() {
 
   const heroImages = useMemo(() => [
     { webp: "/images/optimized/gate3.webp", jpg: "/images/optimized/gate3.jpg", alt: "Kitale Progressive School Main Gate" },
-    { webp: "/images/optimized/slide2.webp", jpg: "/images/optimized/slide2.jpg", alt: "School Activities" },
+    { webp: "/images/optimized/gate7.webp", jpg: "/images/optimized/gate7.jpg", alt: "School gate aerial" },
     { webp: "/images/optimized/gate.webp",  jpg: "/images/optimized/gate.jpg",  alt: "School Campus" },
     { webp: "/images/optimized/admin.webp", jpg: "/images/optimized/admin.jpg", alt: "Administration Block" },
     { webp: "/images/optimized/classroom2.webp", jpg: "/images/optimized/classroom2.jpg", alt: "Modern Classroom" },
