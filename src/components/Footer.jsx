@@ -18,7 +18,7 @@ function Footer() {
   const socialLinks = [
     { icon: "bi-facebook", url: "https://www.facebook.com/kitaleprogressive/", label: "Facebook" },
     { icon: "bi-instagram", url: "https://www.instagram.com/kitaleprogrsv1338/", label: "Instagram" },
-    { icon: "bi-youtube", url: "https://www.youtube.com/@KPSConnect", label: "YouTube" },
+    { icon: "bi-youtube", url: "https://www.youtube.com/@kitaleprogressive.social", label: "YouTube" },
     { icon: "bi-tiktok", url: "https://www.tiktok.com/@kitale.progressive", label: "TikTok" },
     { icon: "bi-whatsapp", url: "https://wa.me/254780841116", label: "WhatsApp" }
   ];
@@ -62,18 +62,7 @@ function Footer() {
             {/* Description */}
             <div className="mb-4">
               <h5 className="footer-title">Kitale Progressive School</h5>
-              <p className="small" style={{ 
-                lineHeight: 1.5,
-                color: 'rgba(255,255,255,0.9)',
-                fontSize: '1.05rem',
-                marginBottom: '1rem',
-                textAlign: 'left',
-                wordWrap: 'break-word',
-                overflowWrap: 'break-word',
-                whiteSpace: 'normal',
-                maxWidth: '100%',
-                paddingRight: '10px'
-              }}>
+              <p className="small" >
                 Molding character, Inspiring excellence.
               </p>
             </div>

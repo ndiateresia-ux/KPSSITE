@@ -183,7 +183,7 @@ const scrollToContact = (event) => {
 };
 
 // CTA Banner Component
-const CTABanner = memo(({ title, description, primaryText, primaryLink, secondaryText }) => {
+const CTABanner = memo(({ title, descriptionItems, primaryText, primaryLink, secondaryText }) => {
   const handlePrimaryClick = useCallback((e) => {
     e.preventDefault();
     if (primaryLink === '/contact') {
@@ -202,7 +202,17 @@ const CTABanner = memo(({ title, description, primaryText, primaryLink, secondar
     <div className="cta-section cta-primary">
       <div className="cta-content">
         <h3 className="cta-title">{title}</h3>
-        <p className="cta-description">{description}</p>
+        
+        {/* Description as vertical list */}
+        <div className="cta-description-list">
+          {descriptionItems && descriptionItems.map((item, index) => (
+            <div key={index} className="cta-list-item">
+              <i className="fas fa-check-circle" aria-hidden="true"></i>
+              <span>{item}</span>
+            </div>
+          ))}
+        </div>
+        
         <div className="cta-buttons">
           <button onClick={handlePrimaryClick} className="btn-navy">
             {primaryText}
@@ -331,14 +341,18 @@ const ECDSection = memo(() => {
 
         <Row className="mt-5">
           <Col lg={12}>
-            <CTABanner 
-              title="By the end of ECD, your child will be:"
-              description="✓ Confident and socially developed | ✓ Ready for structured classroom learning | ✓ Equipped with early literacy and numeracy skills"
-              primaryText="Apply Now"
-              primaryLink="/admissions/apply"
-              secondaryText="Book a School Visit"
-            />
-          </Col>
+  <CTABanner 
+    title="By the end of ECD, your child will be:"
+    descriptionItems={[
+      "Confident and socially developed",
+      "Ready for structured classroom learning",
+      "Equipped with early literacy and numeracy skills"
+    ]}
+    primaryText="Apply Now"
+    primaryLink="/admissions/apply"
+    secondaryText="Book a School Visit"
+  />
+</Col>
         </Row>
       </Container>
     </section>
@@ -348,6 +362,7 @@ const ECDSection = memo(() => {
 ECDSection.displayName = 'ECDSection';
 
 // Primary Section Component
+// Primary Section Component - FIXED CTA
 const PrimarySection = memo(() => {
   const sectionId = "primary-section";
   const headingId = "primary-heading";
@@ -457,11 +472,17 @@ const PrimarySection = memo(() => {
           </Col>
         </Row>
 
+        {/* FIXED: Primary CTA Banner with vertical list */}
         <Row className="mt-5">
           <Col lg={12}>
             <CTABanner 
-              title="Your child will:"
-              description="✓ Develop strong academic skills | ✓ Become confident and disciplined | ✓ Be prepared for more advanced learning"
+              title="By the end of Primary School, your child will be:"
+              descriptionItems={[
+                "Develop strong academic skills",
+                "Become Confident and disciplined",
+                "Prepared for more advanced learning in Junior Secondary"
+                
+              ]}
               primaryText="Apply Now"
               primaryLink="/admissions/apply"
               secondaryText="Book a School Visit"
@@ -476,6 +497,7 @@ const PrimarySection = memo(() => {
 PrimarySection.displayName = 'PrimarySection';
 
 // Junior Secondary Section Component
+// Junior Secondary Section Component - FIXED CTA
 const JuniorSecondarySection = memo(() => {
   const sectionId = "jss-section";
   const headingId = "jss-heading";
@@ -585,11 +607,17 @@ const JuniorSecondarySection = memo(() => {
           </Col>
         </Row>
 
+        {/* FIXED: Junior Secondary CTA Banner with vertical list */}
         <Row className="mt-5">
           <Col lg={12}>
             <CTABanner 
               title="Learners leave Junior Secondary:"
-              description="✓ Confident and self-driven | ✓ Academically prepared | ✓ Ready for the next stage of education"
+              descriptionItems={[
+                "Confident and self-driven in their learning journey",
+                "Academically prepared for Senior School",
+                "Ready to make informed career and subject choices"
+              
+              ]}
               primaryText="Apply Now"
               primaryLink="/admissions/apply"
               secondaryText="Book a School Visit"
@@ -602,7 +630,6 @@ const JuniorSecondarySection = memo(() => {
 });
 
 JuniorSecondarySection.displayName = 'JuniorSecondarySection';
-
 function Curriculum() {
   const location = useLocation();
 

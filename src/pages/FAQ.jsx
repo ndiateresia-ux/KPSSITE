@@ -10,7 +10,7 @@ const GetInTouch = lazy(() => import("../components/GetInTouch"));
 function FAQ() {
   // Trust Bar Data
   const trustItems = [
-    { icon: "✓", label: "CBC Curriculum" },
+    { icon: "✓", label: "CBE Curriculum" },
     { icon: "✓", label: "ECD to Junior Secondary" },
     { icon: "✓", label: "Boarding Available" },
     { icon: "✓", label: "Located in Kitale" }
@@ -35,6 +35,7 @@ function FAQ() {
           question: "Is there an admission interview or assessment?",
           answer: `
             Yes. Depending on the grade level, learners may undergo a simple assessment to help us understand their current level.
+            <b>Excemptions are for those beginning school for the first time.</b>
             <br/><br/>
             <a href="/contact" class="text-navy fw-bold">Contact admissions</a> to schedule an assessment.
           `
@@ -70,7 +71,7 @@ function FAQ() {
         {
           question: "Which curriculum does Kitale Progressive School follow?",
           answer: `
-            We follow the <strong>Competency-Based Curriculum (CBC)</strong>, which focuses on developing practical skills, creativity, and critical thinking.
+            We follow the <strong>Competency-Based Education (CBE)</strong>, which focuses on developing practical skills, creativity, and critical thinking.
             <br/><br/>
             <a href="/academics/curriculum" class="text-navy fw-bold">View full curriculum →</a>
           `
@@ -86,7 +87,7 @@ function FAQ() {
         {
           question: "What sports and clubs are available?",
           answer: `
-            Sports & clubs include Football, Volleyball, Netball, Handball, Taekwondo, Swimming, Chess, Music, Debate, and Computer Club.
+            Sports & clubs include Football, Volleyball, Netball, Handball, Taekwondo, Swimming, Chess, Music, Debate,Journalism, and wildlife Club.
             <br/><br/>
             <a href="/academics/clubs-societies" class="text-navy fw-bold">View clubs & societies →</a>
           `
@@ -185,7 +186,7 @@ function FAQ() {
         <title>Frequently Asked Questions | Kitale Progressive School</title>
         <meta
           name="description"
-          content="Find clear answers about admissions, CBC curriculum, boarding, fees, and student life at Kitale Progressive School."
+          content="Find clear answers about admissions, CBE curriculum, boarding, fees, and student life at Kitale Progressive School."
         />
       </Helmet>
 
@@ -193,7 +194,7 @@ function FAQ() {
       <section className="faq-hero-section" aria-labelledby="page-title">
         <div className="faq-hero-content">
           <h1 id="page-title">Frequently Asked Questions</h1>
-          <p>Find clear answers about admissions, CBC curriculum, boarding, fees, and student life.</p>
+          <p>Find clear answers about admissions, CBE curriculum, boarding, fees, and student life.</p>
         </div>
       </section>
 

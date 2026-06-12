@@ -674,8 +674,8 @@ function Home() {
       <section className="why-choose-us-section" aria-labelledby="why-heading">
         <Container>
           <h2 id="why-heading" className="section-heading text-center mb-4">Why Parents Choose Kitale Progressive School</h2>
-          <p className="why-choose-intro text-center">Parents choose Kitale Progressive School because we combine strong academic excellence with a nurturing and supportive environment where every child is guided to discover their potential and grow in confidence.</p>
-          <p className="why-choose-subintro text-center mb-5">As a trusted CBE school in Kitale, we focus on developing not only academic skills, but also character, discipline, and leadership. Our goal is to build a school community where parents feel informed, involved, and confident in their child's learning journey.</p>
+          <p className="why-choose-intro ">Parents choose Kitale Progressive School because we combine strong academic excellence with a nurturing and supportive environment where every child is guided to discover their potential and grow in confidence.</p>
+          <p className="why-choose-subintro mb-5">As a trusted CBE school in Kitale, we focus on developing not only academic skills, but also character, discipline, and leadership. Our goal is to build a school community where parents feel informed, involved, and confident in their child's learning journey.</p>
           <Row className="g-5" role="list" aria-label="Reasons to choose our school">
             {whyChooseUsItems.map((item, index) => (
               <Col md={6} lg={4} key={index} role="listitem">

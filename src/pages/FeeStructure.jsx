@@ -557,7 +557,7 @@ function FeeStructure() {
       <section className="py-5" style={{ background: 'white' }}>
         <Container>
           <h2 className="section-heading text-center mb-3">Designed to Support Families</h2>
-          <p className="lead text-center mx-auto text-muted" style={{ maxWidth: '900px' }}>
+          <p className="text-center mx-auto text-muted" style={{ maxWidth: '900px' }}>
             We understand that school fees are an important consideration. Our structure is
             designed to balance affordability with quality education, ensuring your child receives a well
             rounded learning experience.     
@@ -580,6 +580,9 @@ function FeeStructure() {
           <h3 className="text-center mb-4">
             View detailed fee structure by level.
           </h3>
+          <p className="text-center mb-4">
+           click on preferred grade.
+          </p>
 
           {/* Class Selector - FIXED with better spacing */}
           <Row className="justify-content-center mb-4">

@@ -618,60 +618,80 @@ function Gallery() {
 
       {/* Featured Video Section */}
       <section className="section-padding bg-light-custom" aria-labelledby="video-heading">
-        <Container>
-          <Row className="align-items-center g-5">
-            <Col lg={6}>
-              <h2 id="video-heading" className="section-heading-left">
+      <Container>
+        <Row className="align-items-center g-5">
+          <Col lg={6}>
+            <div className="pe-lg-4">
+              <h2 id="video-heading" className="section-heading-left mb-3">
                 School Life at a Glance
               </h2>
-              <p className="text-dark mb-4">
+              <p className="text-dark mb-4" style={{ fontSize: '1rem', lineHeight: '1.6' }}>
                 Watch our school video to see the vibrant life at Kitale Progressive School. 
-                From classroom activities to sports events and cultural celebrations.
+                From classroom activities to sports events and cultural celebrations, experience 
+                the nurturing environment that makes our school a second home for your child.
               </p>
-              <div className="d-flex gap-4 flex-wrap">
-                <div>
-                  <span className="display-6 fw-bold text-gold">22+</span>
-                  <span className="d-block small text-muted">Years of Excellence</span>
+              
+              {/* Stats Section - Centered */}
+              <div className="d-flex justify-content-center justify-content-lg-start gap-4 flex-wrap mt-4">
+                <div className="text-center text-lg-start">
+                  <span className="display-6 fw-bold text-gold" style={{ fontSize: 'clamp(1.8rem, 4vw, 2.2rem)' }}>22+</span>
+                  <span className="d-block small text-muted" style={{ fontSize: '0.85rem' }}>Years of Excellence</span>
                 </div>
-                <div>
-                  <span className="display-6 fw-bold text-gold">450+</span>
-                  <span className="d-block small text-muted">Happy Students</span>
+                <div className="text-center text-lg-start">
+                  <span className="display-6 fw-bold text-gold" style={{ fontSize: 'clamp(1.8rem, 4vw, 2.2rem)' }}>450+</span>
+                  <span className="d-block small text-muted" style={{ fontSize: '0.85rem' }}>Happy Students</span>
                 </div>
-                <div>
-                  <span className="display-6 fw-bold text-gold">35+</span>
-                  <span className="d-block small text-muted">Expert Teachers</span>
+                <div className="text-center text-lg-start">
+                  <span className="display-6 fw-bold text-gold" style={{ fontSize: 'clamp(1.8rem, 4vw, 2.2rem)' }}>35+</span>
+                  <span className="d-block small text-muted" style={{ fontSize: '0.85rem' }}>Expert Teachers</span>
                 </div>
               </div>
-            </Col>
-            <Col lg={6}>
-              <div className="video-wrapper" style={{
-                position: 'relative',
-                paddingBottom: '56.25%',
-                height: 0,
-                overflow: 'hidden',
-                borderRadius: '16px',
-                boxShadow: '0 10px 30px rgba(0,0,0,0.1)'
-              }}>
-                <iframe 
-                  src="https://www.youtube-nocookie.com/embed/Vomydkvag_w"
-                  title="School life video"
-                  loading="lazy"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100%',
-                    border: 0
-                  }}
-                />
+              
+              {/* Optional: Call to action button */}
+              <div className="mt-4">
+                 <button 
+                  onClick={() => window.location.href = '/admissions/apply'}
+                  className="btn-navy"
+                
+                >
+                  <i className="fas fa-child" aria-hidden="true"></i>
+                  Enroll Your Child Today
+                  <i className="fas fa-arrow-right" aria-hidden="true"></i>
+                </button>
               </div>
-            </Col>
-          </Row>
-        </Container>
-      </section>
+            </div>
+          </Col>
+          
+          <Col lg={6}>
+            <div className="video-wrapper" style={{
+              position: 'relative',
+              paddingBottom: '56.25%',
+              height: 0,
+              overflow: 'hidden',
+              borderRadius: '16px',
+              boxShadow: '0 15px 35px rgba(13, 101, 251, 0.15)',
+              transition: 'transform 0.3s ease, box-shadow 0.3s ease'
+            }}>
+              <iframe 
+                src="https://www.youtube-nocookie.com/embed/Vomydkvag_w"
+                title="School life video - Kitale Progressive School"
+                loading="lazy"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  border: 0
+                }}
+              />
+            </div>
+          </Col>
+        </Row>
+      </Container>
+    </section>
 
       {/* Lightbox Modal */}
       {selectedImage && (

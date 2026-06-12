@@ -349,7 +349,7 @@ function Dining() {
                   <i className="fas fa-heart text-navy" aria-hidden="true"></i>
                 </div>
                 <h2 id="peace-heading" className="section-heading mb-3">Giving Parents Peace of Mind</h2>
-                <p className="peace-intro mx-auto">
+                <p className="text-left peace-intro mx-auto">
                   We understand that parents want assurance that their children are well cared for throughout the day. 
                   Our kitchen and dining services are designed to provide consistent, reliable, and healthy meals in a safe environment.
                 </p>

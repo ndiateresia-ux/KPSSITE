@@ -195,6 +195,15 @@ function BoardingLife() {
     setSelectedImage(null);
   }, []);
 
+  // Navigation handlers
+  const handleApplyNow = useCallback(() => {
+    window.location.href = '/admissions/apply';
+  }, []);
+
+  const handleBookVisit = useCallback(() => {
+    window.location.href = '/contact';
+  }, []);
+
   return (
     <>
       <Helmet>
@@ -217,7 +226,7 @@ function BoardingLife() {
       </section>
 
       {/* What Your Child Will Experience - Grid with Icons */}
-      <section className="child-experience-section" aria-labelledby="child-experience-heading">
+      <section className="child-experience-section section-padding" aria-labelledby="child-experience-heading">
         <Container>
           <div className="text-center mb-5">
             <h2 id="child-experience-heading" className="section-heading mb-3">
@@ -258,9 +267,9 @@ function BoardingLife() {
       </section>
 
       {/* Outcomes Section - Using statistics-section theme */}
-      <section className="statistics-section" aria-labelledby="outcomes-heading">
+      <section className="statistics-section section-padding" aria-labelledby="outcomes-heading">
         <Container>
-          <h2 id="outcomes-heading" className="text-center text-white mb-4">
+          <h2 id="outcomes-heading" className="text-center text-white mb-4 section-heading">
             Learners Develop
           </h2>
           
@@ -271,8 +280,8 @@ function BoardingLife() {
                   <div className="outcome-icon" aria-hidden="true">
                     {outcome.icon}
                   </div>
-                  <h3 className="h3 fw-bold mb-1 text-gold">{outcome.title}</h3>
-                  <p className="mb-0 text-white outcome-description">{outcome.description}</p>
+                  <p className="fw-bold mb-1 text-gold">{outcome.title}</p>
+                  <p className="mb-0 text-white outcome-description small">{outcome.description}</p>
                 </div>
               </Col>
             ))}
@@ -299,7 +308,7 @@ function BoardingLife() {
             <Col lg={6}>
               <div>
                 <div className="section-icon mb-3" aria-hidden="true">🛏️</div>
-                <h3 className="card-title-navy h3 fw-bold mb-4">Comfortable Living Spaces</h3>
+                <h3 className="card-title-navy fw-bold mb-4">Comfortable Living Spaces</h3>
                 <p className="text-muted">
                 Our dormitories are thoughtfully designed to be a true home away from home. Each room is bright, well-ventilated, and generously spacious, offering plenty of room to live, study, and unwind. With a steadfast commitment to the highest standards of cleanliness, every space is meticulously maintained—creating a fresh, comfortable, and serene environment where you can feel safe, respected, and truly at ease.
                 </p>
@@ -322,7 +331,7 @@ function BoardingLife() {
             <Col lg={6}>
               <div>
                 <div className="section-icon mb-3" aria-hidden="true">📚</div>
-                <h3 className="card-title-navy h3 fw-bold mb-4">Supervised Study Time</h3>
+                <h3 className="card-title-navy fw-bold mb-4">Supervised Study Time</h3>
                 <p className="text-muted">
                   Evening prep sessions are supervised by qualified teachers who provide academic support 
                   and ensure homework completion.
@@ -346,7 +355,7 @@ function BoardingLife() {
             <Col lg={6}>
               <div>
                 <div className="section-icon mb-3" aria-hidden="true">⚽</div>
-                <h3 className="card-title-navy h3 fw-bold mb-4">Recreation & Wellness</h3>
+                <h3 className="card-title-navy fw-bold mb-4">Recreation & Wellness</h3>
                 <p className="text-muted">
                   We believe in holistic development. Our boarding students have access to sports facilities, 
                   common rooms with recreational activities.
@@ -364,7 +373,7 @@ function BoardingLife() {
             <Col lg={10}>
               <Card className="card-custom border-0 shadow-sm overflow-hidden">
                 <Card.Body className="p-4">
-                  <h3 className="card-title-navy h3 fw-bold mb-3">
+                  <h3 className="card-title-navy fw-bold mb-3">
                     <i className="fas fa-clock me-2 text-gold" aria-hidden="true"></i>
                     Daily Routine for Boarders
                   </h3>
@@ -455,7 +464,7 @@ function BoardingLife() {
         </Container>
       </section>
 
-      {/* CTA Section - Using cta-section theme */}
+      {/* CTA Section - Using buttons instead of links */}
       <section className="py-5 bg-light-custom">
         <Container>
           <Row className="justify-content-center">
@@ -469,21 +478,69 @@ function BoardingLife() {
                     <p className="cta-description text-white opacity-90 mb-4">
                       Give your child the gift of independence, responsibility, and academic excellence in a safe, structured environment.
                     </p>
-                    <div className="cta-buttons d-flex gap-3 justify-content-center flex-wrap">
-                      <Link
-                        to="/admissions/apply"
+                    <div className="d-flex gap-3 justify-content-center flex-wrap">
+                      <button
+                        onClick={handleApplyNow}
                         className="btn-light-navy"
+                        style={{
+                          background: 'white',
+                          color: '#0d65fb',
+                          border: 'none',
+                          padding: '12px 32px',
+                          fontWeight: '600',
+                          borderRadius: '40px',
+                          fontSize: '0.85rem',
+                          cursor: 'pointer',
+                          transition: 'all 0.3s ease',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '8px'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = 'translateY(-2px)';
+                          e.currentTarget.style.boxShadow = '0 8px 20px rgba(255,255,255,0.2)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.boxShadow = 'none';
+                        }}
                         aria-label="Apply for admission now"
                       >
+                        <i className="fas fa-user-graduate" aria-hidden="true"></i>
                         Apply Now
-                      </Link>
-                      <Link
-                        to="/contact"
-                        className="btn-light-navy"
+                      </button>
+                      <button
+                        onClick={handleBookVisit}
+                        className="btn-outline-light"
+                        style={{
+                          border: '2px solid white',
+                          color: 'white',
+                          background: 'transparent',
+                          padding: '12px 32px',
+                          fontWeight: '600',
+                          borderRadius: '40px',
+                          fontSize: '0.85rem',
+                          cursor: 'pointer',
+                          transition: 'all 0.3s ease',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '8px'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = 'white';
+                          e.currentTarget.style.color = '#0d65fb';
+                          e.currentTarget.style.transform = 'translateY(-2px)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'transparent';
+                          e.currentTarget.style.color = 'white';
+                          e.currentTarget.style.transform = 'translateY(0)';
+                        }}
                         aria-label="Book a school visit"
                       >
+                        <i className="fas fa-calendar-alt" aria-hidden="true"></i>
                         Book a School Visit
-                      </Link>
+                      </button>
                     </div>
                   </div>
                 </Card.Body>
@@ -657,9 +714,7 @@ function BoardingLife() {
           justify-content: center;
           margin: 0 auto 0.75rem;
           font-size: 1.9rem;
-          color: var(--navy);
           background: rgba(255, 255, 255, 0.2);
-          border-radius: 50%;
         }
 
         .outcome-description {
@@ -693,6 +748,7 @@ function BoardingLife() {
           display: inline-block;
           cursor: pointer;
           transition: transform 0.3s ease, box-shadow 0.3s ease;
+          position: relative;
         }
 
         .boarding-checklist-image-wrapper:hover {
@@ -745,6 +801,21 @@ function BoardingLife() {
           color: white;
           border-radius: 24px;
           overflow: hidden;
+        }
+
+        .cta-title {
+          font-size: clamp(1rem, 3vw, 1.2rem);
+          font-weight: 700;
+          margin-bottom: 1rem;
+          text-align: center;
+        }
+
+        .cta-description {
+          font-size: 0.85rem;
+          margin-bottom: 0;
+          max-width: 600px;
+          margin: 0.75rem auto 0;
+          text-align: center;
         }
 
         /* Routine Header */
@@ -875,6 +946,11 @@ function BoardingLife() {
           margin-bottom: 0.5rem;
         }
 
+        /* Section Padding */
+        .section-padding {
+          padding: 60px 0;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
           .boarding-hero-content {
@@ -904,6 +980,10 @@ function BoardingLife() {
           .activity-column {
             margin-left: 0;
           }
+
+          .section-padding {
+            padding: 40px 0;
+          }
         }
         
         @media (max-width: 576px) {
@@ -918,13 +998,6 @@ function BoardingLife() {
           .cta-buttons {
             flex-direction: column;
             align-items: stretch;
-          }
-          
-          .cta-buttons .btn-navy,
-          .cta-buttons .btn-outline-navy,
-          .cta-buttons .btn-light-navy {
-            width: 100%;
-            text-align: center;
           }
         }
         
