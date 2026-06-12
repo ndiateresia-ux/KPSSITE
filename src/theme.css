@@ -563,7 +563,7 @@ input[type="button"],
 
 .hero-title {
   color: white;
-  font-size: clamp(1.5rem, 4vw, 1.8rem);
+  font-size: clamp(1.8rem, 4vw, 2.0rem);
   font-weight: 800;
   line-height: 1.2;
   margin-bottom: 1rem;
