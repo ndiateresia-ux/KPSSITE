@@ -449,9 +449,6 @@ function Home() {
           overflow: hidden;
         }
 
-        /* Both slots share these base styles.
-           opacity and z-index are set inline per-slot by React
-           so the crossfade is driven entirely in JS. */
         .hero-carousel-slot {
           position: absolute;
           top: 0; left: 0;
@@ -478,7 +475,6 @@ function Home() {
           z-index: 2;
         }
 
-        /* Overlay opacity is controlled inline by React */
         .hero-overlay {
           position: absolute;
           top: 0; left: 0; right: 0; bottom: 0;
@@ -488,7 +484,7 @@ function Home() {
           align-items: center;
           justify-content: center;
         }
-        /* Reduced motion */
+
         @media (prefers-reduced-motion: reduce) {
           .hero-carousel-slot,
           .hero-btn-primary { transition: none; animation: none; }
@@ -527,10 +523,10 @@ function Home() {
               <h2 id="about-heading" className="section-heading-left mb-4">
                 Are you looking for a school where your child will be known, nurtured, and inspired to succeed?
               </h2>
-              <p className="about-text" style={{ lineHeight: '1.8' }}>
+              <p className="about-text">
                 At Kitale Progressive School, we believe every child carries unique potential. Our learning environment is designed to nurture curiosity, strengthen character, and build a strong academic foundation that prepares learners for the future.
               </p>
-              <p className="about-text" style={{ lineHeight: '1.8' }}>
+              <p className="about-text">
                 As a trusted private school in Kitale, on the north-rift of Kenya, we serve families seeking quality CBE education from Early Childhood Development to Junior Secondary, providing a safe and nurturing environment where every learner is supported to succeed.
               </p>
             </Col>
@@ -589,12 +585,7 @@ function Home() {
                     <Row className="align-items-center mb-3">
                       <Col xs="auto">
                         <div className="testimonial-avatar">
-                          <div className="testimonial-avatar-initials" style={{
-                            width: '60px', height: '60px', borderRadius: '50%',
-                            background: 'linear-gradient(135deg, #0a0a2a, #050515)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            color: 'white', fontSize: '1.2rem', fontWeight: 'bold'
-                          }}>
+                          <div className="testimonial-avatar-initials">
                             {testimonials[testimonialIndex].name.split(' ').map(n => n[0]).join('')}
                           </div>
                         </div>
@@ -711,7 +702,7 @@ function Home() {
                 color: 'white', borderRadius: '24px', overflow: 'hidden'
               }}>
                 <Card.Body className="p-4 p-lg-5 text-center">
-                  <h2 className="cta-title" style={{ color: 'white', marginBottom: '1rem', fontSize: '1.3rem' }}>
+                  <h2 className="cta-title" style={{ color: 'white', marginBottom: '1rem' }}>
                     Ready to give your child a school environment where they will truly grow and succeed?
                   </h2>
                   <div className="d-flex gap-3 justify-content-center flex-wrap">
@@ -832,7 +823,7 @@ function Home() {
                 color: 'white', borderRadius: '24px', overflow: 'hidden'
               }}>
                 <Card.Body className="p-4 p-lg-5 text-center">
-                  <h2 className="cta-title" style={{ color: 'white', marginBottom: '1rem', fontSize: '1.3rem' }}>
+                  <h2 className="cta-title" style={{ color: 'white', marginBottom: '1rem' }}>
                     Ready to explore our complete academic curriculum?
                   </h2>
                   <button onClick={() => handleLinkClick('/academics/curriculum')} className="btn-navy" style={buttonStyle}>

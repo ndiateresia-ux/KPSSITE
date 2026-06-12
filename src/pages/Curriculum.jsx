@@ -1,6 +1,7 @@
-// pages/Curriculum.jsx - Fully Updated with Increased Text Sizes
+// pages/Curriculum.jsx - Uniform Font Sizes (1.3rem headings, 1rem body)
+// Uses fetchpriority instead of preload to avoid console warnings
 import { lazy, Suspense, memo, useCallback, useMemo, useEffect, useState, useRef } from "react";
-import { useLocation, Link } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
@@ -11,7 +12,7 @@ import Button from 'react-bootstrap/Button';
 // Lazy load heavy components
 const GetInTouch = lazy(() => import("../components/GetInTouch"));
 
-// Optimized image component with theme classes
+// Optimized image component - uses fetchpriority (no preload warnings)
 const OptimizedImage = memo(({ 
   src, 
   alt, 
@@ -19,41 +20,17 @@ const OptimizedImage = memo(({
   width, 
   height,
   priority = false,
-  folder = '',
   ...props 
 }) => {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
-  const imgRef = useRef(null);
 
-  const basePath = folder ? `/images/optimized/${folder}/${src}` : `/images/optimized/${src}`;
-
-  useEffect(() => {
-    if (priority) {
-      const link = document.createElement('link');
-      link.rel = 'preload';
-      link.as = 'image';
-      link.href = `${basePath}.webp`;
-      link.type = 'image/webp';
-      document.head.appendChild(link);
-      
-      return () => {
-        if (link.parentNode) document.head.removeChild(link);
-      };
-    }
-  }, [priority, basePath]);
+  const basePath = `/images/optimized/${src}`;
 
   if (error) {
     return (
       <div 
-        className="bg-light-custom d-flex align-items-center justify-content-center"
-        style={{
-          width: '100%',
-          height: '100%',
-          minHeight: height || '200px',
-          aspectRatio: width && height ? `${width}/${height}` : '16/9',
-          borderRadius: '16px'
-        }}
+        className="bg-light-custom d-flex align-items-center justify-content-center image-fallback"
         role="img"
         aria-label={`${alt} (image failed to load)`}
       >
@@ -64,29 +41,10 @@ const OptimizedImage = memo(({
   }
 
   return (
-    <div className="curriculum-image-wrapper" style={{ 
-      position: 'relative', 
-      width: '100%', 
-      height: '100%',
-      aspectRatio: width && height ? `${width}/${height}` : '16/9',
-      backgroundColor: 'var(--gray-light)',
-      borderRadius: '16px',
-      overflow: 'hidden'
-    }}>
+    <div className="curriculum-image-wrapper">
       {!loaded && (
         <div 
           className="image-skeleton"
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            zIndex: 1,
-            background: 'linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)',
-            backgroundSize: '200% 100%',
-            animation: 'shimmer 1.5s infinite'
-          }}
           aria-hidden="true"
         />
       )}
@@ -97,7 +55,6 @@ const OptimizedImage = memo(({
           type="image/webp"
         />
         <img
-          ref={imgRef}
           src={`${basePath}.jpg`}
           alt={alt}
           loading={priority ? "eager" : "lazy"}
@@ -108,32 +65,25 @@ const OptimizedImage = memo(({
           onLoad={() => setLoaded(true)}
           onError={() => setError(true)}
           className={`curriculum-image ${loaded ? 'loaded' : ''} ${className}`}
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            position: 'relative',
-            zIndex: 2
-          }}
           {...props}
         />
       </picture>
       
-      {/* Image Tag - using theme image-tag class */}
+      {/* Image Tags */}
       {src === 'ecde' && (
-        <div className="image-tag" style={{ background: 'rgba(255, 215, 0, 0.95)', color: 'var(--navy)' }}>
+        <div className="image-tag ecde-tag">
           <i className="fas fa-child me-2" aria-hidden="true"></i>
           Play-based Learning
         </div>
       )}
       {src === 'primary' && (
-        <div className="image-tag" style={{ background: 'rgba(76, 175, 80, 0.95)', color: 'white' }}>
+        <div className="image-tag primary-tag">
           <i className="fas fa-book-open me-2" aria-hidden="true"></i>
           Structured Learning
         </div>
       )}
       {src === 'jss' && (
-        <div className="image-tag" style={{ background: 'rgba(33, 150, 243, 0.95)', color: 'white' }}>
+        <div className="image-tag jss-tag">
           <i className="fas fa-flask me-2" aria-hidden="true"></i>
           Specialized Learning
         </div>
@@ -144,25 +94,12 @@ const OptimizedImage = memo(({
 
 OptimizedImage.displayName = 'OptimizedImage';
 
-// Stat item component with theme
-const StatItem = memo(({ value, label }) => (
-  <Col xs={6} md={3}>
-    <div className="curriculum-stat-badge text-center" role="article">
-      <div className="stat-number text-gold fw-bold display-6" aria-hidden="true">{value}</div>
-      <div className="stat-label text-white-50 small text-uppercase tracking-wide">{label}</div>
-      <span className="visually-hidden">{value} {label}</span>
-    </div>
-  </Col>
-));
-
-StatItem.displayName = 'StatItem';
-
-// Pillar item component with theme - Increased text size
+// Pillar item component
 const PillarItem = memo(({ icon, label }) => (
   <Col md={3} sm={6}>
     <div className="pillar-item text-center p-3 bg-white rounded-2 shadow-sm h-100" role="article">
-      <div className="pillar-icon fs-1 mb-2" aria-hidden="true">{icon}</div>
-      <h5 className="fw-bold text-navy mb-0" style={{ fontSize: '0.95rem' }}>{label}</h5>
+      <div className="pillar-icon mb-2" aria-hidden="true">{icon}</div>
+      <div className="fw-bold text-navy pillar-label">{label}</div>
       <span className="visually-hidden">Competency: {label}</span>
     </div>
   </Col>
@@ -170,7 +107,7 @@ const PillarItem = memo(({ icon, label }) => (
 
 PillarItem.displayName = 'PillarItem';
 
-// Navigation card component with theme
+// Navigation card component
 const NavCard = memo(({ data, onClick }) => {
   const handleClick = useCallback(() => {
     onClick(`${data.id}-section`);
@@ -183,11 +120,7 @@ const NavCard = memo(({ data, onClick }) => {
         role="article" 
         aria-labelledby={`nav-card-${data.id}`}
       >
-        <div className="curriculum-image-wrapper" style={{ 
-          aspectRatio: '16/9', 
-          overflow: 'hidden', 
-          borderRadius: '16px 16px 0 0'
-        }}>
+        <div className="curriculum-image-wrapper nav-card-image">
           <OptimizedImage
             src={data.image}
             alt={`${data.badge} level learning activities`}
@@ -196,16 +129,15 @@ const NavCard = memo(({ data, onClick }) => {
             priority={data.id === 'ecde'}
           />
         </div>
-        <Card.Body className="text-center p-3">
-          <Card.Title id={`nav-card-${data.id}`} className="card-title-navy fw-bold h5 mb-1" style={{ fontSize: '1.1rem' }}>{data.badge}</Card.Title>
-          <Card.Text className="text-dark mb-2" style={{ fontSize: '0.9rem' }}>{data.ageRange}</Card.Text>
+        <Card.Body className="text-center p-4">
+          <Card.Title id={`nav-card-${data.id}`} className="card-title-navy fw-bold mb-2 nav-card-title">{data.badge}</Card.Title>
+          <Card.Text className="text-dark mb-3 nav-card-text">{data.ageRange}</Card.Text>
           <Button 
             variant="primary"
             size="sm"
-            className="btn-navy px-3"
+            className="btn-navy px-4 nav-card-btn"
             onClick={handleClick}
             aria-label={`Explore ${data.badge} curriculum`}
-            style={{ minHeight: '40px', borderRadius: '40px', fontSize: '0.85rem' }}
           >
             Explore
           </Button>
@@ -217,27 +149,7 @@ const NavCard = memo(({ data, onClick }) => {
 
 NavCard.displayName = 'NavCard';
 
-// Info Card Component for sections using theme - Increased text size
-const InfoCard = memo(({ title, items, icon, bgColor = 'var(--gray-light)' }) => (
-  <div className="info-card p-3 rounded-3 h-100" style={{ background: bgColor }}>
-    <h4 className="fw-bold mb-3 text-navy" style={{ fontSize: '1.1rem' }}>
-      <i className={`fas ${icon} me-2 text-gold`} aria-hidden="true"></i>
-      {title}
-    </h4>
-    <ul className="list-unstyled mb-0">
-      {items.map((item, idx) => (
-        <li key={idx} className="mb-2 d-flex align-items-start gap-2">
-          <span className="text-gold mt-1" aria-hidden="true">✓</span>
-          <span className="text-dark" style={{ fontSize: '0.9rem' }}>{item}</span>
-        </li>
-      ))}
-    </ul>
-  </div>
-));
-
-InfoCard.displayName = 'InfoCard';
-
-// Scroll to contact function - same as homepage
+// Scroll to contact function
 const scrollToContact = (event) => {
   event?.preventDefault();
   
@@ -266,12 +178,11 @@ const scrollToContact = (event) => {
       }
     }, 500);
   } else {
-    // If contact element not found, navigate to contact page
     window.location.href = '/contact';
   }
 };
 
-// Updated CTA Banner Component with scroll to contact functionality
+// CTA Banner Component
 const CTABanner = memo(({ title, description, primaryText, primaryLink, secondaryText }) => {
   const handlePrimaryClick = useCallback((e) => {
     e.preventDefault();
@@ -288,23 +199,15 @@ const CTABanner = memo(({ title, description, primaryText, primaryLink, secondar
   }, []);
 
   return (
-    <div className="cta-section cta-primary" style={{ marginTop: '1rem' }}>
-      <div className="cta-content" style={{ padding: '20px 20px' }}>
-        <h3 className="cta-title" style={{ fontSize: '1.3rem', marginBottom: '0.75rem' }}>{title}</h3>
-        <p className="cta-description" style={{ fontSize: '0.9rem', marginBottom: '0.75rem', lineHeight: '1.6' }}>{description}</p>
+    <div className="cta-section cta-primary">
+      <div className="cta-content">
+        <h3 className="cta-title">{title}</h3>
+        <p className="cta-description">{description}</p>
         <div className="cta-buttons">
-          <button 
-            onClick={handlePrimaryClick}
-            className="btn-navy" 
-            style={{ padding: '6px 20px', fontSize: '0.85rem' }}
-          >
+          <button onClick={handlePrimaryClick} className="btn-navy">
             {primaryText}
           </button>
-          <button 
-            onClick={handleSecondaryClick}
-            className="btn-navy" 
-            style={{ padding: '6px 20px', fontSize: '0.85rem' }}
-          >
+          <button onClick={handleSecondaryClick} className="btn-navy">
             {secondaryText}
           </button>
         </div>
@@ -315,7 +218,7 @@ const CTABanner = memo(({ title, description, primaryText, primaryLink, secondar
 
 CTABanner.displayName = 'CTABanner';
 
-// ECD Section Component using theme - Increased text sizes
+// ECD Section Component
 const ECDSection = memo(() => {
   const sectionId = "ecde-section";
   const headingId = "ecd-heading";
@@ -344,8 +247,7 @@ const ECDSection = memo(() => {
   return (
     <section 
       id={sectionId}
-      className="curriculum-section py-6"
-      style={{ background: 'var(--white)' }}
+      className="curriculum-section py-6 bg-white"
       aria-labelledby={headingId}
       tabIndex="-1"
     >
@@ -353,12 +255,14 @@ const ECDSection = memo(() => {
         <Row className="align-items-center g-5">
           <Col lg={6}>
             <div className="curriculum-content">
-              <span className="curriculum-badge ecde-badge" style={{ fontSize: '0.8rem', padding: '6px 14px' }}>ECDE</span>
-              <h2 id={headingId} className="section-heading-left mb-5" style={{ fontSize: '1.8rem' }}>Early Childhood Development (ECD): The Right Start for Your Child</h2>
-              <p className="lead mb-3 text-dark" style={{ fontSize: '1.1rem', fontWeight:'bold' }}>
+              <span className="curriculum-badge ecde-badge">ECDE</span>
+              <h2 id={headingId} className="section-heading-left mb-4" style={{ fontSize: '1.3rem', fontWeight: '700' }}>
+                Early Childhood Development (ECD): The Right Start for Your Child
+              </h2>
+              <p className="mb-3 text-dark" style={{ fontSize: '1rem', lineHeight: '1.6' }}>
                 Are you looking for a safe, nurturing, and structured environment where your child can confidently begin their learning journey?
               </p>
-              <p className="lead mb-2 text-dark" style={{ fontSize: '1rem', lineHeight: '1.8' }}>
+              <p className="mb-2 text-dark" style={{ fontSize: '1rem', lineHeight: '1.6' }}>
                 Our ECD program introduces young learners to school life through a balanced combination of guided learning and play-based exploration, helping them develop confidence, curiosity, and essential foundational skills.
               </p>
             </div>
@@ -374,36 +278,58 @@ const ECDSection = memo(() => {
           </Col>
         </Row>
 
-        {/* Info Cards Row */}
-        <Row className="mt-4 g-5">
+        <Row className="mt-5 g-4">
           <Col lg={4}>
-            <InfoCard 
-              title="What Your Child Will Experience"
-              items={childExperiences}
-              icon="fa-face-smile"
-              bgColor="var(--gray-light)"
-            />
+            <div className="info-card p-4 rounded-3 h-100" style={{ background: 'var(--gray-light)' }}>
+              <h4 className="fw-bold mb-3 text-navy" style={{ fontSize: '1rem' }}>
+                <i className="fas fa-face-smile me-2 text-gold" aria-hidden="true"></i>
+                What Your Child Will Experience
+              </h4>
+              <ul className="list-unstyled mb-0">
+                {childExperiences.map((item, idx) => (
+                  <li key={idx} className="mb-2 d-flex align-items-start gap-2">
+                    <span className="text-gold mt-1" style={{ fontSize: '0.9rem' }} aria-hidden="true">✓</span>
+                    <span className="text-dark" style={{ fontSize: '1rem', lineHeight: '1.5' }}>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </Col>
           <Col lg={4}>
-            <InfoCard 
-              title="Learning Approach"
-              items={learningApproaches}
-              icon="fa-graduation-cap"
-              bgColor="var(--gray-light)"
-            />
+            <div className="info-card p-4 rounded-3 h-100" style={{ background: 'var(--gray-light)' }}>
+              <h4 className="fw-bold mb-3 text-navy" style={{ fontSize: '1rem' }}>
+                <i className="fas fa-graduation-cap me-2 text-gold" aria-hidden="true"></i>
+                Learning Approach
+              </h4>
+              <ul className="list-unstyled mb-0">
+                {learningApproaches.map((item, idx) => (
+                  <li key={idx} className="mb-2 d-flex align-items-start gap-2">
+                    <span className="text-gold mt-1" style={{ fontSize: '0.9rem' }} aria-hidden="true">✓</span>
+                    <span className="text-dark" style={{ fontSize: '1rem', lineHeight: '1.5' }}>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </Col>
           <Col lg={4}>
-            <InfoCard 
-              title="What to Expect as a Parent"
-              items={parentExpectations}
-              icon="fa-heart"
-              bgColor="var(--gray-light)"
-            />
+            <div className="info-card p-4 rounded-3 h-100" style={{ background: 'var(--gray-light)' }}>
+              <h4 className="fw-bold mb-3 text-navy" style={{ fontSize: '1rem' }}>
+                <i className="fas fa-heart me-2 text-gold" aria-hidden="true"></i>
+                What to Expect as a Parent
+              </h4>
+              <ul className="list-unstyled mb-0">
+                {parentExpectations.map((item, idx) => (
+                  <li key={idx} className="mb-2 d-flex align-items-start gap-2">
+                    <span className="text-gold mt-1" style={{ fontSize: '0.9rem' }} aria-hidden="true">✓</span>
+                    <span className="text-dark" style={{ fontSize: '1rem', lineHeight: '1.5' }}>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </Col>
         </Row>
 
-        {/* CTA Banner */}
-        <Row className="mt-3">
+        <Row className="mt-5">
           <Col lg={12}>
             <CTABanner 
               title="By the end of ECD, your child will be:"
@@ -421,7 +347,7 @@ const ECDSection = memo(() => {
 
 ECDSection.displayName = 'ECDSection';
 
-// Primary Section Component using theme - Increased text sizes
+// Primary Section Component
 const PrimarySection = memo(() => {
   const sectionId = "primary-section";
   const headingId = "primary-heading";
@@ -449,8 +375,7 @@ const PrimarySection = memo(() => {
   return (
     <section 
       id={sectionId}
-      className="curriculum-section py-6"
-      style={{ background: 'var(--gray-light)' }}
+      className="curriculum-section py-6 bg-light-custom"
       aria-labelledby={headingId}
       tabIndex="-1"
     >
@@ -458,12 +383,14 @@ const PrimarySection = memo(() => {
         <Row className="align-items-center g-5 flex-row-reverse">
           <Col lg={6}>
             <div className="curriculum-content">
-              <span className="curriculum-badge primary-badge" style={{ fontSize: '0.8rem', padding: '6px 14px' }}>Primary</span>
-              <h2 id={headingId} className="section-heading-left mb-3" style={{ fontSize: '1.8rem' }}>Primary School: Building Strong Academic Skills and Confidence</h2>
-              <p className="lead mb-4 text-dark" style={{ fontSize: '1.1rem', fontWeight:'bold' }}>
+              <span className="curriculum-badge primary-badge">Primary</span>
+              <h2 id={headingId} className="section-heading-left mb-4" style={{ fontSize: '1.3rem', fontWeight: '700' }}>
+                Primary School: Building Strong Academic Skills and Confidence
+              </h2>
+              <p className="mb-3 text-dark" style={{ fontSize: '1rem', lineHeight: '1.6' }}>
                 Are you looking for a school that will strengthen your child's academic foundation while developing confidence and discipline?
               </p>
-              <p className="lead mb-2 text-dark" style={{ fontSize: '1rem', lineHeight: '1.8' }}>
+              <p className="mb-2 text-dark" style={{ fontSize: '1rem', lineHeight: '1.6' }}>
                 Our Primary School program builds on foundational skills and introduces structured academic learning, helping learners grow in knowledge, independence, and critical thinking.
               </p>
             </div>
@@ -474,40 +401,63 @@ const PrimarySection = memo(() => {
               alt="Primary school students engaged in structured learning"
               width="600"
               height="450"
+              priority={false}
             />
           </Col>
         </Row>
 
-        {/* Info Cards Row */}
-        <Row className="mt-4 g-5">
+        <Row className="mt-5 g-4">
           <Col lg={4}>
-            <InfoCard 
-              title="What Your Child Will Experience"
-              items={childExperiences}
-              icon="fa-smile"
-              bgColor="var(--white)"
-            />
+            <div className="info-card p-4 rounded-3 h-100" style={{ background: 'var(--white)' }}>
+              <h4 className="fw-bold mb-3 text-navy" style={{ fontSize: '1rem' }}>
+                <i className="fas fa-smile me-2 text-gold" aria-hidden="true"></i>
+                What Your Child Will Experience
+              </h4>
+              <ul className="list-unstyled mb-0">
+                {childExperiences.map((item, idx) => (
+                  <li key={idx} className="mb-2 d-flex align-items-start gap-2">
+                    <span className="text-gold mt-1" style={{ fontSize: '0.9rem' }} aria-hidden="true">✓</span>
+                    <span className="text-dark" style={{ fontSize: '1rem', lineHeight: '1.5' }}>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </Col>
           <Col lg={4}>
-            <InfoCard 
-              title="Learning Approach"
-              items={learningApproaches}
-              icon="fa-graduation-cap"
-              bgColor="var(--white)"
-            />
+            <div className="info-card p-4 rounded-3 h-100" style={{ background: 'var(--white)' }}>
+              <h4 className="fw-bold mb-3 text-navy" style={{ fontSize: '1rem' }}>
+                <i className="fas fa-graduation-cap me-2 text-gold" aria-hidden="true"></i>
+                Learning Approach
+              </h4>
+              <ul className="list-unstyled mb-0">
+                {learningApproaches.map((item, idx) => (
+                  <li key={idx} className="mb-2 d-flex align-items-start gap-2">
+                    <span className="text-gold mt-1" style={{ fontSize: '0.9rem' }} aria-hidden="true">✓</span>
+                    <span className="text-dark" style={{ fontSize: '1rem', lineHeight: '1.5' }}>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </Col>
           <Col lg={4}>
-            <InfoCard 
-              title="What to Expect as a Parent"
-              items={parentExpectations}
-              icon="fa-heart"
-              bgColor="var(--white)"
-            />
+            <div className="info-card p-4 rounded-3 h-100" style={{ background: 'var(--white)' }}>
+              <h4 className="fw-bold mb-3 text-navy" style={{ fontSize: '1rem' }}>
+                <i className="fas fa-heart me-2 text-gold" aria-hidden="true"></i>
+                What to Expect as a Parent
+              </h4>
+              <ul className="list-unstyled mb-0">
+                {parentExpectations.map((item, idx) => (
+                  <li key={idx} className="mb-2 d-flex align-items-start gap-2">
+                    <span className="text-gold mt-1" style={{ fontSize: '0.9rem' }} aria-hidden="true">✓</span>
+                    <span className="text-dark" style={{ fontSize: '1rem', lineHeight: '1.5' }}>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </Col>
         </Row>
 
-        {/* CTA Banner */}
-        <Row className="mt-3">
+        <Row className="mt-5">
           <Col lg={12}>
             <CTABanner 
               title="Your child will:"
@@ -525,7 +475,7 @@ const PrimarySection = memo(() => {
 
 PrimarySection.displayName = 'PrimarySection';
 
-// Junior Secondary Section Component using theme - Increased text sizes
+// Junior Secondary Section Component
 const JuniorSecondarySection = memo(() => {
   const sectionId = "jss-section";
   const headingId = "jss-heading";
@@ -553,8 +503,7 @@ const JuniorSecondarySection = memo(() => {
   return (
     <section 
       id={sectionId}
-      className="curriculum-section py-6"
-      style={{ background: 'var(--white)' }}
+      className="curriculum-section py-6 bg-white"
       aria-labelledby={headingId}
       tabIndex="-1"
     >
@@ -562,12 +511,14 @@ const JuniorSecondarySection = memo(() => {
         <Row className="align-items-center g-5">
           <Col lg={6}>
             <div className="curriculum-content">
-              <span className="curriculum-badge jss-badge" style={{ fontSize: '0.8rem', padding: '6px 14px' }}>JSS</span>
-              <h2 id={headingId} className="section-heading-left mb-2" style={{ fontSize: '1.8rem' }}>Junior Secondary School: Preparing Learners for the Future</h2>
-              <p className="lead mb-2 text-dark" style={{ fontSize: '1.1rem', fontWeight:'bold' }}>
+              <span className="curriculum-badge jss-badge">JSS</span>
+              <h2 id={headingId} className="section-heading-left mb-4" style={{ fontSize: '1.3rem', fontWeight: '700' }}>
+                Junior Secondary School: Preparing Learners for the Future
+              </h2>
+              <p className="mb-3 text-dark" style={{ fontSize: '1rem', lineHeight: '1.6' }}>
                 Are you looking for a school that will prepare your child for senior school, future careers, and real-life success?
               </p>
-              <p className="lead mb-2 text-dark" style={{ fontSize: '1rem', lineHeight: '1.8' }}>
+              <p className="mb-2 text-dark" style={{ fontSize: '1rem', lineHeight: '1.6' }}>
                 Our Junior Secondary program builds independence and prepares learners for the next stage through advanced academic learning, critical thinking, and exposure to future pathways.
               </p>
             </div>
@@ -578,40 +529,63 @@ const JuniorSecondarySection = memo(() => {
               alt="Junior secondary students engaged in project-based learning"
               width="600"
               height="450"
+              priority={false}
             />
           </Col>
         </Row>
 
-        {/* Info Cards Row */}
-        <Row className="mt-4 g-5">
+        <Row className="mt-5 g-4">
           <Col lg={4}>
-            <InfoCard 
-              title="What Your Child Will Experience"
-              items={childExperiences}
-              icon="fa-smile"
-              bgColor="var(--gray-light)"
-            />
+            <div className="info-card p-4 rounded-3 h-100" style={{ background: 'var(--gray-light)' }}>
+              <h4 className="fw-bold mb-3 text-navy" style={{ fontSize: '1rem' }}>
+                <i className="fas fa-smile me-2 text-gold" aria-hidden="true"></i>
+                What Your Child Will Experience
+              </h4>
+              <ul className="list-unstyled mb-0">
+                {childExperiences.map((item, idx) => (
+                  <li key={idx} className="mb-2 d-flex align-items-start gap-2">
+                    <span className="text-gold mt-1" style={{ fontSize: '0.9rem' }} aria-hidden="true">✓</span>
+                    <span className="text-dark" style={{ fontSize: '1rem', lineHeight: '1.5' }}>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </Col>
           <Col lg={4}>
-            <InfoCard 
-              title="Learning Approach"
-              items={learningApproaches}
-              icon="fa-graduation-cap"
-              bgColor="var(--gray-light)"
-            />
+            <div className="info-card p-4 rounded-3 h-100" style={{ background: 'var(--gray-light)' }}>
+              <h4 className="fw-bold mb-3 text-navy" style={{ fontSize: '1rem' }}>
+                <i className="fas fa-graduation-cap me-2 text-gold" aria-hidden="true"></i>
+                Learning Approach
+              </h4>
+              <ul className="list-unstyled mb-0">
+                {learningApproaches.map((item, idx) => (
+                  <li key={idx} className="mb-2 d-flex align-items-start gap-2">
+                    <span className="text-gold mt-1" style={{ fontSize: '0.9rem' }} aria-hidden="true">✓</span>
+                    <span className="text-dark" style={{ fontSize: '1rem', lineHeight: '1.5' }}>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </Col>
           <Col lg={4}>
-            <InfoCard 
-              title="What to Expect as a Parent"
-              items={parentExpectations}
-              icon="fa-heart"
-              bgColor="var(--gray-light)"
-            />
+            <div className="info-card p-4 rounded-3 h-100" style={{ background: 'var(--gray-light)' }}>
+              <h4 className="fw-bold mb-3 text-navy" style={{ fontSize: '1rem' }}>
+                <i className="fas fa-heart me-2 text-gold" aria-hidden="true"></i>
+                What to Expect as a Parent
+              </h4>
+              <ul className="list-unstyled mb-0">
+                {parentExpectations.map((item, idx) => (
+                  <li key={idx} className="mb-2 d-flex align-items-start gap-2">
+                    <span className="text-gold mt-1" style={{ fontSize: '0.9rem' }} aria-hidden="true">✓</span>
+                    <span className="text-dark" style={{ fontSize: '1rem', lineHeight: '1.5' }}>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </Col>
         </Row>
 
-        {/* CTA Banner */}
-        <Row className="mt-3">
+        <Row className="mt-5">
           <Col lg={12}>
             <CTABanner 
               title="Learners leave Junior Secondary:"
@@ -632,7 +606,6 @@ JuniorSecondarySection.displayName = 'JuniorSecondarySection';
 function Curriculum() {
   const location = useLocation();
 
-  // Handle scrolling to section
   useEffect(() => {
     if (location.hash) {
       const timer = setTimeout(() => {
@@ -680,16 +653,15 @@ function Curriculum() {
   };
 
   const cbePillars = [
-    { icon: "🧠", label: "Critical Thinking and problem solving" },
-    { icon: "🎨", label: "Imagination and Creativity" },
+    { icon: "🧠", label: "Critical Thinking & Problem Solving" },
+    { icon: "🎨", label: "Imagination & Creativity" },
     { icon: "🤝", label: "Learning to Learn" },
-    { icon: "💬", label: "Communication and Collaboration" },
+    { icon: "💬", label: "Communication & Collaboration" },
     { icon: "💻", label: "Digital Literacy" },
     { icon: "🌍", label: "Citizenship" },
     { icon: "🔍", label: "Self-efficacy" },
   ];
 
-  // Daily schedule flow
   const dailyFlow = useMemo(() => [
     { time: "Morning", icon: "📚", activity: "Morning Classes" },
     { time: "Break", icon: "🍎", activity: "Break and Social Time" },
@@ -708,48 +680,43 @@ function Curriculum() {
         />
       </Helmet>
       
-      {/* Page Header - Using theme page-title-section */}
+      {/* Hero Section */}
       <section className="curriculum-hero-section" aria-labelledby="page-title">
         <div className="curriculum-hero-content">
-          <h1 id="page-title" className="display-5 fw-bold" style={{ fontSize: '3rem' }}>
-            Academics
-          </h1>
-          <p className="lead" style={{ fontSize: '1.2rem' }}>
-            Our paths to building confident scholars
-          </p>
+          <h1 id="page-title">Academics</h1>
+          <p>Our paths to building confident scholars</p>
         </div>
       </section>
 
       {/* Curriculum Overview */}
-      <section className="py-5 bg-light-custom" aria-labelledby="overview-heading">
+      <section className="py-6 bg-light-custom" aria-labelledby="overview-heading">
         <Container>
-          <Row className="text-center mb-4">
+          <Row className="text-center mb-5">
             <Col lg={8} className="mx-auto">
-              <h2 id="overview-heading" className="section-heading mb-4" style={{ fontSize: '2rem' }}>
+              <h2 id="overview-heading" className="section-heading mb-3" style={{ fontSize: '1.3rem', fontWeight: '700' }}>
                 The CBE Pathway
               </h2>
-              <p className="lead text-dark" style={{ fontSize: '1rem', maxWidth: '700px', margin: '0 auto' }}>
-                We follow the Competency-Based Education (CBE) approved by (KICD), guiding learners
-                from early years through junior school.          
+              <p className="overview-intro" style={{ fontSize: '1rem' }}>
+                We follow the Competency-Based Education (CBE) approved by KICD, guiding learners from early years through junior school.
               </p>
             </Col>
           </Row>
 
           {/* Quick Navigation Cards */}
-          <Row className="mb-5 g-5" role="list" aria-label="Curriculum levels">
+          <Row className="mb-5 g-4" role="list" aria-label="Curriculum levels">
             <NavCard data={navData.ecde} onClick={handleNavClick} />
             <NavCard data={navData.primary} onClick={handleNavClick} />
             <NavCard data={navData.jss} onClick={handleNavClick} />
           </Row>
 
           {/* CBE Pillars */}
-          <Row className="mt-4">
+          <Row className="mt-5">
             <Col lg={12}>
-              <div className="p-4 rounded-3 shadow-sm" style={{ background: 'var(--white)' }}>
-                <h3 className="text-center fw-bold mb-4 text-navy" style={{ fontSize: '1.5rem' }}>
+              <div className="pillars-container p-5 rounded-3 shadow-sm bg-white">
+                <h3 className="text-center fw-bold mb-4 text-navy" style={{ fontSize: '1.3rem', fontWeight: '700' }}>
                   The 7 Core Competencies of CBE
                 </h3>
-                <Row className="g-5" role="list" aria-label="Core competencies">
+                <Row className="g-4" role="list" aria-label="Core competencies">
                   {cbePillars.map((pillar, index) => (
                     <PillarItem key={index} icon={pillar.icon} label={pillar.label} />
                   ))}
@@ -769,33 +736,27 @@ function Curriculum() {
       {/* Junior Secondary Section */}
       <JuniorSecondarySection />
 
-      {/* A Typical Day Section */}
-      <section className="py-6" style={{ background: 'var(--white)' }} aria-labelledby="typical-day-heading">
+      {/* Daily Experience Section */}
+      <section className="py-6 bg-white" aria-labelledby="typical-day-heading">
         <Container>
-          <Row className="text-center mb-3">
+          <Row className="text-center mb-5">
             <Col lg={8} className="mx-auto">
-              <h2 id="typical-day-heading" className="section-heading mb-3">
+              <h2 id="typical-day-heading" className="section-heading mb-3" style={{ fontSize: '1.3rem', fontWeight: '700' }}>
                 The Daily Experience
               </h2>
-              <p className="text-muted lead">
+              <p className="daily-intro" style={{ fontSize: '1rem' }}>
                 A thoughtfully structured day that fosters intellectual growth, character development, and holistic well-being.
               </p>
             </Col>
           </Row>
 
-          <Row className="g-5 justify-content-center">
+          <Row className="g-4 justify-content-center">
             {dailyFlow.map((item, idx) => (
               <Col key={idx} xs={12} sm={6} md={3} lg={3}>
-                <div className="text-center p-3 border rounded-4 h-100 bg-white shadow-sm hover-shadow transition">
-                  <div 
-                    className="mb-3 d-inline-flex align-items-center justify-content-center rounded-circle bg-primary-soft" 
-                    style={{ fontSize: '2rem', width: '64px', height: '64px' }}
-                    aria-hidden="true"
-                  >
-                    {item.icon}
-                  </div>
-                  <h3 className="h5 fw-semibold mb-1">{item.activity}</h3>
-                  <p className="small text-secondary mb-0">{item.time}</p>
+                <div className="daily-flow-card text-center p-4 border rounded-4 h-100 bg-white shadow-sm">
+                  <div className="daily-flow-icon mb-3" style={{ fontSize: '2rem' }} aria-hidden="true">{item.icon}</div>
+                  <h3 className="daily-flow-title" style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem' }}>{item.activity}</h3>
+                  <p className="daily-flow-time" style={{ fontSize: '0.85rem', color: '#6c757d', marginBottom: '0' }}>{item.time}</p>
                 </div>
               </Col>
             ))}
@@ -807,139 +768,70 @@ function Curriculum() {
         <GetInTouch />
       </Suspense>
 
-      {/* Additional Styles that complement theme.css */}
       <style dangerouslySetInnerHTML={{ __html: `
-        .visually-hidden {
-          position: absolute;
-          width: 1px;
-          height: 1px;
-          padding: 0;
-          margin: -1px;
-          overflow: hidden;
-          clip: rect(0, 0, 0, 0);
-          border: 0;
-        }
-        [tabindex="-1"]:focus {
-          outline: 3px solid var(--gold);
-          outline-offset: 2px;
-        }
-        button:focus-visible,
-        a:focus-visible {
-          outline: 3px solid var(--gold);
-          outline-offset: 2px;
-        }
-        .curriculum-nav-card {
-          transition: transform 0.2s ease, box-shadow 0.2s ease;
-          border-radius: 14px;
-          overflow: hidden;
-          cursor: pointer;
-        }
-        .curriculum-nav-card:focus-within,
-        .curriculum-nav-card:hover {
-          transform: translateY(-3px);
-          box-shadow: 0 10px 25px rgba(13,101,251,0.15) !important;
-        }
-        .curriculum-section {
-          scroll-margin-top: 80px;
-        }
-        .curriculum-badge {
-          display: inline-block;
-          padding: 6px 14px;
-          border-radius: 30px;
-          font-size: 0.8rem;
-          font-weight: 600;
-          margin-bottom: 0.75rem;
-          letter-spacing: 0.5px;
-        }
-        .ecde-badge {
-          background: #ffd700;
-          color: var(--navy);
-        }
-        .primary-badge {
-          background: #4CAF50;
+  .curriculum-hero-section {
+    position: relative;
+    background: linear-gradient(135deg, #0d65fb 0%, #0a55d6 100%);
+    min-height: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    overflow: hidden;
+  }
+
+  .curriculum-hero-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url('/images/optimized/jss.webp');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    opacity: 0.9;
+    z-index: 0;
+  }
+
+  .curriculum-hero-section::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(13, 101, 251, 0.6), rgba(10, 85, 214, 0.7));
+    z-index: 1;
+  }
+
+  .curriculum-hero-content {
+    position: relative;
+    z-index: 2;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 80px 24px;
+    color: white;
+  }
+
+  .curriculum-hero-content h1 {
+          font-size: clamp(2rem, 5vw, 3rem);
+          font-weight: 700;
+          margin-bottom: 1rem;
           color: white;
+          text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
         }
-        .jss-badge {
-          background: #2196F3;
-          color: white;
+
+
+  .curriculum-hero-content p {
+          font-size: clamp(1rem, 4vw, 1.2rem);
+          color: rgba(255, 255, 255, 0.95);
+          line-height: 1.6;
+          margin-bottom: 1rem;
+          text-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);
         }
-        .pillar-item {
-          transition: transform 0.2s ease, box-shadow 0.2s ease;
-          border-radius: 12px;
-        }
-        .pillar-item:hover {
-          transform: translateY(-3px);
-          box-shadow: 0 8px 20px rgba(13,101,251,0.12);
-        }
-        .info-card {
-          transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-        .info-card:hover {
-          transform: translateY(-3px);
-          box-shadow: 0 8px 20px rgba(13,101,251,0.1);
-        }
-        .tracking-wide {
-          letter-spacing: 0.5px;
-        }
-        .bg-light-custom {
-          background-color: var(--gray-light);
-        }
-        .text-navy {
-          color: var(--navy);
-        }
-        .text-gold {
-          color: var(--gold);
-        }
-        @keyframes shimmer {
-          0% { background-position: -200% 0; }
-          100% { background-position: 200% 0; }
-        }
-        @media (max-width: 768px) {
-          .section-heading {
-            font-size: 1.6rem;
-          }
-          .section-heading-left {
-            font-size: 1.4rem;
-          }
-          .curriculum-hero-content h1 {
-            font-size: 2rem;
-          }
-          .curriculum-hero-content p {
-            font-size: 1rem;
-          }
-        }
-        @media (max-width: 576px) {
-          .section-heading {
-            font-size: 1.4rem;
-          }
-          .section-heading-left {
-            font-size: 1.2rem;
-          }
-          .cta-buttons {
-            flex-direction: column;
-            align-items: stretch;
-          }
-          .cta-buttons .btn-navy,
-          .cta-buttons .btn-outline-navy {
-            width: 100%;
-            text-align: center;
-          }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          *,
-          .curriculum-nav-card,
-          .curriculum-nav-card:focus-within,
-          .curriculum-nav-card:hover,
-          .pillar-item,
-          .info-card,
-          .curriculum-image {
-            transition: none !important;
-          }
-          .image-skeleton {
-            animation: none !important;
-          }
-        }
-      `}} />
+`}} />
     </>
   );
 }

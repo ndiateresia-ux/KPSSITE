@@ -71,7 +71,8 @@ const InfoCard = memo(({ icon, title, description }) => (
 
 InfoCard.displayName = 'InfoCard';
 
-// Enhanced ClassButton component with accessibility
+// Enhanced ClassButton component with FIXED SPACING for descriptions
+// Alternative with visual separator
 const ClassButton = memo(({ category, isActive, onClick }) => {
   const buttonId = `class-${category.id}`;
   
@@ -89,8 +90,8 @@ const ClassButton = memo(({ category, isActive, onClick }) => {
       aria-label={`${category.name} level, ${category.description}`}
       className={`class-selector-btn ${isActive ? 'active' : ''}`}
       style={{
-        flex: 1,
-        padding: '0.8rem 0.5rem',
+        width: '100%',
+        padding: '0.8rem 0.75rem',
         borderRadius: '12px',
         border: 'none',
         background: isActive 
@@ -116,11 +117,37 @@ const ClassButton = memo(({ category, isActive, onClick }) => {
           left: 0,
           right: 0,
           height: '3px',
-          background: 'navy'
+          background: '#ff0080'
         }} aria-hidden="true" />
       )}
-      <div style={{ fontWeight: '700', fontSize: '0.95rem', marginBottom: '0.2rem' }}>{category.name}</div>
-      <div style={{ fontSize: '0.7rem', opacity: isActive ? 0.9 : 0.6 }}>{category.description}</div>
+      {/* Grade Name */}
+      <div style={{ 
+        fontWeight: '700', 
+        fontSize: '1rem',
+        marginBottom: '0.35rem',
+        letterSpacing: '-0.2px'
+      }}>
+        {category.name}
+      </div>
+      {/* Visual Separator - small dot or line */}
+      <div style={{
+            width: '14px',
+            height: '2px',
+            background: isActive ? 'rgba(255,255,255,0.5)' : 'rgba(5,2,101,0.2)',
+            margin: '0.15rem auto 0.2rem auto', // Reduced from 0.25rem and 0.35rem
+            borderRadius: '2px'
+          }} aria-hidden="true" />
+
+          {/* Grade Description */}
+          <div style={{ 
+            fontSize: '0.75rem',
+            opacity: isActive ? 0.95 : 0.75,
+            lineHeight: '1',
+            letterSpacing: '0.1px',
+            
+          }}>
+        {category.description}
+      </div>
       {isActive && <span className="visually-hidden"> (selected)</span>}
     </button>
   );
@@ -554,22 +581,31 @@ function FeeStructure() {
             View detailed fee structure by level.
           </h3>
 
-          {/* Class Selector */}
+          {/* Class Selector - FIXED with better spacing */}
           <Row className="justify-content-center mb-4">
             <Col lg={10}>
               <div 
-                className="bg-white p-3 rounded-3 shadow-sm"
+                className="bg-white p-4 rounded-3 shadow-sm"  // Increased padding from p-3 to p-4
                 style={{ 
                   display: 'flex', 
-                  gap: '0.75rem', 
+                  gap: '1rem',  // Increased from 0.75rem to 1rem
                   borderRadius: '16px',
-                  flexWrap: 'wrap'
+                  flexWrap: 'wrap',
+                  justifyContent: 'center'  // Center the buttons
                 }}
                 role="tablist"
                 aria-label="Education levels"
               >
                 {classCategories.map(category => (
-                  <div key={category.id} role="tab" style={{ flex: 1 }}>
+                  <div 
+                    key={category.id} 
+                    role="tab" 
+                    style={{ 
+                      flex: '1 1 200px',  // Better flex basis with minimum width
+                      minWidth: '160px',   // Prevent buttons from getting too narrow
+                      maxWidth: '280px'    // Prevent buttons from getting too wide
+                    }}
+                  >
                     <ClassButton
                       category={category}
                       isActive={selectedClass === category.id}
@@ -582,337 +618,337 @@ function FeeStructure() {
           </Row>
         
          {/* Fee Structure Image Preview */}
-<Card className="card-custom border-0 mb-5" style={{ 
-  boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
-  borderRadius: '24px',
-  overflow: 'hidden',
-  transition: 'transform 0.3s ease, box-shadow 0.3s ease'
-}}>
-  <div style={{
-    background: '#1a6bff',
-    padding: '1rem 1.75rem',
-    color: 'white',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: '0.75rem'
-  }}>
-    <div>
-      <h3 className="h5 mb-0 fw-bold">
-        <i className="bi bi-receipt me-2" aria-hidden="true"></i>
-        {selectedClass === 'ecde' ? 'ECDE Fee Structure' : 
-         selectedClass === 'primary' ? 'Primary School Fee Structure' : 
-         'Junior Secondary Fee Structure'}
-      </h3>
-      <p className="mb-0 mt-1 small opacity-75">
-        <i className="bi bi-credit-card-2-front me-1" aria-hidden="true"></i>
-        View detailed fee breakdown by term
-      </p>
-    </div>
-    <Button 
-      size="sm"
-      variant="outline-light"
-      style={{
-        borderRadius: '40px',
-        padding: '0.5rem 1.25rem',
-        fontWeight: '500',
-        minHeight: '40px',
-        minWidth: '40px',
-        fontSize: '0.875rem',
-        borderColor: 'rgba(255,255,255,0.3)',
-        transition: 'all 0.3s ease',
-        background: 'transparent',
-        color: 'white'
-      }}
-      onClick={handleDownloadImage}
-      aria-label={`Download ${selectedClass} fee structure`}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
-        e.currentTarget.style.transform = 'translateY(-2px)';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.background = 'transparent';
-        e.currentTarget.style.transform = 'translateY(0)';
-      }}
-    >
-      <i className="bi bi-download me-2" aria-hidden="true"></i> Download PDF
-    </Button>
-  </div>
-  
-  <Card.Body className="text-center p-4 bg-white">
-    <div 
-      onClick={handleViewImage} 
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          handleViewImage();
-        }
-      }}
-      style={{ 
-        cursor: 'pointer',
-        position: 'relative',
-        borderRadius: '16px',
-        overflow: 'hidden',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        width: '100%'
-      }}
-      role="button"
-      tabIndex={0}
-      aria-label={`View enlarged fee structure for ${selectedClass}`}
-    >
-      {!imageLoaded[selectedClass] && (
-        <div className="image-skeleton" style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          borderRadius: '16px',
-          background: 'linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)',
-          backgroundSize: '200% 100%',
-          animation: 'skeleton-loading 1.5s infinite',
-          zIndex: 1
-        }} aria-hidden="true" />
-      )}
-      <img 
-        src={feeImages[selectedClass]} 
-        alt={`Fee Structure for ${selectedClass}`}
-        className={`curriculum-image ${imageLoaded[selectedClass] ? 'loaded' : ''}`}
-        style={{
-          maxWidth: '100%',
-          maxHeight: '500px',
-          width: 'auto',
-          height: 'auto',
-          borderRadius: '16px',
-          boxShadow: '0 12px 30px rgba(0,0,0,0.15)',
-          transition: 'transform 0.3s ease',
-          objectFit: 'contain'
-        }}
-        onLoad={() => handleImageLoad(selectedClass)}
-        onError={(e) => {
-          e.currentTarget.onerror = null;
-          e.currentTarget.src = "https://via.placeholder.com/800x600?text=Fee+Season+Preview";
-        }}
-      />
-      <div className="image-tag" style={{
-        position: 'absolute',
-        bottom: '20px',
-        right: '20px',
-        background: 'rgba(5, 2, 101, 0.95)',
-        color: 'white',
-        padding: '8px 16px',
-        borderRadius: '40px',
-        fontSize: '0.75rem',
-        fontWeight: '500',
-        pointerEvents: 'none',
-        backdropFilter: 'blur(8px)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '6px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-        zIndex: 2
-      }} aria-hidden="true">
-        <i className="bi bi-zoom-in" aria-hidden="true"></i>
-        Click to enlarge
-      </div>
-    </div>
-    
-    {/* Quick info note */}
-    <div className="mt-4 d-flex justify-content-center">
-      <div className="p-2 px-3" style={{ 
-        background: 'linear-gradient(135deg, rgba(5,2,101,0.08), rgba(26,107,255,0.08))',
-        borderRadius: '12px',
-        display: 'inline-block'
-      }}>
-        <p className="mb-0 small text-muted">
-          <i className="bi bi-info-circle-fill me-1 text-primary" aria-hidden="true"></i>
-          Fees are payable per term. Contact the accounts office for payment plans.
-        </p>
-      </div>
-    </div>
-  </Card.Body>
-</Card>
+        <Card className="card-custom border-0 mb-5" style={{ 
+          boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+          borderRadius: '24px',
+          overflow: 'hidden',
+          transition: 'transform 0.3s ease, box-shadow 0.3s ease'
+        }}>
+          <div style={{
+            background: 'var(--gradient-primary)',
+            padding: '1rem 1.75rem',
+            color: 'white',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '0.75rem'
+          }}>
+            <div>
+              <h3 className="h5 mb-0 fw-bold">
+                <i className="bi bi-receipt me-2" aria-hidden="true"></i>
+                {selectedClass === 'ecde' ? 'ECDE Fee Structure' : 
+                selectedClass === 'primary' ? 'Primary School Fee Structure' : 
+                'Junior Secondary Fee Structure'}
+              </h3>
+              <p className="mb-0 mt-1 small opacity-75">
+                <i className="bi bi-credit-card-2-front me-1" aria-hidden="true"></i>
+                View detailed fee breakdown by term
+              </p>
+            </div>
+            <Button 
+              size="sm"
+              variant="outline-light"
+              style={{
+                borderRadius: '40px',
+                padding: '0.5rem 1.25rem',
+                fontWeight: '500',
+                minHeight: '40px',
+                minWidth: '40px',
+                fontSize: '0.875rem',
+                borderColor: 'rgba(255,255,255,0.3)',
+                transition: 'all 0.3s ease',
+                background: 'transparent',
+                color: 'white'
+              }}
+              onClick={handleDownloadImage}
+              aria-label={`Download ${selectedClass} fee structure`}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}
+            >
+              <i className="bi bi-download me-2" aria-hidden="true"></i> Download PDF
+            </Button>
+          </div>
+          
+          <Card.Body className="text-center p-4 bg-white">
+            <div 
+              onClick={handleViewImage} 
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleViewImage();
+                }
+              }}
+              style={{ 
+                cursor: 'pointer',
+                position: 'relative',
+                borderRadius: '16px',
+                overflow: 'hidden',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                width: '100%'
+              }}
+              role="button"
+              tabIndex={0}
+              aria-label={`View enlarged fee structure for ${selectedClass}`}
+            >
+              {!imageLoaded[selectedClass] && (
+                <div className="image-skeleton" style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  borderRadius: '16px',
+                  background: 'linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)',
+                  backgroundSize: '200% 100%',
+                  animation: 'skeleton-loading 1.5s infinite',
+                  zIndex: 1
+                }} aria-hidden="true" />
+              )}
+              <img 
+                src={feeImages[selectedClass]} 
+                alt={`Fee Structure for ${selectedClass}`}
+                className={`curriculum-image ${imageLoaded[selectedClass] ? 'loaded' : ''}`}
+                style={{
+                  maxWidth: '100%',
+                  maxHeight: '500px',
+                  width: 'auto',
+                  height: 'auto',
+                  borderRadius: '16px',
+                  boxShadow: '0 12px 30px rgba(0,0,0,0.15)',
+                  transition: 'transform 0.3s ease',
+                  objectFit: 'contain'
+                }}
+                onLoad={() => handleImageLoad(selectedClass)}
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = "https://via.placeholder.com/800x600?text=Fee+Season+Preview";
+                }}
+              />
+              <div className="image-tag" style={{
+                position: 'absolute',
+                bottom: '20px',
+                right: '20px',
+                background: 'rgba(5, 2, 101, 0.95)',
+                color: 'white',
+                padding: '8px 16px',
+                borderRadius: '40px',
+                fontSize: '0.75rem',
+                fontWeight: '500',
+                pointerEvents: 'none',
+                backdropFilter: 'blur(8px)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                zIndex: 2
+              }} aria-hidden="true">
+                <i className="bi bi-zoom-in" aria-hidden="true"></i>
+                Click to enlarge
+              </div>
+            </div>
+            
+            {/* Quick info note */}
+            <div className="mt-4 d-flex justify-content-center">
+              <div className="p-2 px-3" style={{ 
+                background: 'linear-gradient(135deg, rgba(5,2,101,0.08), rgba(26,107,255,0.08))',
+                borderRadius: '12px',
+                display: 'inline-block'
+              }}>
+                <p className="mb-0 small text-muted">
+                  <i className="bi bi-info-circle-fill me-1 text-primary" aria-hidden="true"></i>
+                  Fees are payable per term. Contact the accounts office for payment plans.
+                </p>
+              </div>
+            </div>
+          </Card.Body>
+        </Card>
 
-{/* Spacer between cards */}
-<div style={{ height: '2rem' }} aria-hidden="true"></div>
+        {/* Spacer between cards */}
+        <div style={{ height: '2rem' }} aria-hidden="true"></div>
 
-{/* Transport Section */}
-<Card id="transport-section" className="card-custom border-0 mb-5" style={{ 
-  boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
-  borderRadius: '24px',
-  overflow: 'hidden',
-  transition: 'transform 0.3s ease, box-shadow 0.3s ease'
-}}>
-  <div style={{
-    background: '#1a6bff',
-    padding: '1rem 1.75rem',
-    color: 'white',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: '0.75rem'
-  }}>
-    <div>
-      <h3 className="h5 mb-0 fw-bold">
-        <i className="bi bi-bus-front me-2" aria-hidden="true"></i>
-        School Transportation Services
-      </h3>
-      <p className="mb-0 mt-1 small opacity-75">
-        <i className="bi bi-geo-alt me-1" aria-hidden="true"></i>
-        Convenient pick-up and drop-off routes
-      </p>
-    </div>
-    <Button 
-      size="sm"
-      variant="outline-light"
-      style={{
-        borderRadius: '40px',
-        padding: '0.5rem 1.25rem',
-        fontWeight: '500',
-        minHeight: '40px',
-        minWidth: '40px',
-        fontSize: '0.875rem',
-        borderColor: 'rgba(255,255,255,0.3)',
-        transition: 'all 0.3s ease',
-        background: 'transparent',
-        color: 'white'
-      }}
-      onClick={() => {
-        const link = document.createElement('a');
-        link.href = transportImage;
-        link.download = "Kitale_Progressive_Transport.jpg";
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }}
-      aria-label="Download transportation costs"
-      onMouseEnter={(e) => {
-        e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
-        e.currentTarget.style.transform = 'translateY(-2px)';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.background = 'transparent';
-        e.currentTarget.style.transform = 'translateY(0)';
-      }}
-    >
-      <i className="bi bi-download me-2" aria-hidden="true"></i> Download PDF
-    </Button>
-  </div>
-  
-  <Card.Body className="text-center p-4 bg-white">
-    <div 
-      onClick={handleViewTransportImage} 
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          handleViewTransportImage();
-        }
-      }}
-      style={{ 
-        cursor: 'pointer',
-        position: 'relative',
-        borderRadius: '16px',
-        overflow: 'hidden',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        width: '100%'
-      }}
-      role="button"
-      tabIndex={0}
-      aria-label="View enlarged transportation costs"
-    >
-      {!imageLoaded.transport && (
-        <div className="image-skeleton" style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          borderRadius: '16px',
-          background: 'linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)',
-          backgroundSize: '200% 100%',
-          animation: 'skeleton-loading 1.5s infinite',
-          zIndex: 1
-        }} aria-hidden="true" />
-      )}
-      <img 
-        src={transportImage} 
-        alt="Transportation Costs"
-        className={`curriculum-image ${imageLoaded.transport ? 'loaded' : ''}`}
-        style={{
-          maxWidth: '100%',
-          maxHeight: '500px',
-          width: 'auto',
-          height: 'auto',
-          borderRadius: '16px',
-          boxShadow: '0 12px 30px rgba(0,0,0,0.15)',
-          transition: 'transform 0.3s ease',
-          objectFit: 'contain'
-        }}
-        onLoad={() => handleImageLoad('transport')}
-        onError={(e) => {
-          e.currentTarget.onerror = null;
-          e.currentTarget.src = "https://via.placeholder.com/800x400?text=Transport+Costs+Preview";
-        }}
-      />
-      <div className="image-tag" style={{
-        position: 'absolute',
-        bottom: '20px',
-        right: '20px',
-        background: 'rgba(5, 2, 101, 0.95)',
-        color: 'white',
-        padding: '8px 16px',
-        borderRadius: '40px',
-        fontSize: '0.75rem',
-        fontWeight: '500',
-        pointerEvents: 'none',
-        backdropFilter: 'blur(8px)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '6px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-        zIndex: 2
-      }} aria-hidden="true">
-        <i className="bi bi-zoom-in" aria-hidden="true"></i>
-        Click to enlarge
-      </div>
-    </div>
-    
-    {/* Service highlights */}
-    <div className="mt-4">
-      <div className="d-flex flex-wrap justify-content-center gap-2">
-        <div className="p-2 px-3" style={{ background: 'var(--gray-light)', borderRadius: '30px' }}>
-          <small className="text-muted">
-            <i className="bi bi-check-circle-fill text-primary me-1" style={{ fontSize: '0.7rem' }}></i>
-            Safe & Reliable Transport
-          </small>
-        </div>
-      </div>
-    </div>
-    
-    {/* Info note */}
-    <div className="mt-4 d-flex justify-content-center">
-      <div className="p-3" style={{ 
-        background: 'var(--gray-light)', 
-        borderRadius: '14px',
-        borderLeft: '4px solid #0d65fb',
-        maxWidth: '90%'
-      }}>
-        <p className="mb-0 small text-muted">
-          <i className="bi bi-info-circle-fill me-1 text-primary" aria-hidden="true"></i>
-          Transport routes and costs vary based on location. Contact the transport office for personalized guidance and availability.
-        </p>
-      </div>
-    </div>
-  </Card.Body>
-</Card>
+        {/* Transport Section */}
+        <Card id="transport-section" className="card-custom border-0 mb-5" style={{ 
+          boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+          borderRadius: '24px',
+          overflow: 'hidden',
+          transition: 'transform 0.3s ease, box-shadow 0.3s ease'
+        }}>
+          <div style={{
+            background: 'var(--gradient-primary)',
+            padding: '1rem 1.75rem',
+            color: 'white',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '0.75rem'
+          }}>
+            <div>
+              <h3 className="h5 mb-0 fw-bold">
+                <i className="bi bi-bus-front me-2" aria-hidden="true"></i>
+                School Transportation Services
+              </h3>
+              <p className="mb-0 mt-1 small opacity-75">
+                <i className="bi bi-geo-alt me-1" aria-hidden="true"></i>
+                Convenient pick-up and drop-off routes
+              </p>
+            </div>
+            <Button 
+              size="sm"
+              variant="outline-light"
+              style={{
+                borderRadius: '40px',
+                padding: '0.5rem 1.25rem',
+                fontWeight: '500',
+                minHeight: '40px',
+                minWidth: '40px',
+                fontSize: '0.875rem',
+                borderColor: 'rgba(255,255,255,0.3)',
+                transition: 'all 0.3s ease',
+                background: 'transparent',
+                color: 'white'
+              }}
+              onClick={() => {
+                const link = document.createElement('a');
+                link.href = transportImage;
+                link.download = "Kitale_Progressive_Transport.jpg";
+                link.target = '_blank';
+                link.rel = 'noopener noreferrer';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+              }}
+              aria-label="Download transportation costs"
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}
+            >
+              <i className="bi bi-download me-2" aria-hidden="true"></i> Download PDF
+            </Button>
+          </div>
+          
+          <Card.Body className="text-center p-4 bg-white">
+            <div 
+              onClick={handleViewTransportImage} 
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleViewTransportImage();
+                }
+              }}
+              style={{ 
+                cursor: 'pointer',
+                position: 'relative',
+                borderRadius: '16px',
+                overflow: 'hidden',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                width: '100%'
+              }}
+              role="button"
+              tabIndex={0}
+              aria-label="View enlarged transportation costs"
+            >
+              {!imageLoaded.transport && (
+                <div className="image-skeleton" style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  borderRadius: '16px',
+                  background: 'linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)',
+                  backgroundSize: '200% 100%',
+                  animation: 'skeleton-loading 1.5s infinite',
+                  zIndex: 1
+                }} aria-hidden="true" />
+              )}
+              <img 
+                src={transportImage} 
+                alt="Transportation Costs"
+                className={`curriculum-image ${imageLoaded.transport ? 'loaded' : ''}`}
+                style={{
+                  maxWidth: '100%',
+                  maxHeight: '500px',
+                  width: 'auto',
+                  height: 'auto',
+                  borderRadius: '16px',
+                  boxShadow: '0 12px 30px rgba(0,0,0,0.15)',
+                  transition: 'transform 0.3s ease',
+                  objectFit: 'contain'
+                }}
+                onLoad={() => handleImageLoad('transport')}
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = "https://via.placeholder.com/800x400?text=Transport+Costs+Preview";
+                }}
+              />
+              <div className="image-tag" style={{
+                position: 'absolute',
+                bottom: '20px',
+                right: '20px',
+                background: 'rgba(5, 2, 101, 0.95)',
+                color: 'white',
+                padding: '8px 16px',
+                borderRadius: '40px',
+                fontSize: '0.75rem',
+                fontWeight: '500',
+                pointerEvents: 'none',
+                backdropFilter: 'blur(8px)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                zIndex: 2
+              }} aria-hidden="true">
+                <i className="bi bi-zoom-in" aria-hidden="true"></i>
+                Click to enlarge
+              </div>
+            </div>
+            
+            {/* Service highlights */}
+            <div className="mt-4">
+              <div className="d-flex flex-wrap justify-content-center gap-2">
+                <div className="p-2 px-3" style={{ background: 'var(--gray-light)', borderRadius: '30px' }}>
+                  <small className="text-muted">
+                    <i className="bi bi-check-circle-fill text-primary me-1" style={{ fontSize: '0.7rem' }}></i>
+                    Safe & Reliable Transport
+                  </small>
+                </div>
+              </div>
+            </div>
+            
+            {/* Info note */}
+            <div className="mt-4 d-flex justify-content-center">
+              <div className="p-3" style={{ 
+                background: 'var(--gray-light)', 
+                borderRadius: '14px',
+                borderLeft: '4px solid #0d65fb',
+                maxWidth: '90%'
+              }}>
+                <p className="mb-0 small text-muted">
+                  <i className="bi bi-info-circle-fill me-1 text-primary" aria-hidden="true"></i>
+                  Transport routes and costs vary based on location. Contact the transport office for personalized guidance and availability.
+                </p>
+              </div>
+            </div>
+          </Card.Body>
+        </Card>
 
           {/* Action Buttons */}
           <Row className="mt-3 g-2 mb-5">
@@ -1184,7 +1220,7 @@ function FeeStructure() {
         }
         
         .class-selector-btn:hover {
-          transform: translateY(-1px);
+          transform: translateY(-2px);
         }
         
         button:focus-visible,

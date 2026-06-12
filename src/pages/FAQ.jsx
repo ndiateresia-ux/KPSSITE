@@ -103,7 +103,7 @@ function FAQ() {
           answer: `
             Our boarding facilities provide a safe, structured, and supportive environment.
             <br/><br/>
-            <a href="/school-life/facilities" class="text-navy fw-bold">View boarding facilities →</a>
+            <a href="/school-life/boarding" class="text-navy fw-bold">View boarding facilities →</a>
           `
         },
         {
@@ -111,7 +111,6 @@ function FAQ() {
           answer: `
             We prioritize student safety through controlled access, supervision, and structured routines.
             <br/><br/>
-            <a href="/school-life/facilities" class="text-navy fw-bold">View safety measures →</a>
           `
         },
         {
