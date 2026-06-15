@@ -17,10 +17,10 @@
   --gradient-dark: linear-gradient(135deg, #021331, #0d65fb);
   --mobile-padding: 16px;
   --tablet-padding: 24px;
-  --desktop-padding: 0;
-  --section-spacing-mobile: 48px;
-  --section-spacing-tablet: 60px;
-  --section-spacing-desktop: 80px;
+  --desktop-padding: 00px;
+  --section-spacing-mobile: 45px;
+  --section-spacing-tablet: 50px;
+  --section-spacing-desktop: 60px;
   --card-spacing: 24px;
   --heading-max: 1.3rem;
   --body-text: 1rem;
@@ -102,7 +102,7 @@ small, .small, .text-small, .card-text-small {
   line-height: 1.5;
 }
 
-/* ===== CONTAINER PADDING ===== */
+/* ===== CONTAINER PADDING - CONSISTENT MARGINS FOR ALL SECTIONS ===== */
 .container,
 .container-fluid {
   padding-left: var(--mobile-padding) !important;
@@ -131,6 +131,17 @@ small, .small, .text-small, .card-text-small {
     padding-left: var(--desktop-padding) !important;
     padding-right: var(--desktop-padding) !important;
   }
+}
+
+/* Fix row margins for consistent spacing */
+.row {
+  margin-left: -12px;
+  margin-right: -12px;
+}
+
+[class*="col-"] {
+  padding-left: 12px;
+  padding-right: 12px;
 }
 
 /* ===== SECTION SPACING ===== */
@@ -401,11 +412,20 @@ input[type="button"],
   z-index: 1030 !important;
   background: white !important;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1) !important;
+  padding-left: var(--desktop-padding) !important;
+  padding-right: var(--desktop-padding) !important;
+}
+
+@media (max-width: 991px) {
+  .navbar {
+    padding-left: var(--mobile-padding) !important;
+    padding-right: var(--mobile-padding) !important;
+  }
 }
 
 /* Fix navbar toggler visibility - HIDDEN ON DESKTOP by default */
 .navbar-toggler {
-  display: none !important;  /* Hidden by default on desktop */
+  display: none !important;
   border: none !important;
   background: transparent !important;
   padding: 0.5rem !important;
@@ -415,7 +435,7 @@ input[type="button"],
 /* Show toggler ONLY on mobile/tablet */
 @media (max-width: 991px) {
   .navbar-toggler {
-    display: block !important;  /* Show on mobile */
+    display: block !important;
   }
 }
 
@@ -491,13 +511,7 @@ input[type="button"],
     padding: 0.5rem 1rem !important;
   }
 }
-@media (max-width: 768px) {
-  .cta-section .cta-content {
-    text-align: left !important;
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-  }
-}
+
 /* ===== HERO SECTION ===== */
 .hero-section {
   position: relative;
@@ -629,10 +643,10 @@ input[type="button"],
   opacity: 0;
 }
 
-/* ===== CTA SECTIONS ===== */
+/* ===== CTA SECTIONS - WITH DISTINCT MARGINS ===== */
 .cta-section {
   color: white;
-  padding: 20px 50px !important;
+  padding: 20px 0 !important;
 }
 
 .cta-primary {
@@ -650,8 +664,8 @@ input[type="button"],
 .cta-section .container {
   max-width: 1200px;
   margin: 0 auto;
-  padding-left: 30px;
-  padding-right: 30px;
+  padding-left: var(--desktop-padding) !important;
+  padding-right: var(--desktop-padding) !important;
 }
 
 .cta-primary,
@@ -660,6 +674,14 @@ input[type="button"],
   margin: 0 20px;
   border-radius: 20px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 768px) {
+  .cta-primary,
+  .cta-secondary,
+  .cta-tertiary {
+    margin: 0 16px;
+  }
 }
 
 .cta-content {
@@ -699,7 +721,7 @@ input[type="button"],
   padding: 12px 20px !important;
 }
 
-/* ===== STATISTICS SECTION ===== */
+/* ===== STATISTICS SECTION - WITH DISTINCT MARGINS ===== */
 .statistics-section {
   background: var(--gradient-primary);
   color: white;
@@ -709,6 +731,13 @@ input[type="button"],
   border-radius: 30px;
   margin: 0 4% 40px 4%;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 768px) {
+  .statistics-section {
+    margin: 0 16px 30px 16px;
+    padding: 30px 16px;
+  }
 }
 
 .stats-intro-title {
@@ -743,7 +772,6 @@ input[type="button"],
   overflow: hidden;
   width: 100%;
   min-width: 0;
-  
 }
 
 .stat-item-card i,
@@ -924,6 +952,17 @@ input[type="button"],
 .testimonial-next:hover {
   background: var(--navy);
   color: white;
+}
+
+@media (max-width: 768px) {
+  .testimonial-prev { left: -10px; }
+  .testimonial-next { right: -10px; }
+  .testimonial-prev,
+  .testimonial-next {
+    width: 30px;
+    height: 30px;
+    font-size: 0.8rem;
+  }
 }
 
 /* ===== ACADEMIC PATHWAY SECTION ===== */
@@ -1244,12 +1283,18 @@ input[type="button"],
   z-index: 1;
 }
 
-/* ===== ADMISSIONS CTA ===== */
+/* ===== ADMISSIONS CTA - WITH DISTINCT MARGINS ===== */
 .admissions-home-cta {
   background: var(--gradient-primary) !important;
   margin: 0 20px;
   border-radius: 20px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 768px) {
+  .admissions-home-cta {
+    margin: 0 16px;
+  }
 }
 
 .admissions-cta-title {
@@ -1334,6 +1379,7 @@ input[type="button"],
   margin-bottom: 1rem;
   text-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);
 }
+
 .curriculum-nav-card {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   border-radius: 14px;
@@ -2005,7 +2051,6 @@ select:focus-visible,
 }
 
 /* ===== ZOOM-IN ADAPTATION FOR CARDS ===== */
-/* Ensures all cards, containers, and sections adapt properly when zooming in on mobile */
 html {
   scroll-behavior: smooth;
 }
@@ -2086,24 +2131,19 @@ article,
 
 /* Row and column adjustments for zoom */
 .row {
-  margin-left: auto;
-  margin-right: auto;
-  max-width: 100%;
+  margin-left: -12px;
+  margin-right: -12px;
+  max-width: calc(100% + 24px);
 }
 
 [class*="col-"] {
-  padding-left: calc(var(--mobile-padding) / 2);
-  padding-right: calc(var(--mobile-padding) / 2);
+  padding-left: 12px;
+  padding-right: 12px;
   max-width: 100%;
 }
 
 /* Responsive padding adjustments for zoom */
 @media (max-width: 768px) {
-  .statistics-section {
-    margin: 0 16px 30px 16px;
-    padding: 30px 16px;
-  }
-  
   .stat-item-card {
     padding: 0.75rem;
     margin-bottom: 1rem;
@@ -2165,8 +2205,7 @@ article,
   }
   
   .admissions-home-cta {
-    margin: 0 16px;
-    padding: 20px 16px !important;
+    padding: 20px !important;
   }
   
   .kitchen-card {
@@ -2189,6 +2228,16 @@ article,
     width: 50px;
     height: 50px;
     font-size: 1.5rem;
+  }
+  
+  .row {
+    margin-left: -8px;
+    margin-right: -8px;
+  }
+  
+  [class*="col-"] {
+    padding-left: 8px;
+    padding-right: 8px;
   }
 }
 
@@ -2451,7 +2500,6 @@ img {
 }
 
 /* ===== PARTNER/SPONSORSHIP PAGE STYLES ===== */
-/* Hero Section */
 .partner-hero-section {
   position: relative;
   background: linear-gradient(135deg, #0d65fb 0%, #0a55d6 100%);
@@ -2521,7 +2569,6 @@ img {
   margin-bottom: 0.5rem;
 }
 
-/* Partnership Cards */
 .partnership-card {
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   border-radius: 20px;
@@ -2553,7 +2600,6 @@ img {
   margin-bottom: 1rem;
 }
 
-/* Step Cards */
 .step-card {
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   border-radius: 16px;
@@ -2571,7 +2617,6 @@ img {
   margin-bottom: 0.5rem;
 }
 
-/* Impact Cards */
 .impact-card {
   background: #f8f9fa;
   border-radius: 20px;
@@ -2616,7 +2661,6 @@ img {
   margin-bottom: 0;
 }
 
-/* Testimonial Styles */
 .sponsor-testimonial {
   background: linear-gradient(135deg, #fff9e6 0%, var(--white) 100%);
   border: 1px solid rgba(255, 0, 128, 0.2);
@@ -2655,7 +2699,6 @@ img {
 }
 
 /* ===== APPLY/FORM PAGE STYLES ===== */
-/* Hero Section */
 .apply-hero-section {
   position: relative;
   background: linear-gradient(135deg, #0d65fb 0%, #0a55d6 100%);
@@ -2730,7 +2773,6 @@ img {
   text-shadow: none;
 }
 
-/* Form Styles */
 .form-container {
   background: white;
   border-radius: 20px;
@@ -2762,7 +2804,6 @@ img {
   font-size: 1rem !important;
 }
 
-/* Journey Step Cards */
 .journey-step-card {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   background: white;
@@ -2783,7 +2824,6 @@ img {
   font-size: 0.85rem !important;
 }
 
-/* Progress Indicator */
 .progress-indicator {
   margin-bottom: 1.5rem;
 }
@@ -2818,7 +2858,6 @@ img {
   color: white;
 }
 
-/* Phone Input */
 .PhoneInput {
   display: flex;
   align-items: center;
@@ -2838,7 +2877,6 @@ img {
   font-size: 1rem !important;
 }
 
-/* Alert Messages */
 .sponsor-alert {
   position: relative;
   padding: 1rem 2rem 1rem 1rem;
@@ -2871,7 +2909,6 @@ img {
   padding: 0.25rem 0.5rem;
 }
 
-/* Review Section */
 .review-section {
   background-color: var(--gray-light);
   border-left: 4px solid var(--gold);
@@ -2884,7 +2921,6 @@ img {
   margin-bottom: 0.25rem;
 }
 
-/* Success Section */
 .success-section {
   text-align: center;
   padding: 3rem 1rem;
@@ -2895,7 +2931,6 @@ img {
   color: #48bb78;
 }
 
-/* Terms Checkbox */
 .terms-checkbox-input {
   width: 18px;
   height: 18px;
@@ -2904,7 +2939,6 @@ img {
   accent-color: #050265;
 }
 
-/* Fade In Animation */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-10px); }
   to { opacity: 1; transform: translateY(0); }
@@ -2914,14 +2948,12 @@ img {
   animation: fadeIn 0.3s ease;
 }
 
-/* Section Heading */
 .section-heading {
   font-size: clamp(1.1rem, 4vw, 1.3rem) !important;
   font-weight: 700;
   color: #0c0d0d;
 }
 
-/* Card Title Navy */
 .card-title-navy {
   font-weight: 700;
   color: var(--text-dark);
@@ -2929,7 +2961,6 @@ img {
   margin-bottom: 0.75rem;
 }
 
-/* Text Colors */
 .text-navy {
   color: var(--navy) !important;
 }
@@ -2942,7 +2973,6 @@ img {
   color: #6c757d !important;
 }
 
-/* Background Utilities */
 .bg-light-custom {
   background-color: var(--gray-light) !important;
 }
@@ -2951,7 +2981,6 @@ img {
   background-color: var(--white) !important;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
   .apply-hero-content,
   .partner-hero-content {
@@ -2989,7 +3018,6 @@ img {
   }
 }
 
-/* Reduced Motion */
 @media (prefers-reduced-motion: reduce) {
   .journey-step-card,
   .impact-card,
@@ -3006,4 +3034,50 @@ img {
   .partner-hero-section::before {
     transform: none;
   }
+}
+/* ===== BOOTSTRAP GRID OVERFLOW FIX ===== */
+.container,
+.container-fluid {
+  padding-left: var(--mobile-padding) !important;
+  padding-right: var(--mobile-padding) !important;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+/* Remove negative margins from Bootstrap rows */
+.row {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+/* Add proper spacing for columns without negative margins */
+[class*="col-"] {
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+}
+
+/* For g-5 (gap-3 in Bootstrap 5) */
+.g-5,
+.gx-5 {
+  --bs-gutter-x: 2rem;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.g-5 > [class*="col-"],
+.gx-5 > [class*="col-"] {
+  padding-left: calc(var(--bs-gutter-x) / 2);
+  padding-right: calc(var(--bs-gutter-x) / 2);
+}
+
+/* Fix for the specific row in statistics section */
+.statistics-section .row.justify-content-center {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+/* Ensure all images are responsive */
+img {
+  max-width: 100%;
+  height: auto;
 }
