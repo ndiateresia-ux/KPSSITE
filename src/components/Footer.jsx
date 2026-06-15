@@ -18,7 +18,7 @@ function Footer() {
   const socialLinks = [
     { icon: "bi-facebook", url: "https://www.facebook.com/kitaleprogressive/", label: "Facebook" },
     { icon: "bi-instagram", url: "https://www.instagram.com/kitaleprogrsv1338/", label: "Instagram" },
-    { icon: "bi-youtube", url: "https://www.youtube.com/@kitaleprogressive.social", label: "YouTube" },
+    { icon: "bi-youtube", url: "https://www.youtube.com/@KPSConnect", label: "YouTube" },
     { icon: "bi-tiktok", url: "https://www.tiktok.com/@kitale.progressive", label: "TikTok" },
     { icon: "bi-whatsapp", url: "https://wa.me/254780841116", label: "WhatsApp" }
   ];
