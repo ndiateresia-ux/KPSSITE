@@ -405,7 +405,7 @@ input[type="button"],
   }
 }
 
-/* ===== NAVIGATION - FIXED FOR MOBILE ===== */
+/* ===== NAVIGATION - FIXED FOR MOBILE & DESKTOP DROPDOWNS ===== */
 /* Ensure navbar is visible and properly positioned */
 .navbar {
   position: relative !important;
@@ -423,9 +423,8 @@ input[type="button"],
   }
 }
 
-/* Fix navbar toggler visibility - HIDDEN ON DESKTOP by default */
+/* Fix navbar toggler visibility */
 .navbar-toggler {
-  display: none !important;
   border: none !important;
   background: transparent !important;
   padding: 0.5rem !important;
@@ -439,11 +438,18 @@ input[type="button"],
   }
 }
 
+/* Hide toggler on desktop */
+@media (min-width: 992px) {
+  .navbar-toggler {
+    display: none !important;
+  }
+}
+
 .navbar-toggler-icon {
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(13, 101, 251, 0.85)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e") !important;
 }
 
-/* Mobile navigation styles */
+/* ===== MOBILE NAVIGATION STYLES (max-width: 991px) ===== */
 @media (max-width: 991px) {
   .navbar-collapse {
     position: fixed !important;
@@ -468,6 +474,7 @@ input[type="button"],
   
   .nav-item {
     width: 100% !important;
+    position: relative !important;
   }
   
   .nav-link {
@@ -482,6 +489,50 @@ input[type="button"],
     background: rgba(13, 101, 251, 0.05) !important;
   }
   
+  /* Mobile dropdown styles */
+  .dropdown-menu {
+    position: static !important;
+    display: none !important;
+    float: none !important;
+    width: 100% !important;
+    background: rgba(13, 101, 251, 0.03) !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border-radius: 8px !important;
+  }
+  
+  .dropdown.show .dropdown-menu {
+    display: block !important;
+  }
+  
+  .dropdown .dropdown-toggle {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+  }
+  
+  .dropdown .dropdown-toggle::after {
+    margin-left: auto !important;
+    transform: rotate(0deg);
+    transition: transform 0.3s ease;
+  }
+  
+  .dropdown.show .dropdown-toggle::after {
+    transform: rotate(180deg);
+  }
+  
+  .dropdown-menu .dropdown-item {
+    padding: 10px 15px 10px 30px !important;
+    font-size: 0.9rem !important;
+    border-radius: 8px !important;
+  }
+  
+  .dropdown-menu .dropdown-item:hover {
+    background: rgba(13, 101, 251, 0.08) !important;
+  }
+  
   /* Apply button in mobile menu */
   .apply-btn {
     margin-top: 0.5rem !important;
@@ -492,26 +543,109 @@ input[type="button"],
   }
 }
 
-/* Desktop navigation */
+/* ===== DESKTOP NAVIGATION STYLES (min-width: 992px) ===== */
 @media (min-width: 992px) {
+  /* Reset navbar-collapse for desktop */
   .navbar-collapse {
     position: static !important;
     display: flex !important;
     flex-basis: auto !important;
+    flex-grow: 1 !important;
+    align-items: center !important;
     padding: 0 !important;
     box-shadow: none !important;
+    background: transparent !important;
+    overflow: visible !important;
   }
   
   .navbar-nav {
     flex-direction: row !important;
     align-items: center !important;
+    margin-left: auto !important;
+  }
+  
+  .nav-item {
+    position: relative !important;
+    list-style: none !important;
   }
   
   .nav-link {
     padding: 0.5rem 1rem !important;
+    white-space: nowrap !important;
+  }
+  
+  /* Desktop dropdown styles - THIS FIXES THE ISSUE */
+  .dropdown-menu {
+    position: absolute !important;
+    top: 100% !important;
+    left: 0 !important;
+    display: none !important;
+    float: left !important;
+    min-width: 240px !important;
+    margin: 0.5rem 0 0 !important;
+    padding: 0.6rem 0 !important;
+    background: white !important;
+    border: none !important;
+    border-radius: 12px !important;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15) !important;
+    z-index: 1050 !important;
+  }
+  
+  /* Show dropdown on hover */
+  .dropdown:hover .dropdown-menu {
+    display: block !important;
+  }
+  
+  /* Optional: Also support Bootstrap's show class */
+  .dropdown.show .dropdown-menu {
+    display: block !important;
+  }
+  
+  /* Dropdown item styling */
+  .dropdown-item {
+    display: block !important;
+    width: 100% !important;
+    padding: 0.6rem 1.5rem !important;
+    font-size: 0.85rem !important;
+    font-weight: 500 !important;
+    color: var(--text-dark) !important;
+    text-align: left !important;
+    text-decoration: none !important;
+    background: transparent !important;
+    border: none !important;
+    transition: all 0.2s ease !important;
+    white-space: nowrap !important;
+  }
+  
+  .dropdown-item:hover {
+    background: rgba(13, 101, 251, 0.08) !important;
+    color: var(--navy) !important;
+    padding-left: 1.8rem !important;
+  }
+  
+  /* Dropdown toggle caret styling */
+  .dropdown-toggle::after {
+    display: inline-block !important;
+    margin-left: 0.5rem !important;
+    vertical-align: middle !important;
+    content: "▼" !important;
+    font-size: 0.7rem !important;
+    border: none !important;
+  }
+  
+  /* Right-aligned dropdowns (if needed) */
+  .dropdown-menu-end,
+  .dropdown-menu-right {
+    left: auto !important;
+    right: 0 !important;
+  }
+  
+  /* Ensure dropdowns don't get cut off by container */
+  .navbar .container,
+  .navbar .container-fluid {
+    overflow: visible !important;
   }
 }
-
 /* ===== HERO SECTION ===== */
 .hero-section {
   position: relative;
