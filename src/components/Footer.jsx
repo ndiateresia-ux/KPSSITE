@@ -116,13 +116,13 @@ function Footer() {
           {/* Column 2: Quick Links */}
           <Col lg={3} md={6} className="mb-2">
             <h5 className="footer-title">Quick Links</h5>
-            <ul className="list-unstyled">
-              <li className="mb-2"><button onClick={() => handleLinkClick('/faq')} className="footer-link-btn">FAQs</button></li>
-              <li className="mb-2"><button onClick={() => handleLinkClick('/school-life/gallery')} className="footer-link-btn">Gallery</button></li>
-              <li className="mb-2"><button onClick={() => handleLinkClick('/academics/curriculum')} className="footer-link-btn">Curriculum</button></li>
-              <li className="mb-2"><button onClick={() => handleLinkClick('/admissions/fee-structure')} className="footer-link-btn">Fee Structure</button></li>
-              <li className="mb-2"><button onClick={() => handleLinkClick('/partner')} className="footer-link-btn">Partner Page</button></li>
-              <li className="mb-2"><button onClick={() => handleLinkClick('/schoollife/blog')} className="footer-link-btn">Blogs</button></li>
+           <ul className="list-unstyled">
+              <li className="mb-3"><button onClick={() => handleLinkClick('/faq')} className="footer-link-btn">FAQs</button></li>
+              <li className="mb-3"><button onClick={() => handleLinkClick('/school-life/gallery')} className="footer-link-btn">Gallery</button></li>
+              <li className="mb-3"><button onClick={() => handleLinkClick('/academics/curriculum')} className="footer-link-btn">Curriculum</button></li>
+              <li className="mb-3"><button onClick={() => handleLinkClick('/admissions/fee-structure')} className="footer-link-btn">Fee Structure</button></li>
+              <li className="mb-3"><button onClick={() => handleLinkClick('/partner')} className="footer-link-btn">Partner Page</button></li>
+              <li className="mb-3"><button onClick={() => handleLinkClick('/schoollife/blog')} className="footer-link-btn">Blogs</button></li>
             </ul>
           </Col>
 
