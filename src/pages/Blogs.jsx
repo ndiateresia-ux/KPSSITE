@@ -567,7 +567,7 @@ function Blogs() {
                 <h2 className="section-heading mb-3" style={{ fontSize: 'clamp(1.8rem, 4vw, 2.2rem)', color: '#050265' }}>
                   Discover, Learn, and Grow
                 </h2>
-                <p className="lead text-center text-muted" style={{ maxWidth: '700px', margin: '0 auto' }}>
+                <p className="text-left text-muted" style={{ maxWidth: '700px', margin: '0 auto' }}>
                   Explore articles that help you understand your child's learning journey and how to support their growth.
                 </p>
               </div>

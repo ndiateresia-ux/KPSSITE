@@ -525,19 +525,19 @@ function Partner() {
               <h2 className="fw-bold mb-3 text-white section-heading">Our Commitment to Impact</h2>
               <p className="mb-4 text-white opacity-75 small">Building structured programs for meaningful, measurable contributions in education</p>
               <Row className="g-4 justify-content-center">
-                <Col xs={6} md={3}>
+                <Col xs={12} sm={6} md={3}>
                   <div className="text-center p-3 bg-white bg-opacity-10 rounded-3">
                     <i className="fas fa-clipboard-list fa-2x text-gold mb-2 d-block" aria-hidden="true"></i>
                     <p className="mb-0 fw-bold text-white small">Accountability</p>
                   </div>
                 </Col>
-                <Col xs={6} md={3}>
+                <Col xs={12} sm={6} md={3}>
                   <div className="text-center p-3 bg-white bg-opacity-10 rounded-3">
                     <i className="fas fa-eye fa-2x text-gold mb-2 d-block" aria-hidden="true"></i>
                     <p className="mb-0 fw-bold text-white small">Transparency</p>
                   </div>
                 </Col>
-                <Col xs={6} md={3}>
+                <Col xs={12} sm={6} md={3}>
                   <div className="text-center p-3 bg-white bg-opacity-10 rounded-3">
                     <i className="fas fa-chart-bar fa-2x text-gold mb-2 d-block" aria-hidden="true"></i>
                     <p className="mb-0 fw-bold text-white small">Long-term Impact</p>

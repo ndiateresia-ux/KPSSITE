@@ -694,10 +694,10 @@ function Events() {
         <Container>
           <Row className="justify-content-center text-center">
             <Col lg={8}>
-              <h2 id="why-matters-heading" className="h2 fw-bold mb-2 text-white">
+              <h2 id="why-matters-heading" className="h5 mb-3 text-white">
                 Why This Matters for You as a Parent
               </h2>
-              <p className="lead text-white" style={{ fontSize: '1.1rem', maxWidth: '800px', margin: '5' }}>
+              <p className="text-white">
                 Keeping track of school events helps you stay involved in your child's education, support their activities, and plan effectively throughout the school term.
               </p>
             </Col>

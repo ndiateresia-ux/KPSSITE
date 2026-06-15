@@ -116,7 +116,7 @@ function Footer() {
           {/* Column 2: Quick Links */}
           <Col lg={3} md={6} className="mb-2">
             <h5 className="footer-title">Quick Links</h5>
-           <ul className="list-unstyled">
+            <ul className="list-unstyled">
               <li className="mb-3"><button onClick={() => handleLinkClick('/faq')} className="footer-link-btn">FAQs</button></li>
               <li className="mb-3"><button onClick={() => handleLinkClick('/school-life/gallery')} className="footer-link-btn">Gallery</button></li>
               <li className="mb-3"><button onClick={() => handleLinkClick('/academics/curriculum')} className="footer-link-btn">Curriculum</button></li>

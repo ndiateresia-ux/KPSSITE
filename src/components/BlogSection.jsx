@@ -303,7 +303,7 @@ const BlogSection = ({ limit, showViewAll, variant, showHeadingLine = true }) =>
             <h2 id="blog-heading" className="section-heading">
               Stay Updated with Our School Community
             </h2>
-            <p className="lead text-muted" style={{ maxWidth: '700px', margin: '0 auto' }}>
+            <p className=" text-muted" style={{ maxWidth: '700px', margin: '0 auto' }}>
               Discover insights, stories, and updates from Kitale Progressive School
             </p>
           </div>
