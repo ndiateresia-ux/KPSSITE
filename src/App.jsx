@@ -20,10 +20,37 @@ const Contact = lazy(() => import("./pages/Contact"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 
+// Admin routes - protected with authentication
+const Admin = lazy(() => import("./pages/Admin"));
+const AdminLogin = lazy(() => import("./pages/AdminLogin"));
+
 // Lazy load non-critical components
 const Header = lazy(() => import("./components/Header"));
 const Footer = lazy(() => import("./components/Footer"));
 const WhatsAppFloat = lazy(() => import("./components/WhatsAppFloat"));
+
+// Protected Route wrapper component
+const ProtectedRoute = ({ children }) => {
+  const [isAuthenticated, setIsAuthenticated] = React.useState(null);
+  
+  useEffect(() => {
+    const auth = localStorage.getItem('adminAuthenticated');
+    const expiry = localStorage.getItem('adminExpiry');
+    const isValid = auth === 'true' && expiry && new Date().getTime() < parseInt(expiry);
+    setIsAuthenticated(isValid);
+  }, []);
+  
+  if (isAuthenticated === null) {
+    return <PageLoader />;
+  }
+  
+  if (!isAuthenticated) {
+    window.location.href = '/admin/login';
+    return null;
+  }
+  
+  return children;
+};
 
 // Loading fallback component with theme colors and accessibility
 const PageLoader = () => (
@@ -139,6 +166,7 @@ function App() {
         <main id="main-content" tabIndex="-1">
           <Suspense fallback={<PageLoader />}>
             <Routes>
+              {/* Public Routes */}
               <Route path="/" element={<Home />} />
               
               {/* Academics Routes */}
@@ -164,6 +192,25 @@ function App() {
               {/* Legal Routes */}
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               <Route path="/terms-of-service" element={<TermsOfService />} />
+              
+              {/* Admin Routes - No header/footer wrapper for cleaner admin experience */}
+              <Route path="/admin/login" element={<AdminLogin />} />
+              <Route 
+                path="/admin" 
+                element={
+                  <ProtectedRoute>
+                    <Admin />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/dashboard" 
+                element={
+                  <ProtectedRoute>
+                    <Admin />
+                  </ProtectedRoute>
+                } 
+              />
             </Routes>
           </Suspense>
         </main>

@@ -1,4 +1,4 @@
-// pages/Gallery.jsx - Fully Updated with 3 Images Per Row
+// pages/Gallery.jsx - Fixed to remove scroll bar on images
 import { Helmet } from "react-helmet-async";
 import { Container, Row, Col } from "react-bootstrap";
 import { useState, useEffect, useCallback, lazy, Suspense, memo, useMemo, useRef } from "react";
@@ -6,16 +6,189 @@ import { useState, useEffect, useCallback, lazy, Suspense, memo, useMemo, useRef
 // Lazy load non-critical components
 const GetInTouch = lazy(() => import("../components/GetInTouch"));
 
-// Optimized Gallery Image Component with theme classes
+// ==================== HELPER FUNCTIONS ====================
+
+// Load gallery images from localStorage (admin_uploaded_images and admin_gallery)
+const loadGalleryFromStorage = () => {
+  const storedImages = JSON.parse(localStorage.getItem('admin_uploaded_images') || '{}');
+  const storedGallery = JSON.parse(localStorage.getItem('admin_gallery') || '[]');
+  
+  // If we have gallery metadata, use it
+  if (storedGallery && storedGallery.length > 0) {
+    // Enrich gallery items with actual image data
+    const enrichedGallery = storedGallery.map(item => {
+      // Find the image data in storedImages
+      const imagePath = `/images/optimized/gallery/${item.filename}.jpg`;
+      const imageData = storedImages[imagePath] || null;
+      return {
+        ...item,
+        imageData: imageData,
+        // Use the stored alt or generate from filename
+        alt: item.alt || item.filename.replace(/-/g, ' ').replace(/\d+$/, '').trim(),
+      };
+    });
+    return enrichedGallery;
+  }
+  
+  return null;
+};
+
+// ==================== ORIGINAL GALLERY DATA (PRESERVED - DO NOT MODIFY) ====================
+const getDefaultGalleryData = () => ({
+  all: [
+    { id: 1, filename: "academics1", alt: "Classroom learning", category: "academics" },
+    { id: 2, filename: "academics2", alt: "Science experiment", category: "academics" },
+    { id: 3, filename: "academics3", alt: "Library reading", category: "academics" },
+    { id: 4, filename: "academics4", alt: "Computer class", category: "academics" },
+    { id: 5, filename: "sports1", alt: "Football match", category: "sports" },
+    { id: 6, filename: "sports2", alt: "Athletics", category: "sports" },
+    { id: 7, filename: "sports5", alt: "Netball", category: "sports" },
+    { id: 8, filename: "sports4", alt: "Swimming gala", category: "sports" },
+    { id: 9, filename: "cultural1", alt: "Traditional dance", category: "cultural" },
+    { id: 10, filename: "cultural2", alt: "Music festival", category: "cultural" },
+    { id: 11, filename: "cultural3", alt: "Drama performance", category: "cultural" },
+    { id: 12, filename: "cultural4", alt: "Art exhibition", category: "cultural" },
+    { id: 13, filename: "events1", alt: "Graduation", category: "events" },
+    { id: 14, filename: "events2", alt: "Prize giving day", category: "events" },
+    { id: 16, filename: "events5", alt: "Open day", category: "events" },
+    { id: 17, filename: "facilities1", alt: "School library", category: "facilities" },
+    { id: 18, filename: "facilities2", alt: "Science lab", category: "facilities" },
+    { id: 19, filename: "facilities3", alt: "Playground", category: "facilities" },
+    { id: 20, filename: "facilities4", alt: "Computer lab", category: "facilities" },
+    { id: 21, filename: "facilities5", alt: "Dorm", category: "facilities" },
+    { id: 22, filename: "facilities6", alt: "dorm", category: "facilities" },
+    { id: 23, filename: "facilities7", alt: "playground", category: "facilities" },
+    { id: 24, filename: "slide2", alt: "School van", category: "facilities" },
+  ],
+  academics: [
+    { id: 1, filename: "academics1", alt: "Classroom learning" },
+    { id: 2, filename: "academics2", alt: "Science experiment" },
+    { id: 3, filename: "academics3", alt: "Library reading" },
+    { id: 4, filename: "academics4", alt: "Computer class" },
+    { id: 25, filename: "academics5", alt: "Academic tour" },
+    { id: 26, filename: "practicals2", alt: "practicals" },
+  ],
+  sports: [
+    { id: 5, filename: "sports1", alt: "Football match" },
+    { id: 6, filename: "sports2", alt: "Athletics" },
+    { id: 7, filename: "sports5", alt: "Netball" },
+    { id: 8, filename: "sports4", alt: "Swimming gala" },
+  ],
+  cultural: [
+    { id: 9, filename: "cultural1", alt: "Traditional dance" },
+    { id: 10, filename: "cultural2", alt: "Music festival" },
+    { id: 11, filename: "cultural3", alt: "Drama performance" },
+    { id: 12, filename: "cultural4", alt: "Art exhibition" },
+  ],
+  events: [
+    { id: 13, filename: "events1", alt: "Graduation" },
+    { id: 14, filename: "events2", alt: "Prize giving day" },
+    { id: 15, filename: "events3", alt: "Parents day" },
+    { id: 16, filename: "events5", alt: "Open day" },
+  ],
+  facilities: [
+    { id: 17, filename: "facilities1", alt: "School library" },
+    { id: 18, filename: "facilities2", alt: "Science lab" },
+    { id: 19, filename: "facilities3", alt: "Playground" },
+    { id: 20, filename: "facilities4", alt: "Computer lab" },
+    { id: 21, filename: "facilities5", alt: "Dorm" },
+    { id: 22, filename: "facilities6", alt: "dorm" },
+    { id: 23, filename: "facilities7", alt: "playground" },
+    { id: 24, filename: "slide2", alt: "School van" },
+    { id: 27, filename: "facilities8", alt: "School van" },
+  ]
+});
+
+// Merge default images with admin uploaded images (preserving all defaults)
+const mergeGalleryData = (defaultData, adminItems) => {
+  // Start with a deep copy of default data
+  const mergedData = {
+    all: [...defaultData.all],
+    academics: [...defaultData.academics],
+    sports: [...defaultData.sports],
+    cultural: [...defaultData.cultural],
+    events: [...defaultData.events],
+    facilities: [...defaultData.facilities]
+  };
+  
+  // If no admin items, return defaults
+  if (!adminItems || adminItems.length === 0) {
+    return mergedData;
+  }
+  
+  // Get stored image data
+  const storedImages = JSON.parse(localStorage.getItem('admin_uploaded_images') || '{}');
+  
+  // Track existing filenames to avoid duplicates
+  const existingFilenames = new Set();
+  mergedData.all.forEach(img => existingFilenames.add(img.filename));
+  
+  // Add admin items that don't already exist
+  adminItems.forEach((item) => {
+    // Skip if filename already exists in default data
+    if (existingFilenames.has(item.filename)) {
+      return;
+    }
+    
+    // Generate alt text
+    const altText = item.alt || item.filename.replace(/-/g, ' ').replace(/\d+$/, '').trim();
+    const imagePath = `/images/optimized/gallery/${item.filename}.jpg`;
+    const imageData = storedImages[imagePath] || null;
+    
+    const newId = Math.max(...mergedData.all.map(img => img.id), 0) + 1;
+    const imageObj = {
+      id: newId,
+      filename: item.filename,
+      alt: altText,
+      category: item.category || 'facilities',
+      imageData: imageData,
+      dataUrl: imageData,
+      isUploaded: true // Flag to identify uploaded images
+    };
+    
+    // Add to 'all' category
+    mergedData.all.push(imageObj);
+    existingFilenames.add(item.filename);
+    
+    // Add to specific category
+    const category = item.category || 'facilities';
+    if (mergedData[category]) {
+      mergedData[category].push(imageObj);
+    }
+  });
+  
+  return mergedData;
+};
+
+// ==================== OPTIMIZED GALLERY IMAGE COMPONENT ====================
 const GalleryImage = memo(({ image, onClick, priority = false }) => {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
   const imgRef = useRef(null);
   const imageId = `gallery-img-${image.id}`;
 
+  // Get the image source - use dataUrl if available (uploaded image), otherwise use path
+  const getImageSrc = useCallback(() => {
+    if (image.imageData) {
+      return image.imageData;
+    }
+    if (image.dataUrl) {
+      return image.dataUrl;
+    }
+    return `/images/optimized/gallery/${image.filename}.jpg`;
+  }, [image.imageData, image.dataUrl, image.filename]);
+
+  // Get webp source (only for non-uploaded images)
+  const getWebpSrc = useCallback(() => {
+    if (image.imageData || image.dataUrl) {
+      return null; // Uploaded images are already base64
+    }
+    return `/images/optimized/gallery/${image.filename}.webp`;
+  }, [image.imageData, image.dataUrl, image.filename]);
+
   // Preload priority images
   useEffect(() => {
-    if (priority && image.filename) {
+    if (priority && image.filename && !image.imageData && !image.dataUrl) {
       const link = document.createElement('link');
       link.rel = 'preload';
       link.as = 'image';
@@ -27,7 +200,7 @@ const GalleryImage = memo(({ image, onClick, priority = false }) => {
         if (link.parentNode) document.head.removeChild(link);
       };
     }
-  }, [priority, image.filename]);
+  }, [priority, image.filename, image.imageData, image.dataUrl]);
 
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -35,6 +208,10 @@ const GalleryImage = memo(({ image, onClick, priority = false }) => {
       onClick(image);
     }
   }, [onClick, image]);
+
+  const imageSrc = getImageSrc();
+  const webpSrc = getWebpSrc();
+  const isUploaded = !!(image.imageData || image.dataUrl);
 
   // Error fallback
   if (error) {
@@ -95,21 +272,21 @@ const GalleryImage = memo(({ image, onClick, priority = false }) => {
             left: 0,
             right: 0,
             bottom: 0,
-            zIndex: 1
+            zIndex: 1,
+            background: 'linear-gradient(90deg, #f0f2f5 25%, #e2e6ea 50%, #f0f2f5 75%)',
+            backgroundSize: '200% 100%',
+            animation: 'skeleton-loading 1.5s infinite'
           }}
           aria-hidden="true"
         />
       )}
       
-      <picture>
-        <source 
-          srcSet={`/images/optimized/gallery/${image.filename}.webp`}
-          type="image/webp"
-        />
+      {isUploaded ? (
+        // For uploaded images (base64 data)
         <img
           ref={imgRef}
           id={imageId}
-          src={`/images/optimized/gallery/${image.filename}.jpg`}
+          src={imageSrc}
           alt={image.alt}
           loading={priority ? "eager" : "lazy"}
           fetchpriority={priority ? "high" : "auto"}
@@ -127,14 +304,45 @@ const GalleryImage = memo(({ image, onClick, priority = false }) => {
             zIndex: 2
           }}
         />
-      </picture>
+      ) : (
+        // For default images with webp support
+        <picture>
+          {webpSrc && (
+            <source 
+              srcSet={webpSrc}
+              type="image/webp"
+            />
+          )}
+          <img
+            ref={imgRef}
+            id={imageId}
+            src={imageSrc}
+            alt={image.alt}
+            loading={priority ? "eager" : "lazy"}
+            fetchpriority={priority ? "high" : "auto"}
+            decoding="async"
+            width="400"
+            height="300"
+            onLoad={() => setLoaded(true)}
+            onError={() => setError(true)}
+            className={`curriculum-image ${loaded ? 'loaded' : ''}`}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              position: 'relative',
+              zIndex: 2
+            }}
+          />
+        </picture>
+      )}
     </div>
   );
 });
 
 GalleryImage.displayName = 'GalleryImage';
 
-// Memoized filter button component with theme
+// ==================== FILTER BUTTON COMPONENT ====================
 const FilterButton = memo(({ category, isActive, onClick }) => {
   const buttonRef = useRef(null);
 
@@ -180,12 +388,28 @@ const FilterButton = memo(({ category, isActive, onClick }) => {
 
 FilterButton.displayName = 'FilterButton';
 
-// Memoized lightbox modal with theme
+// ==================== LIGHTBOX MODAL ====================
 const LightboxModal = memo(({ selectedImage, onClose, onPrev, onNext }) => {
   const modalRef = useRef(null);
   const closeButtonRef = useRef(null);
 
-  // Handle keyboard navigation
+  const getImageSrc = useCallback(() => {
+    if (selectedImage?.imageData) {
+      return selectedImage.imageData;
+    }
+    if (selectedImage?.dataUrl) {
+      return selectedImage.dataUrl;
+    }
+    return `/images/optimized/gallery/${selectedImage?.filename}.jpg`;
+  }, [selectedImage]);
+
+  const getWebpSrc = useCallback(() => {
+    if (selectedImage?.imageData || selectedImage?.dataUrl) {
+      return null;
+    }
+    return `/images/optimized/gallery/${selectedImage?.filename}.webp`;
+  }, [selectedImage]);
+
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Escape') {
       onClose();
@@ -213,6 +437,10 @@ const LightboxModal = memo(({ selectedImage, onClose, onPrev, onNext }) => {
   }, [handleKeyDown]);
 
   if (!selectedImage) return null;
+
+  const imageSrc = getImageSrc();
+  const webpSrc = getWebpSrc();
+  const isUploaded = !!(selectedImage.imageData || selectedImage.dataUrl);
 
   return (
     <div
@@ -338,13 +566,9 @@ const LightboxModal = memo(({ selectedImage, onClose, onPrev, onNext }) => {
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <picture>
-          <source 
-            srcSet={`/images/optimized/gallery/${selectedImage.filename}.webp`}
-            type="image/webp"
-          />
+        {isUploaded ? (
           <img
-            src={`/images/optimized/gallery/${selectedImage.filename}.jpg`}
+            src={imageSrc}
             alt={selectedImage.alt}
             style={{
               maxWidth: '100%',
@@ -354,7 +578,27 @@ const LightboxModal = memo(({ selectedImage, onClose, onPrev, onNext }) => {
             }}
             loading="eager"
           />
-        </picture>
+        ) : (
+          <picture>
+            {webpSrc && (
+              <source 
+                srcSet={webpSrc}
+                type="image/webp"
+              />
+            )}
+            <img
+              src={imageSrc}
+              alt={selectedImage.alt}
+              style={{
+                maxWidth: '100%',
+                maxHeight: '90vh',
+                objectFit: 'contain',
+                borderRadius: '8px'
+              }}
+              loading="eager"
+            />
+          </picture>
+        )}
         <p style={{ 
           color: 'white', 
           textAlign: 'center', 
@@ -370,81 +614,17 @@ const LightboxModal = memo(({ selectedImage, onClose, onPrev, onNext }) => {
 
 LightboxModal.displayName = 'LightboxModal';
 
+// ==================== MAIN GALLERY COMPONENT ====================
 function Gallery() {
   const [selectedImage, setSelectedImage] = useState(null);
   const [activeCategory, setActiveCategory] = useState("all");
   const [visibleImages, setVisibleImages] = useState(9);
   const [loading, setLoading] = useState(false);
+  const [galleryData, setGalleryData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const announcerRef = useRef(null);
 
-  // Gallery data organized by categories - memoized
-  const galleryData = useMemo(() => ({
-    all: [
-      { id: 1, filename: "academics1", alt: "Classroom learning", category: "academics" },
-      { id: 2, filename: "academics2", alt: "Science experiment", category: "academics" },
-      { id: 3, filename: "academics3", alt: "Library reading", category: "academics" },
-      { id: 4, filename: "academics4", alt: "Computer class", category: "academics" },
-      { id: 5, filename: "sports1", alt: "Football match", category: "sports" },
-      { id: 6, filename: "sports2", alt: "Athletics", category: "sports" },
-      { id: 7, filename: "sports5", alt: "Netball", category: "sports" },
-      { id: 8, filename: "sports4", alt: "Swimming gala", category: "sports" },
-      { id: 9, filename: "cultural1", alt: "Traditional dance", category: "cultural" },
-      { id: 10, filename: "cultural2", alt: "Music festival", category: "cultural" },
-      { id: 11, filename: "cultural3", alt: "Drama performance", category: "cultural" },
-      { id: 12, filename: "cultural4", alt: "Art exhibition", category: "cultural" },
-      { id: 13, filename: "events1", alt: "Graduation", category: "events" },
-      { id: 14, filename: "events2", alt: "Prize giving day", category: "events" },
-      { id: 15, filename: "events3", alt: "Parents day", category: "events" },
-      { id: 16, filename: "events5", alt: "Open day", category: "events" },
-      { id: 17, filename: "facilities1", alt: "School library", category: "facilities" },
-      { id: 18, filename: "facilities2", alt: "Science lab", category: "facilities" },
-      { id: 19, filename: "facilities3", alt: "Playground", category: "facilities" },
-      { id: 20, filename: "facilities4", alt: "Computer lab", category: "facilities" },
-      { id: 21, filename: "facilities5", alt: "Dorm", category: "facilities" },
-       { id: 22, filename: "facilities6", alt: "dorm", category: "facilities"  },
-      { id: 23, filename: "facilities7", alt: "playground", category: "facilities"  },
-      { id: 24, filename: "slide2", alt: "School van" , category: "facilities" },
-      
-    ],
-    academics: [
-      { id: 1, filename: "academics1", alt: "Classroom learning" },
-      { id: 2, filename: "academics2", alt: "Science experiment" },
-      { id: 3, filename: "academics3", alt: "Library reading" },
-      { id: 4, filename: "academics4", alt: "Computer class" },
-      { id: 25, filename: "academics5", alt: "Academic tour" },
-      { id: 26, filename: "practicals2", alt: "practicals" },
-    ],
-    sports: [
-      { id: 5, filename: "sports1", alt: "Football match" },
-      { id: 6, filename: "sports2", alt: "Athletics" },
-      { id: 7, filename: "sports5", alt: "Netball" },
-      { id: 8, filename: "sports4", alt: "Swimming gala" },
-    ],
-    cultural: [
-      { id: 9, filename: "cultural1", alt: "Traditional dance" },
-      { id: 10, filename: "cultural2", alt: "Music festival" },
-      { id: 11, filename: "cultural3", alt: "Drama performance" },
-      { id: 12, filename: "cultural4", alt: "Art exhibition" },
-    ],
-    events: [
-      { id: 13, filename: "events1", alt: "Graduation" },
-      { id: 14, filename: "events2", alt: "Prize giving day" },
-      { id: 15, filename: "events3", alt: "Parents day" },
-      { id: 16, filename: "events5", alt: "Open day" },
-    ],
-    facilities: [
-      { id: 17, filename: "facilities1", alt: "School library" },
-      { id: 18, filename: "facilities2", alt: "Science lab" },
-      { id: 19, filename: "facilities3", alt: "Playground" },
-      { id: 20, filename: "facilities4", alt: "Computer lab" },
-      { id: 21, filename: "facilities5", alt: "Dorm" },
-      { id: 22, filename: "facilities6", alt: "dorm" },
-      { id: 23, filename: "facilities7", alt: "playground" },
-      { id: 24, filename: "slide2", alt: "School van" },
-      { id: 24, filename: "facilities8", alt: "School van" },
-    ]
-  }), []);
-
+  // Categories definition
   const categories = useMemo(() => [
     { id: "all", name: "All", icon: "🖼️" },
     { id: "academics", name: "Academics", icon: "📚" },
@@ -453,6 +633,64 @@ function Gallery() {
     { id: "events", name: "Events", icon: "🎉" },
     { id: "facilities", name: "Facilities", icon: "🏫" }
   ], []);
+
+  // Load gallery data from localStorage and merge with defaults
+  const loadGalleryData = useCallback(() => {
+    setIsLoading(true);
+    try {
+      // Get default data first
+      const defaultData = getDefaultGalleryData();
+      
+      // Try to load admin uploaded images
+      const adminItems = loadGalleryFromStorage();
+      
+      // Merge default data with admin items (preserves all defaults)
+      const mergedData = mergeGalleryData(defaultData, adminItems);
+      
+      setGalleryData(mergedData);
+      setIsLoading(false);
+      console.log('Gallery loaded with', mergedData.all.length, 'total images');
+      if (adminItems && adminItems.length > 0) {
+        console.log('Including', adminItems.length, 'admin uploaded images');
+      }
+    } catch (error) {
+      console.error('Error loading gallery:', error);
+      setGalleryData(getDefaultGalleryData());
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Initial load and event listeners
+  useEffect(() => {
+    loadGalleryData();
+
+    // Listen for storage changes (when admin updates gallery)
+    const handleStorageChange = (e) => {
+      if (e.key === 'admin_gallery' || e.key === 'admin_uploaded_images') {
+        console.log('Gallery: Storage changed, reloading...');
+        loadGalleryData();
+        // Reset visible images when data changes
+        setVisibleImages(9);
+      }
+    };
+
+    // Listen for custom event from Admin
+    const handleAdminDataChange = (e) => {
+      if (e.detail?.key === 'admin_gallery' || e.detail?.key === 'admin_uploaded_images') {
+        console.log('Gallery: adminDataChange event received, reloading...');
+        loadGalleryData();
+        setVisibleImages(9);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('adminDataChange', handleAdminDataChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('adminDataChange', handleAdminDataChange);
+    };
+  }, [loadGalleryData]);
 
   // Reset visible images when category changes
   useEffect(() => {
@@ -474,6 +712,7 @@ function Gallery() {
   }, []);
 
   const handlePrevImage = useCallback(() => {
+    if (!galleryData || !selectedImage) return;
     const currentImages = galleryData[activeCategory] || galleryData.all;
     const currentIndex = currentImages.findIndex(img => img.id === selectedImage.id);
     const prevIndex = currentIndex > 0 ? currentIndex - 1 : currentImages.length - 1;
@@ -481,6 +720,7 @@ function Gallery() {
   }, [selectedImage, activeCategory, galleryData]);
 
   const handleNextImage = useCallback(() => {
+    if (!galleryData || !selectedImage) return;
     const currentImages = galleryData[activeCategory] || galleryData.all;
     const currentIndex = currentImages.findIndex(img => img.id === selectedImage.id);
     const nextIndex = currentIndex < currentImages.length - 1 ? currentIndex + 1 : 0;
@@ -501,10 +741,11 @@ function Gallery() {
     setActiveCategory(categoryId);
   }, []);
 
-  const currentImages = useMemo(() => 
-    galleryData[activeCategory] || galleryData.all,
-    [activeCategory, galleryData]
-  );
+  // Get current images based on active category
+  const currentImages = useMemo(() => {
+    if (!galleryData) return [];
+    return galleryData[activeCategory] || galleryData.all || [];
+  }, [activeCategory, galleryData]);
   
   const displayedImages = useMemo(() => 
     currentImages.slice(0, visibleImages),
@@ -512,6 +753,18 @@ function Gallery() {
   );
   
   const hasMoreImages = visibleImages < currentImages.length;
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="text-center py-5">
+        <div className="spinner-border text-primary" role="status" style={{ width: '3rem', height: '3rem' }}>
+          <span className="visually-hidden">Loading gallery...</span>
+        </div>
+        <p className="mt-3 text-muted">Loading gallery images...</p>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -564,53 +817,68 @@ function Gallery() {
             ))}
           </div>
 
-          {/* Photo Grid - 3 columns on desktop */}
-          <div
-            className="gallery-grid"
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3, 1fr)',
-              gap: '1.5rem'
-            }}
-            role="list"
-            aria-label="Gallery images"
-          >
-            {displayedImages.map((image, index) => (
-              <div key={image.id} role="listitem">
-                <GalleryImage
-                  image={image}
-                  onClick={openLightbox}
-                  priority={index < 3 && activeCategory === 'all'}
-                />
-              </div>
-            ))}
-          </div>
+          
 
-          {/* Load More Button */}
-          {hasMoreImages && (
-            <div className="text-center mt-5">
-              <button
-                onClick={handleLoadMore}
-                disabled={loading}
-                className="btn-navy"
+          {/* Photo Grid - 3 columns on desktop */}
+          {displayedImages.length > 0 ? (
+            <>
+              <div
+                className="gallery-grid"
                 style={{
-                  minHeight: '44px',
-                  minWidth: '160px'
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3, 1fr)',
+                  gap: '1.5rem',
+                  overflow: 'hidden' // This removes the scroll bar
                 }}
-                aria-label="Load more photos"
+                role="list"
+                aria-label="Gallery images"
               >
-                {loading ? (
-                  <>
-                    <i className="fas fa-spinner fa-spin me-2" aria-hidden="true"></i>
-                    <span>Loading...</span>
-                  </>
-                ) : (
-                  <>
-                    <i className="fas fa-sync-alt me-2" aria-hidden="true"></i>
-                    View more moments
-                  </>
-                )}
-              </button>
+                {displayedImages.map((image, index) => (
+                  <div key={image.id || index} role="listitem">
+                    <GalleryImage
+                      image={image}
+                      onClick={openLightbox}
+                      priority={index < 3 && activeCategory === 'all'}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* Load More Button */}
+              {hasMoreImages && (
+                <div className="text-center mt-5">
+                  <button
+                    onClick={handleLoadMore}
+                    disabled={loading}
+                    className="btn-navy"
+                    style={{
+                      minHeight: '44px',
+                      minWidth: '160px'
+                    }}
+                    aria-label="Load more photos"
+                  >
+                    {loading ? (
+                      <>
+                        <i className="fas fa-spinner fa-spin me-2" aria-hidden="true"></i>
+                        <span>Loading...</span>
+                      </>
+                    ) : (
+                      <>
+                        <i className="fas fa-sync-alt me-2" aria-hidden="true"></i>
+                        View more moments
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+              
+              
+            </>
+          ) : (
+            <div className="text-center py-5">
+              <div style={{ fontSize: '3rem', marginBottom: '1rem' }} aria-hidden="true">🖼️</div>
+              <h3 className="h5 text-muted">No images in this category</h3>
+              <p className="text-muted">Check back later for more photos.</p>
             </div>
           )}
         </Container>
@@ -618,80 +886,79 @@ function Gallery() {
 
       {/* Featured Video Section */}
       <section className="section-padding bg-light-custom" aria-labelledby="video-heading">
-      <Container>
-        <Row className="align-items-center g-5">
-          <Col lg={6}>
-            <div className="pe-lg-4">
-              <h2 id="video-heading" className="section-heading-left mb-3">
-                School Life at a Glance
-              </h2>
-              <p className="text-dark mb-4" style={{ fontSize: '1rem', lineHeight: '1.6' }}>
-                Watch our school video to see the vibrant life at Kitale Progressive School. 
-                From classroom activities to sports events and cultural celebrations, experience 
-                the nurturing environment that makes our school a second home for your child.
-              </p>
-              
-              {/* Stats Section - Centered */}
-              <div className="d-flex justify-content-center justify-content-lg-start gap-4 flex-wrap mt-4">
-                <div className="text-center text-lg-start">
-                  <span className="display-6 fw-bold text-gold" style={{ fontSize: 'clamp(1.8rem, 4vw, 2.2rem)' }}>22+</span>
-                  <span className="d-block small text-muted" style={{ fontSize: '0.85rem' }}>Years of Excellence</span>
-                </div>
-                <div className="text-center text-lg-start">
-                  <span className="display-6 fw-bold text-gold" style={{ fontSize: 'clamp(1.8rem, 4vw, 2.2rem)' }}>450+</span>
-                  <span className="d-block small text-muted" style={{ fontSize: '0.85rem' }}>Happy Students</span>
-                </div>
-                <div className="text-center text-lg-start">
-                  <span className="display-6 fw-bold text-gold" style={{ fontSize: 'clamp(1.8rem, 4vw, 2.2rem)' }}>35+</span>
-                  <span className="d-block small text-muted" style={{ fontSize: '0.85rem' }}>Expert Teachers</span>
-                </div>
-              </div>
-              
-              {/* Optional: Call to action button */}
-              <div className="mt-4">
-                 <button 
-                  onClick={() => window.location.href = '/admissions/apply'}
-                  className="btn-navy"
+        <Container>
+          <Row className="align-items-center g-5">
+            <Col lg={6}>
+              <div className="pe-lg-4">
+                <h2 id="video-heading" className="section-heading-left mb-3">
+                  School Life at a Glance
+                </h2>
+                <p className="text-dark mb-4" style={{ fontSize: '1rem', lineHeight: '1.6' }}>
+                  Watch our school video to see the vibrant life at Kitale Progressive School. 
+                  From classroom activities to sports events and cultural celebrations, experience 
+                  the nurturing environment that makes our school a second home for your child.
+                </p>
                 
-                >
-                  <i className="fas fa-child" aria-hidden="true"></i>
-                  Enroll Your Child Today
-                  <i className="fas fa-arrow-right" aria-hidden="true"></i>
-                </button>
+                {/* Stats Section - Centered */}
+                <div className="d-flex justify-content-center justify-content-lg-start gap-4 flex-wrap mt-4">
+                  <div className="text-center text-lg-start">
+                    <span className="display-6 fw-bold text-gold" style={{ fontSize: 'clamp(1.8rem, 4vw, 2.2rem)' }}>22+</span>
+                    <span className="d-block small text-muted" style={{ fontSize: '0.85rem' }}>Years of Excellence</span>
+                  </div>
+                  <div className="text-center text-lg-start">
+                    <span className="display-6 fw-bold text-gold" style={{ fontSize: 'clamp(1.8rem, 4vw, 2.2rem)' }}>450+</span>
+                    <span className="d-block small text-muted" style={{ fontSize: '0.85rem' }}>Happy Students</span>
+                  </div>
+                  <div className="text-center text-lg-start">
+                    <span className="display-6 fw-bold text-gold" style={{ fontSize: 'clamp(1.8rem, 4vw, 2.2rem)' }}>35+</span>
+                    <span className="d-block small text-muted" style={{ fontSize: '0.85rem' }}>Expert Teachers</span>
+                  </div>
+                </div>
+                
+                {/* Optional: Call to action button */}
+                <div className="mt-4">
+                  <button 
+                    onClick={() => window.location.href = '/admissions/apply'}
+                    className="btn-navy"
+                  >
+                    <i className="fas fa-child" aria-hidden="true"></i>
+                    Enroll Your Child Today
+                    <i className="fas fa-arrow-right" aria-hidden="true"></i>
+                  </button>
+                </div>
               </div>
-            </div>
-          </Col>
-          
-          <Col lg={6}>
-            <div className="video-wrapper" style={{
-              position: 'relative',
-              paddingBottom: '56.25%',
-              height: 0,
-              overflow: 'hidden',
-              borderRadius: '16px',
-              boxShadow: '0 15px 35px rgba(13, 101, 251, 0.15)',
-              transition: 'transform 0.3s ease, box-shadow 0.3s ease'
-            }}>
-              <iframe 
-                src="https://www.youtube-nocookie.com/embed/Vomydkvag_w"
-                title="School life video - Kitale Progressive School"
-                loading="lazy"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
-                  height: '100%',
-                  border: 0
-                }}
-              />
-            </div>
-          </Col>
-        </Row>
-      </Container>
-    </section>
+            </Col>
+            
+            <Col lg={6}>
+              <div className="video-wrapper" style={{
+                position: 'relative',
+                paddingBottom: '56.25%',
+                height: 0,
+                overflow: 'hidden',
+                borderRadius: '16px',
+                boxShadow: '0 15px 35px rgba(13, 101, 251, 0.15)',
+                transition: 'transform 0.3s ease, box-shadow 0.3s ease'
+              }}>
+                <iframe 
+                  src="https://www.youtube-nocookie.com/embed/Vomydkvag_w"
+                  title="School life video - Kitale Progressive School"
+                  loading="lazy"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    border: 0
+                  }}
+                />
+              </div>
+            </Col>
+          </Row>
+        </Container>
+      </section>
 
       {/* Lightbox Modal */}
       {selectedImage && (
@@ -707,8 +974,13 @@ function Gallery() {
         <GetInTouch />
       </Suspense>
 
-      {/* Optimized Critical CSS for Core Web Vitals */}
+      {/* Optimized Critical CSS for Core Web Vitals - RETAINS ALL ORIGINAL STYLES */}
       <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes skeleton-loading {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+        }
+        
         .visually-hidden {
           position: absolute;
           width: 1px;
@@ -783,6 +1055,7 @@ function Gallery() {
           text-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);
         }
 
+        /* Gallery Item Styles - RETAINED FROM ORIGINAL */
         .gallery-item {
           transition: transform 0.3s ease, box-shadow 0.3s ease;
           border-radius: 12px;
@@ -798,6 +1071,8 @@ function Gallery() {
           outline-offset: 2px;
           box-shadow: 0 10px 25px rgba(13,101,251,0.15);
         }
+        
+        /* Filter Button Styles - RETAINED FROM ORIGINAL */
         .filter-button {
           transition: all 0.2s ease;
         }
@@ -807,18 +1082,24 @@ function Gallery() {
         .filter-button.active {
           box-shadow: 0 4px 12px rgba(13,101,251,0.3);
         }
+        
+        /* Focus Styles - RETAINED FROM ORIGINAL */
         button:focus-visible,
         a:focus-visible,
         [role="button"]:focus-visible {
           outline: 3px solid var(--gold);
           outline-offset: 2px;
         }
+        
+        /* Modal Styles - RETAINED FROM ORIGINAL */
         .modal-overlay {
           backdrop-filter: blur(5px);
         }
         .lightbox-nav {
           transition: background-color 0.2s ease, transform 0.2s ease;
         }
+        
+        /* Button Styles - RETAINED FROM ORIGINAL */
         .btn-navy {
           background: var(--gradient-primary);
           color: white;
@@ -827,6 +1108,9 @@ function Gallery() {
           border-radius: 40px;
           padding: 0.75rem 2rem;
           transition: all 0.3s ease;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
         }
         .btn-navy:hover:not(:disabled) {
           background: var(--gradient-hover);
@@ -838,7 +1122,12 @@ function Gallery() {
           cursor: not-allowed;
         }
         
-        /* Responsive - 2 columns on tablet, 1 column on mobile */
+        /* Gallery Grid - No scrollbar */
+        .gallery-grid {
+          overflow: hidden !important;
+        }
+        
+        /* Responsive - 2 columns on tablet, 1 column on mobile - RETAINED FROM ORIGINAL */
         @media (max-width: 992px) {
           .gallery-grid {
             grid-template-columns: repeat(2, 1fr) !important;
@@ -887,6 +1176,7 @@ function Gallery() {
           }
         }
         
+        /* Reduced Motion - RETAINED FROM ORIGINAL */
         @media (prefers-reduced-motion: reduce) {
           .gallery-item,
           .gallery-item:focus-visible,
@@ -904,7 +1194,7 @@ function Gallery() {
           }
         }
         
-        /* Performance optimizations */
+        /* Performance optimizations - RETAINED FROM ORIGINAL */
         .gallery-item {
           contain: layout paint;
         }

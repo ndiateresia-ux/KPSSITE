@@ -1,4 +1,4 @@
-// pages/BoardingLife.jsx - Optimized with Hero Background Image
+// pages/BoardingLife.jsx - Updated to show boarding items image prominently
 import { Helmet } from "react-helmet-async";
 import { Container, Row, Col, Card, Button, Modal } from "react-bootstrap";
 import { useState, useCallback, lazy, Suspense, memo, useEffect, useMemo, useRef } from "react";
@@ -7,12 +7,72 @@ import { Link } from "react-router-dom";
 // Lazy load non-critical components
 const GetInTouch = lazy(() => import("../components/GetInTouch"));
 
+// ============================================================
+// Helper function to get page content from localStorage
+// ============================================================
+const getPageContent = (sectionId, field) => {
+  try {
+    const saved = localStorage.getItem('admin_all_page_content');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      return parsed['boarding']?.[sectionId]?.[field] || '';
+    }
+  } catch (error) {
+    console.error('Error loading boarding page content:', error);
+  }
+  return '';
+};
+
+// ============================================================
+// Default content (fallback)
+// ============================================================
+const getDefaultContent = (sectionId, field) => {
+  const defaults = {
+    hero: {
+      title: 'A Safe and Structured Boarding Experience',
+      subtitle: 'Our boarding program provides a structured, disciplined and supportive environment where learners live, study and grow under the care of experienced and attentive staff.'
+    },
+    overview: {
+      title: 'What Your Child Will Experience',
+      content: 'Every day in our boarding program is designed to support academic success and personal growth.'
+    },
+    experience: {
+      title: 'Comfortable Living Spaces',
+      content: 'Our dormitories are thoughtfully designed to be a true home away from home. Each room is bright, well-ventilated, and generously spacious, offering plenty of room to live, study, and unwind. With a steadfast commitment to the highest standards of cleanliness, every space is meticulously maintained—creating a fresh, comfortable, and serene environment where you can feel safe, respected, and truly at ease.'
+    },
+    study: {
+      title: 'Supervised Study Time',
+      content: 'Evening prep sessions are supervised by qualified teachers who provide academic support and ensure homework completion.'
+    },
+    recreation: {
+      title: 'Recreation & Wellness',
+      content: 'We believe in holistic development. Our boarding students have access to sports facilities, common rooms with recreational activities.'
+    },
+    parent_expectations: {
+      title: 'What to Expect as a Parent',
+      content: ''
+    },
+    outcomes: {
+      title: 'Learners Develop',
+      content: ''
+    },
+    routine: {
+      title: 'Daily Routine for Boarders',
+      content: ''
+    },
+    checklist: {
+      title: 'Boarding Checklist',
+      content: 'Essential Items Your Child will need for Boarding'
+    }
+  };
+  return defaults[sectionId]?.[field] || '';
+};
+
 // Optimized image component with theme classes
 const OptimizedImage = memo(({ src, alt, width, height, objectFit = 'cover', priority = false, onClick, style, className = '' }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState(false);
   
-  // Preload critical images
   useEffect(() => {
     if (priority && src) {
       const link = document.createElement('link');
@@ -112,6 +172,24 @@ function BoardingLife() {
   const [showImageModal, setShowImageModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  
+  // Load content from localStorage
+  const heroTitle = getPageContent('hero', 'title') || getDefaultContent('hero', 'title');
+  const heroSubtitle = getPageContent('hero', 'subtitle') || getDefaultContent('hero', 'subtitle');
+  const overviewTitle = getPageContent('overview', 'title') || getDefaultContent('overview', 'title');
+  const overviewContent = getPageContent('overview', 'content') || getDefaultContent('overview', 'content');
+  const experienceTitle = getPageContent('experience', 'title') || getDefaultContent('experience', 'title');
+  const experienceContent = getPageContent('experience', 'content') || getDefaultContent('experience', 'content');
+  const studyTitle = getPageContent('study', 'title') || getDefaultContent('study', 'title');
+  const studyContent = getPageContent('study', 'content') || getDefaultContent('study', 'content');
+  const recreationTitle = getPageContent('recreation', 'title') || getDefaultContent('recreation', 'title');
+  const recreationContent = getPageContent('recreation', 'content') || getDefaultContent('recreation', 'content');
+  const parentExpectationsTitle = getPageContent('parent_expectations', 'title') || getDefaultContent('parent_expectations', 'title');
+  const outcomesTitle = getPageContent('outcomes', 'title') || getDefaultContent('outcomes', 'title');
+  const routineTitle = getPageContent('routine', 'title') || getDefaultContent('routine', 'title');
+  const checklistTitle = getPageContent('checklist', 'title') || getDefaultContent('checklist', 'title');
+  const checklistContent = getPageContent('checklist', 'content') || getDefaultContent('checklist', 'content');
   
   // Boarding images
   const boardingImages = useMemo(() => ({
@@ -130,15 +208,15 @@ function BoardingLife() {
 
   // Daily routine data
   const dailyRoutine = useMemo(() => [
-    { time: "6:00 AM - 6:45 AM", activity: "Morning Prep (Study Time)" },
-    { time: "7:00 AM - 7:45 AM", activity: "Breakfast" },
-    { time: "8:00 AM - 5:00 PM", activity: "Classes (with breaks)" },
-    { time: "5:00 PM - 6:00 PM", activity: "Sports & Recreation" },
-    { time: "6:00 PM - 7:00 PM", activity: "Personal Time/Shower" },
-    { time: "7:00 PM - 8:00 PM", activity: "Supper" },
-    { time: "8:00 PM - 9:00 PM", activity: "Evening Prep (Homework)" },
-    { time: "9:00 PM", activity: "Lights Out (Younger Students)" },
-    { time: "10:00 PM", activity: "Lights Out (Older Students)" }
+    { time: "6:30 AM - 8:20 AM", activity: "Morning Prep (Study Time)" },
+    { time: "6:50 AM - 7:00 AM", activity: "Breakfast" },
+    { time: "8:20 AM - 3:20 PM", activity: "Classes (with breaks)" },
+    { time: "3:20 PM - 4:20 PM", activity: "Sports & Recreation" },
+    { time: "4:20 PM - 5:00 PM", activity: "Evening preps" },
+    { time: "5:00 PM - 6:00 PM", activity: "Personal time/shower" },
+    { time: "6:00 PM - 6:45 PM", activity: "Supper" },
+    { time: "6:45 PM - 7:20 PM", activity: "Homework" },
+    { time: "7:20 PM - 8:20 PM", activity: "Evening remedials" }
   ], []);
 
   // What Your Child Will Experience - Icons
@@ -216,12 +294,11 @@ function BoardingLife() {
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </Helmet>
 
-      {/* Hero Section - Matching Curriculum Page with Background Image */}
+      {/* Hero Section - Using dynamic content */}
       <section className="boarding-hero-section" aria-labelledby="page-title">
         <div className="boarding-hero-content">
-          <h1 id="page-title">A Safe and Structured Boarding Experience</h1>
-          <p>Our boarding program provides a structured, disciplined and supportive environment
-            where learners live, study and grow under the care of experienced and attentive staff.</p>
+          <h1 id="page-title">{heroTitle}</h1>
+          <p>{heroSubtitle}</p>
         </div>
       </section>
 
@@ -230,10 +307,10 @@ function BoardingLife() {
         <Container>
           <div className="text-center mb-5">
             <h2 id="child-experience-heading" className="section-heading mb-3">
-              What Your Child Will Experience
+              {overviewTitle}
             </h2>
             <p className="text-muted experience-intro">
-              Every day in our boarding program is designed to support academic success and personal growth.
+              {overviewContent}
             </p>
           </div>
           
@@ -252,7 +329,7 @@ function BoardingLife() {
         <Container>
           <div className="text-center mb-5">
             <h2 id="parent-expectations-heading" className="section-heading mb-3">
-              What to Expect as a Parent
+              {parentExpectationsTitle || 'What to Expect as a Parent'}
             </h2>
           </div>
           
@@ -270,7 +347,7 @@ function BoardingLife() {
       <section className="statistics-section section-padding" aria-labelledby="outcomes-heading">
         <Container>
           <h2 id="outcomes-heading" className="text-center text-white mb-4 section-heading">
-            Learners Develop
+            {outcomesTitle || 'Learners Develop'}
           </h2>
           
           <Row className="g-5 justify-content-center">
@@ -308,10 +385,8 @@ function BoardingLife() {
             <Col lg={6}>
               <div>
                 <div className="section-icon mb-3" aria-hidden="true">🛏️</div>
-                <h3 className="card-title-navy fw-bold mb-4">Comfortable Living Spaces</h3>
-                <p className="text-muted">
-                Our dormitories are thoughtfully designed to be a true home away from home. Each room is bright, well-ventilated, and generously spacious, offering plenty of room to live, study, and unwind. With a steadfast commitment to the highest standards of cleanliness, every space is meticulously maintained—creating a fresh, comfortable, and serene environment where you can feel safe, respected, and truly at ease.
-                </p>
+                <h3 className="card-title-navy fw-bold mb-4">{experienceTitle}</h3>
+                <p className="text-muted">{experienceContent}</p>
               </div>
             </Col>
           </Row>
@@ -331,11 +406,8 @@ function BoardingLife() {
             <Col lg={6}>
               <div>
                 <div className="section-icon mb-3" aria-hidden="true">📚</div>
-                <h3 className="card-title-navy fw-bold mb-4">Supervised Study Time</h3>
-                <p className="text-muted">
-                  Evening prep sessions are supervised by qualified teachers who provide academic support 
-                  and ensure homework completion.
-                </p>
+                <h3 className="card-title-navy fw-bold mb-4">{studyTitle}</h3>
+                <p className="text-muted">{studyContent}</p>
               </div>
             </Col>
           </Row>
@@ -355,11 +427,8 @@ function BoardingLife() {
             <Col lg={6}>
               <div>
                 <div className="section-icon mb-3" aria-hidden="true">⚽</div>
-                <h3 className="card-title-navy fw-bold mb-4">Recreation & Wellness</h3>
-                <p className="text-muted">
-                  We believe in holistic development. Our boarding students have access to sports facilities, 
-                  common rooms with recreational activities.
-                </p>
+                <h3 className="card-title-navy fw-bold mb-4">{recreationTitle}</h3>
+                <p className="text-muted">{recreationContent}</p>
               </div>
             </Col>
           </Row>
@@ -375,7 +444,7 @@ function BoardingLife() {
                 <Card.Body className="p-4">
                   <h3 className="card-title-navy fw-bold mb-3">
                     <i className="fas fa-clock me-2 text-gold" aria-hidden="true"></i>
-                    Daily Routine for Boarders
+                    {routineTitle}
                   </h3>
 
                   <div className="routine-header" role="row">
@@ -395,7 +464,7 @@ function BoardingLife() {
         </Container>
       </section>
 
-      {/* Boarding Items Checklist Section - Image View */}
+      {/* Boarding Items Checklist Section - IMAGE VIEW */}
       <section className="py-5 bg-light-custom">
         <Container>
           <Row className="justify-content-center">
@@ -404,22 +473,46 @@ function BoardingLife() {
                 <Card.Body className="p-4">
                   <h2 className="card-title-navy h5 fw-bold mb-3">
                     <i className="fas fa-box me-2 text-gold" aria-hidden="true"></i>
-                    Boarding Checklist
+                    {checklistTitle}
                   </h2>
-                  <p className="mb-4">Essential Items Your Child will need for Boarding</p>
-                  
+                  <p className="mb-4">{checklistContent}</p>
+
+                  {/* Image View - Full Checklist Image */}
                   <div className="text-center mb-4">
                     <div 
                       className="boarding-checklist-image-wrapper"
                       onClick={() => handleViewImage(boardingItemsImage, "Boarding Items Checklist")}
                     >
-                      <OptimizedImage 
+                      {!imageLoaded && (
+                        <div className="image-skeleton" style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          borderRadius: '12px',
+                          zIndex: 1,
+                          background: 'linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)',
+                          backgroundSize: '200% 100%',
+                          animation: 'skeleton-loading 1.5s infinite'
+                        }} aria-hidden="true" />
+                      )}
+                      <img 
                         src={boardingItemsImage}
                         alt="Boarding Items Checklist"
-                        width="800"
-                        height="600"
-                        objectFit="contain"
                         className="boarding-checklist-image"
+                        style={{
+                          width: '100%',
+                          height: 'auto',
+                          display: 'block',
+                          borderRadius: '12px',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                        }}
+                        onLoad={() => setImageLoaded(true)}
+                        onError={(e) => {
+                          e.target.src = 'https://via.placeholder.com/800x600?text=Checklist+Coming+Soon';
+                          setImageLoaded(true);
+                        }}
                       />
                       <div className="zoom-overlay">
                         <div className="zoom-icon">
@@ -429,6 +522,7 @@ function BoardingLife() {
                     </div>
                   </div>
 
+                  {/* Download Button */}
                   <div className="d-flex justify-content-center gap-3 flex-wrap">
                     <Button 
                       onClick={() => handleViewImage(boardingItemsImage, "Boarding Items Checklist")}
@@ -436,7 +530,7 @@ function BoardingLife() {
                       aria-label="View boarding items checklist"
                     >
                       <i className="fas fa-eye me-2" aria-hidden="true"></i>
-                      View Checklist
+                      View Full Size
                     </Button>
                     <Button 
                       onClick={() => handleDownload(pdfDocuments.itemsList, 'Boarding_Items_List.pdf')}
@@ -482,20 +576,6 @@ function BoardingLife() {
                       <button
                         onClick={handleApplyNow}
                         className="btn-light-navy"
-                        style={{
-                          background: 'white',
-                          color: '#0d65fb',
-                          border: 'none',
-                          padding: '12px 32px',
-                          fontWeight: '600',
-                          borderRadius: '40px',
-                          fontSize: '0.85rem',
-                          cursor: 'pointer',
-                          transition: 'all 0.3s ease',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '8px'
-                        }}
                         onMouseEnter={(e) => {
                           e.currentTarget.style.transform = 'translateY(-2px)';
                           e.currentTarget.style.boxShadow = '0 8px 20px rgba(255,255,255,0.2)';
@@ -511,21 +591,7 @@ function BoardingLife() {
                       </button>
                       <button
                         onClick={handleBookVisit}
-                        className="btn-outline-light"
-                        style={{
-                          border: '2px solid white',
-                          color: 'white',
-                          background: 'transparent',
-                          padding: '12px 32px',
-                          fontWeight: '600',
-                          borderRadius: '40px',
-                          fontSize: '0.85rem',
-                          cursor: 'pointer',
-                          transition: 'all 0.3s ease',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '8px'
-                        }}
+                        className="btn-outline-navy"
                         onMouseEnter={(e) => {
                           e.currentTarget.style.background = 'white';
                           e.currentTarget.style.color = '#0d65fb';
@@ -572,6 +638,12 @@ function BoardingLife() {
               src={selectedImage?.url} 
               alt={selectedImage?.alt}
               className="lightbox-image"
+              style={{
+                maxWidth: '100%',
+                maxHeight: '80vh',
+                objectFit: 'contain',
+                display: 'block'
+              }}
             />
           </div>
         </Modal.Body>
@@ -740,7 +812,7 @@ function BoardingLife() {
 
         /* Boarding Checklist Image */
         .boarding-checklist-image-wrapper {
-          max-height: 700px;
+          max-height: 500px;
           overflow: hidden;
           border-radius: 12px;
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -749,6 +821,8 @@ function BoardingLife() {
           cursor: pointer;
           transition: transform 0.3s ease, box-shadow 0.3s ease;
           position: relative;
+          width: 50%;
+          background: white;
         }
 
         .boarding-checklist-image-wrapper:hover {
@@ -951,6 +1025,11 @@ function BoardingLife() {
           padding: 60px 0;
         }
 
+        @keyframes skeleton-loading {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
           .boarding-hero-content {
@@ -984,6 +1063,10 @@ function BoardingLife() {
           .section-padding {
             padding: 40px 0;
           }
+
+          .boarding-checklist-image-wrapper {
+            max-height: 500px;
+          }
         }
         
         @media (max-width: 576px) {
@@ -999,6 +1082,10 @@ function BoardingLife() {
             flex-direction: column;
             align-items: stretch;
           }
+
+          .boarding-checklist-image-wrapper {
+            max-height: 350px;
+          }
         }
         
         @media (prefers-reduced-motion: reduce) {
@@ -1010,7 +1097,8 @@ function BoardingLife() {
           .boarding-checklist-image-wrapper,
           .experience-card:hover,
           .routine-row:hover,
-          .image-shadow:hover {
+          .image-shadow:hover,
+          .boarding-checklist-image-wrapper:hover {
             transition: none !important;
             transform: none !important;
             animation: none !important;
@@ -1019,6 +1107,10 @@ function BoardingLife() {
           .boarding-hero-section::before {
             filter: blur(0px);
             transform: none;
+          }
+
+          .image-skeleton {
+            animation: none !important;
           }
         }
         

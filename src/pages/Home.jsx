@@ -1,9 +1,9 @@
-// pages/Home.jsx - Complete Homepage with Seamless Hero Carousel
+// pages/Home.jsx - Fixed syntax errors
 import { Helmet } from "react-helmet-async";
 import { Container, Row, Col, Card } from "react-bootstrap";
 import { useLocation, useNavigate } from "react-router-dom";
 import React, { useEffect, lazy, Suspense, useCallback, useMemo, useState, useRef } from 'react';
-import BlogSection from '../components/BlogSection';
+import { BlogSection } from './Blogs';
 import '../theme.css';
 
 // Lazy load non-critical components
@@ -46,7 +46,6 @@ const ImageWithFallback = ({ src, alt, width, height, className, fetchpriority }
   );
 };
 
-
 const StarRating = ({ rating }) => {
   return (
     <div className="star-rating">
@@ -58,14 +57,13 @@ const StarRating = ({ rating }) => {
 };
 
 const HeroCarousel = ({ images, onNavigate }) => {
-  const [activeSlot,     setActiveSlot]     = useState(0);
-  const [slotA,          setSlotA]          = useState(0);
-  const [slotB,          setSlotB]          = useState(null);
-  const [keyA,           setKeyA]           = useState(0);
-  const [keyB,           setKeyB]           = useState(0);
+  const [activeSlot, setActiveSlot] = useState(0);
+  const [slotA, setSlotA] = useState(0);
+  const [slotB, setSlotB] = useState(null);
+  const [keyA, setKeyA] = useState(0);
+  const [keyB, setKeyB] = useState(0);
   const [overlayVisible, setOverlayVisible] = useState(false);
-  const autoPlayRef  = useRef(null);
-  const advanceRef   = useRef(null);
+  const autoPlayRef = useRef(null);
 
   // Preload all images up front
   useEffect(() => {
@@ -80,19 +78,17 @@ const HeroCarousel = ({ images, onNavigate }) => {
       const nextSlot = curSlot === 0 ? 1 : 0;
 
       if (curSlot === 0) {
-        // A is active → load next image into B, make B active
         setSlotA((curA) => {
           const nextImg = (curA + 1) % images.length;
           setSlotB(nextImg);
-          setKeyB((k) => k + 1); // restart zoom on B
+          setKeyB((k) => k + 1);
           return curA;
         });
       } else {
-        // B is active → load next image into A, make A active
         setSlotB((curB) => {
           const nextImg = ((curB ?? 0) + 1) % images.length;
           setSlotA(nextImg);
-          setKeyA((k) => k + 1); // restart zoom on A
+          setKeyA((k) => k + 1);
           return curB;
         });
       }
@@ -118,7 +114,6 @@ const HeroCarousel = ({ images, onNavigate }) => {
       aria-label="Hero carousel showcasing school facilities"
     >
       <div className="hero-carousel-container">
-
         {/* Slot A */}
         {slotA !== null && (
           <img
@@ -131,9 +126,9 @@ const HeroCarousel = ({ images, onNavigate }) => {
             decoding="sync"
             onLoad={slotA === 0 && keyA === 0 ? handleFirstLoad : undefined}
             style={{
-              opacity:    activeSlot === 0 ? 1 : 0,
+              opacity: activeSlot === 0 ? 1 : 0,
               transition: `opacity ${FADE}`,
-              zIndex:     activeSlot === 0 ? 1 : 0,
+              zIndex: activeSlot === 0 ? 1 : 0,
             }}
           />
         )}
@@ -149,9 +144,9 @@ const HeroCarousel = ({ images, onNavigate }) => {
             fetchpriority="auto"
             decoding="async"
             style={{
-              opacity:    activeSlot === 1 ? 1 : 0,
+              opacity: activeSlot === 1 ? 1 : 0,
               transition: `opacity ${FADE}`,
-              zIndex:     activeSlot === 1 ? 1 : 0,
+              zIndex: activeSlot === 1 ? 1 : 0,
             }}
           />
         )}
@@ -163,13 +158,13 @@ const HeroCarousel = ({ images, onNavigate }) => {
       <div
         className="hero-overlay"
         style={{
-          opacity:       overlayVisible ? 1 : 0,
-          transition:    'opacity 0.6s ease',
+          opacity: overlayVisible ? 1 : 0,
+          transition: 'opacity 0.6s ease',
           pointerEvents: overlayVisible ? 'auto' : 'none',
         }}
       >
         <div className="hero-overlay-content">
-          <h1 className="hero-title hero-animate-title">
+          <h1 className="hero-title hero-animate-title py-3">
             Give Your Child the Foundation to Lead
           </h1>
           <p className="hero-subtitle hero-animate-subtitle">
@@ -197,6 +192,7 @@ const HeroCarousel = ({ images, onNavigate }) => {
     </section>
   );
 };
+
 // Stat Item Component with animation
 const StatItemContent = ({ value, label, suffix }) => {
   const [count, setCount] = useState(0);
@@ -248,54 +244,14 @@ function Home() {
   const location = useLocation();
   const navigate = useNavigate();
   const contactFormRef = useRef(null);
+  
+  // State for testimonials loaded from localStorage
+  const [testimonials, setTestimonials] = useState([]);
+  const [testimonialIndex, setTestimonialIndex] = useState(0);
+  const [isLoadingTestimonials, setIsLoadingTestimonials] = useState(true);
 
-  const scrollToContact = useCallback((event) => {
-    event?.preventDefault();
-
-    let contactElement = document.getElementById('contactus');
-
-    if (!contactElement) {
-      contactElement = document.querySelector('#get-in-touch-form, .get-in-touch-section form, [id*="contact"]');
-    }
-
-    if (contactElement) {
-      const elementPosition = contactElement.getBoundingClientRect().top;
-      const offsetPosition  = elementPosition + window.pageYOffset - 80;
-
-      window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
-
-      setTimeout(() => {
-        const focusableElement = contactElement.querySelector('input, button, textarea, select, [tabindex="0"]');
-        if (focusableElement) {
-          focusableElement.focus();
-        } else {
-          contactElement.setAttribute('tabindex', '-1');
-          contactElement.focus();
-        }
-      }, 500);
-    } else {
-      navigate('/contact');
-    }
-  }, [navigate]);
-
-  useEffect(() => {
-    if (location.hash === '#contact-section' || location.hash === '#contactus') {
-      setTimeout(() => scrollToContact(), 100);
-    } else if (location.hash === '') {
-      requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
-    }
-  }, [location, scrollToContact]);
-
-  const handleLinkClick = useCallback((path, scrollToForm = false) => {
-    if (scrollToForm && (path === '/contact' || path === 'contact')) {
-      scrollToContact();
-    } else {
-      navigate(path);
-      requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
-    }
-  }, [navigate, scrollToContact]);
-
-  const testimonials = useMemo(() => [
+  // Default testimonials (fallback)
+  const getDefaultTestimonials = () => [
     {
       id: 1,
       name: "Jane Akinyi",
@@ -341,19 +297,121 @@ function Home() {
       quote: "What stands out is how the school combines strong academics with character development.",
       rating: 5
     }
-  ], []);
+  ];
 
-  const [testimonialIndex, setTestimonialIndex] = useState(0);
+  // Load testimonials from localStorage
+  const loadTestimonials = useCallback(() => {
+    setIsLoadingTestimonials(true);
+    try {
+      const saved = localStorage.getItem('admin_testimonials');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.length > 0) {
+          setTestimonials(parsed);
+          console.log('Loaded testimonials from admin:', parsed.length);
+        } else {
+          setTestimonials(getDefaultTestimonials());
+        }
+      } else {
+        setTestimonials(getDefaultTestimonials());
+      }
+    } catch (error) {
+      console.error('Error loading testimonials:', error);
+      setTestimonials(getDefaultTestimonials());
+    }
+    setIsLoadingTestimonials(false);
+  }, []);
 
+  // Load testimonials on mount and listen for changes
   useEffect(() => {
+    loadTestimonials();
+
+    const handleStorageChange = (e) => {
+      if (e.key === 'admin_testimonials') {
+        console.log('Home: Testimonials storage changed, reloading...');
+        loadTestimonials();
+      }
+    };
+
+    const handleAdminDataChange = (e) => {
+      if (e.detail?.key === 'admin_testimonials') {
+        console.log('Home: adminDataChange event received, reloading testimonials...');
+        loadTestimonials();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('adminDataChange', handleAdminDataChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('adminDataChange', handleAdminDataChange);
+    };
+  }, [loadTestimonials]);
+
+  // Auto-rotate testimonials
+  useEffect(() => {
+    if (testimonials.length === 0) return;
+    
     const interval = setInterval(() => {
       setTestimonialIndex((current) => (current + 1) % testimonials.length);
     }, 5000);
     return () => clearInterval(interval);
   }, [testimonials.length]);
 
-  const nextTestimonial = () => setTestimonialIndex((current) => (current + 1) % testimonials.length);
-  const prevTestimonial = () => setTestimonialIndex((current) => (current - 1 + testimonials.length) % testimonials.length);
+  const nextTestimonial = () => {
+    setTestimonialIndex((current) => (current + 1) % testimonials.length);
+  };
+
+  const prevTestimonial = () => {
+    setTestimonialIndex((current) => (current - 1 + testimonials.length) % testimonials.length);
+  };
+
+  const scrollToContact = useCallback((event) => {
+    event?.preventDefault();
+
+    let contactElement = document.getElementById('contactus');
+
+    if (!contactElement) {
+      contactElement = document.querySelector('#get-in-touch-form, .get-in-touch-section form, [id*="contact"]');
+    }
+
+    if (contactElement) {
+      const elementPosition = contactElement.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - 80;
+
+      window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
+
+      setTimeout(() => {
+        const focusableElement = contactElement.querySelector('input, button, textarea, select, [tabindex="0"]');
+        if (focusableElement) {
+          focusableElement.focus();
+        } else {
+          contactElement.setAttribute('tabindex', '-1');
+          contactElement.focus();
+        }
+      }, 500);
+    } else {
+      navigate('/contact');
+    }
+  }, [navigate]);
+
+  useEffect(() => {
+    if (location.hash === '#contact-section' || location.hash === '#contactus') {
+      setTimeout(() => scrollToContact(), 100);
+    } else if (location.hash === '') {
+      requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
+    }
+  }, [location, scrollToContact]);
+
+  const handleLinkClick = useCallback((path, scrollToForm = false) => {
+    if (scrollToForm && (path === '/contact' || path === 'contact')) {
+      scrollToContact();
+    } else {
+      navigate(path);
+      requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
+    }
+  }, [navigate, scrollToContact]);
 
   const whyChooseUsItems = useMemo(() => [
     { icon: "👩‍🏫", title: "Teachers Who Know and Support Every Child", description: "Your child is not just another student here. Our teachers take time to understand each learner's strengths, guide their progress, and provide the support they need to grow with confidence." },
@@ -385,27 +443,18 @@ function Home() {
   const heroImages = useMemo(() => [
     { webp: "/images/optimized/gate3.webp", jpg: "/images/optimized/gate3.jpg", alt: "Kitale Progressive School Main Gate" },
     { webp: "/images/optimized/gate7.webp", jpg: "/images/optimized/gate7.jpg", alt: "School gate aerial" },
-    { webp: "/images/optimized/gate.webp",  jpg: "/images/optimized/gate.jpg",  alt: "School Campus" },
+    { webp: "/images/optimized/gate.webp", jpg: "/images/optimized/gate.jpg", alt: "School Campus" },
     { webp: "/images/optimized/admin.webp", jpg: "/images/optimized/admin.jpg", alt: "Administration Block" },
     { webp: "/images/optimized/classroom2.webp", jpg: "/images/optimized/classroom2.jpg", alt: "Modern Classroom" },
     { webp: "/images/optimized/classroom3.webp", jpg: "/images/optimized/classroom3.jpg", alt: "Classroom Learning Environment" },
     { webp: "/images/optimized/school.webp", jpg: "/images/optimized/school.jpg", alt: "School Aerial View" },
   ], []);
 
-  const buttonStyle = useMemo(() => ({
-    minHeight: '44px',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    background: 'white',
-    border: 'none',
-    color: '#050265',
-    padding: '12px 32px',
-    borderRadius: '50px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    transition: 'transform 0.2s ease, box-shadow 0.2s ease'
-  }), []);
+  // Define currentTestimonial
+  const defaultTestimonial = getDefaultTestimonials()[0];
+  const currentTestimonial = testimonials.length > 0 
+    ? testimonials[testimonialIndex % testimonials.length] 
+    : defaultTestimonial;
 
   return (
     <>
@@ -417,91 +466,13 @@ function Home() {
         <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
       </Helmet>
 
-      {/* ── CRITICAL INLINE STYLES ── */}
-      <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes heroFadeInUp {
-          from { opacity: 0; transform: translateY(30px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes heroZoomSmooth {
-          0%   { transform: scale(1); }
-          100% { transform: scale(1.15); }
-        }
-
-        html { scroll-behavior: smooth; }
-
-        /* Hero section */
-        .hero-section {
-          position: relative;
-          width: 100%;
-          height: 100vh;
-          overflow: hidden;
-          background-color: #0a0a2a;
-          margin: 0;
-          padding: 0;
-        }
-
-        .hero-carousel-container {
-          position: relative;
-          width: 100%;
-          height: 100%;
-          overflow: hidden;
-        }
-
-        .hero-carousel-slot {
-          position: absolute;
-          top: 0; left: 0;
-          width: 100%; height: 100%;
-          object-fit: cover;
-          object-position: center;
-          transform-origin: center center;
-          will-change: transform, opacity;
-          display: block;
-          animation: heroZoomSmooth 12s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
-        }
-
-        .hero-image-gradient-overlay {
-          position: absolute;
-          top: 0; left: 0; right: 0; bottom: 0;
-          background: linear-gradient(
-            135deg,
-            rgba(0,0,0,0.5) 0%,
-            rgba(0,0,0,0.2) 40%,
-            rgba(0,0,0,0.3) 70%,
-            rgba(0,0,0,0.6) 100%
-          );
-          pointer-events: none;
-          z-index: 2;
-        }
-
-        .hero-overlay {
-          position: absolute;
-          top: 0; left: 0; right: 0; bottom: 0;
-          background: rgba(10, 10, 42, 0.5);
-          z-index: 10;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          .hero-carousel-slot,
-          .hero-btn-primary { transition: none; animation: none; }
-          .hero-carousel-slot { transform: scale(1); }
-          .hero-animate-title,
-          .hero-animate-subtitle,
-          .hero-animate-buttons { animation: none; opacity: 1; }
-        }
-      `}} />
-
-      {/* ── HERO CAROUSEL ── */}
+      {/* Hero Section - Using theme.css styles */}
       <HeroCarousel
         images={heroImages}
         onNavigate={handleLinkClick}
       />
 
-      {/* ── ABOUT SECTION ── */}
+      {/* About Section - Using theme.css classes */}
       <section className="about-section section-padding" aria-labelledby="about-heading">
         <Container>
           <Row className="align-items-center g-5">
@@ -534,7 +505,7 @@ function Home() {
         </Container>
       </section>
 
-      {/* ── STATISTICS SECTION ── */}
+      {/* Statistics Section - Using theme.css classes */}
       <section className="statistics-section" aria-labelledby="stats-heading">
         <Container>
           <h2 id="stats-heading" className="visually-hidden">School Statistics</h2>
@@ -565,13 +536,13 @@ function Home() {
         </Container>
       </section>
 
-      {/* ── TESTIMONIALS SECTION ── */}
-      <section className="testimonials-section" aria-labelledby="testimonials-heading">
+      {/* Testimonials Section - Using theme.css classes, loaded from admin */}
+      <section className="testimonials-section section-padding" aria-labelledby="testimonials-heading">
         <Container>
           <Row className="justify-content-center text-center mb-4">
             <Col lg={8}>
               <h2 id="testimonials-heading" className="testimonials-title">What Parents Say About Kitale Progressive School</h2>
-              <div className="testimonials-title-underline"></div>
+              <div className="testimonials-title-underline" style={{ background: 'linear-gradient(90deg, var(--gold), var(--navy))' }}></div>
               <p className="testimonials-subtitle">Hear from parents who have experienced the growth, care, and academic progress of their children at our school.</p>
             </Col>
           </Row>
@@ -579,42 +550,73 @@ function Home() {
           <Row className="justify-content-center">
             <Col lg={10}>
               <div className="testimonial-carousel">
-                <div className="testimonial-card">
-                  <div className="testimonial-quote-mark">"</div>
-                  <div className="testimonial-content">
-                    <Row className="align-items-center mb-3">
-                      <Col xs="auto">
-                        <div className="testimonial-avatar">
-                          <div className="testimonial-avatar-initials">
-                            {testimonials[testimonialIndex].name.split(' ').map(n => n[0]).join('')}
-                          </div>
-                        </div>
-                      </Col>
-                      <Col>
-                        <h3 className="testimonial-name">{testimonials[testimonialIndex].title} {testimonials[testimonialIndex].name}</h3>
-                        <p className="testimonial-parent-type">{testimonials[testimonialIndex].parentType}</p>
-                        <p className="testimonial-section">{testimonials[testimonialIndex].section}</p>
-                      </Col>
-                    </Row>
-                    <StarRating rating={testimonials[testimonialIndex].rating} />
-                    <blockquote className="testimonial-quote">
-                      "{testimonials[testimonialIndex].quote}"
-                    </blockquote>
-                    <div className="testimonial-social-snapshot">
-                      <span className="testimonial-shared-count"><strong>15+ parents</strong> shared similar experiences</span>
+                {isLoadingTestimonials ? (
+                  <div className="text-center py-5">
+                    <div className="spinner-border text-primary" role="status" style={{ width: '2rem', height: '2rem' }}>
+                      <span className="visually-hidden">Loading testimonials...</span>
                     </div>
                   </div>
-                </div>
-                <button onClick={prevTestimonial} className="testimonial-prev" aria-label="Previous testimonial">‹</button>
-                <button onClick={nextTestimonial} className="testimonial-next" aria-label="Next testimonial">›</button>
+                ) : testimonials.length > 0 ? (
+                  <div className="testimonial-card">
+                    <div className="testimonial-quote-mark">"</div>
+                    <div className="testimonial-content">
+                      <Row className="align-items-center mb-3">
+                        <Col xs="auto">
+                          <div className="testimonial-avatar" style={{
+                            width: '60px',
+                            height: '60px',
+                            borderRadius: '50%',
+                            background: 'var(--gradient-primary)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}>
+                            <div className="testimonial-avatar-initials" style={{
+                              color: 'white',
+                              fontWeight: '700',
+                              fontSize: '1.2rem'
+                            }}>
+                              {currentTestimonial.name.split(' ').map(n => n[0]).join('')}
+                            </div>
+                          </div>
+                        </Col>
+                        <Col>
+                          <h3 className="testimonial-name">{currentTestimonial.title || 'Mr.'} {currentTestimonial.name}</h3>
+                          <p className="testimonial-parent-type">{currentTestimonial.parentType || 'Parent'}</p>
+                          <p className="testimonial-section">{currentTestimonial.section || ''}</p>
+                        </Col>
+                      </Row>
+                      <StarRating rating={currentTestimonial.rating || 5} />
+                      <blockquote className="testimonial-quote">
+                        "{currentTestimonial.quote}"
+                      </blockquote>
+                      <div className="testimonial-social-snapshot">
+                        <span className="testimonial-shared-count">
+                          <strong>{testimonials.length}+ parents</strong> shared similar experiences
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-5">
+                    <p className="text-muted">No testimonials available yet.</p>
+                  </div>
+                )}
+                
+                {testimonials.length > 1 && (
+                  <>
+                    <button onClick={prevTestimonial} className="testimonial-prev" aria-label="Previous testimonial">‹</button>
+                    <button onClick={nextTestimonial} className="testimonial-next" aria-label="Next testimonial">›</button>
+                  </>
+                )}
               </div>
             </Col>
           </Row>
         </Container>
       </section>
 
-      {/* ── ACADEMIC PATHWAY SECTION ── */}
-      <section className="academic-pathway-section" aria-labelledby="pathway-heading">
+      {/* Academic Pathway Section - Using theme.css classes */}
+      <section className="academic-pathway-section section-padding" aria-labelledby="pathway-heading">
         <Container>
           <h2 id="pathway-heading" className="pathway-main-title text-center mb-5">Academic Pathway at KPS</h2>
           <h3 className="pathway-subtitle text-center">Are you seeking a school that gives your child a strong educational foundation?</h3>
@@ -638,7 +640,7 @@ function Home() {
                     <p className="academic-card-text">{pathway.summary}</p>
                     <button
                       onClick={() => handleLinkClick(`/academics/curriculum#${pathway.section}`)}
-                      className="btn-navy btn-lg"
+                      className="btn-navy"
                       aria-label={`Explore ${pathway.level}`}
                     >
                       {pathway.btnText}
@@ -655,7 +657,7 @@ function Home() {
         </Container>
       </section>
 
-      {/* ── CTA SECTION 1 ── */}
+      {/* CTA Section 1 - Using theme.css classes */}
       <section className="cta-section cta-primary" aria-label="Call to action">
         <Container>
           <div className="cta-content text-center">
@@ -670,11 +672,11 @@ function Home() {
         </Container>
       </section>
 
-      {/* ── WHY CHOOSE US SECTION ── */}
-      <section className="why-choose-us-section" aria-labelledby="why-heading">
+      {/* Why Choose Us Section - Using theme.css classes */}
+      <section className="why-choose-us-section section-padding" aria-labelledby="why-heading">
         <Container>
           <h2 id="why-heading" className="section-heading text-center mb-4">Why Parents Choose Kitale Progressive School</h2>
-          <p className="why-choose-intro ">Parents choose Kitale Progressive School because we combine strong academic excellence with a nurturing and supportive environment where every child is guided to discover their potential and grow in confidence.</p>
+          <p className="why-choose-intro">Parents choose Kitale Progressive School because we combine strong academic excellence with a nurturing and supportive environment where every child is guided to discover their potential and grow in confidence.</p>
           <p className="why-choose-subintro mb-5">As a trusted CBE school in Kitale, we focus on developing not only academic skills, but also character, discipline, and leadership. Our goal is to build a school community where parents feel informed, involved, and confident in their child's learning journey.</p>
           <Row className="g-5 align-items-center" role="list" aria-label="Reasons to choose our school">
             {whyChooseUsItems.map((item, index) => (
@@ -692,8 +694,8 @@ function Home() {
         </Container>
       </section>
 
-      {/* ── CTA SECTION 2 ── */}
-      <section className="py-5" style={{ background: '#f8f9fa' }}>
+      {/* CTA Section 2 - Using theme.css classes */}
+      <section className="section-padding bg-light-custom">
         <Container>
           <Row className="justify-content-center">
             <Col lg={10}>
@@ -706,8 +708,8 @@ function Home() {
                     Ready to give your child a school environment where they will truly grow and succeed?
                   </h2>
                   <div className="d-flex gap-3 justify-content-center flex-wrap">
-                    <button onClick={() => handleLinkClick('/admissions/apply')} className="btn-navy" style={buttonStyle}>Apply Now</button>
-                    <button onClick={scrollToContact} className="btn-navy" style={buttonStyle}>Book A Tour</button>
+                    <button onClick={() => handleLinkClick('/admissions/apply')} className="btn-navy">Apply Now</button>
+                    <button onClick={scrollToContact} className="btn-navy">Book A Tour</button>
                   </div>
                 </Card.Body>
               </Card>
@@ -716,8 +718,8 @@ function Home() {
         </Container>
       </section>
 
-      {/* ── YOUTUBE VIDEO SECTION ── */}
-      <section className="video-section" aria-labelledby="video-heading">
+      {/* YouTube Video Section - Using theme.css classes */}
+      <section className="video-section section-padding" aria-labelledby="video-heading">
         <Container>
           <Row className="align-items-center g-5">
             <Col lg={6}>
@@ -782,8 +784,8 @@ function Home() {
         </Container>
       </section>
 
-      {/* ── LEARNING APPROACH SECTION ── */}
-      <section className="learning-approach-section" aria-labelledby="approach-heading">
+      {/* Learning Approach Section - Using theme.css classes */}
+      <section className="learning-approach-section section-padding" aria-labelledby="approach-heading">
         <Container>
           <h2 id="approach-heading" className="section-heading text-center mb-4">
             Our Approach to Learning and Student Development
@@ -813,8 +815,8 @@ function Home() {
         </Container>
       </section>
 
-      {/* ── CTA SECTION 3 ── */}
-      <section className="py-5" style={{ background: '#f8f9fa' }}>
+      {/* CTA Section 3 - Using theme.css classes */}
+      <section className="section-padding bg-light-custom">
         <Container>
           <Row className="justify-content-center">
             <Col lg={8}>
@@ -826,7 +828,7 @@ function Home() {
                   <h2 className="cta-title" style={{ color: 'white', marginBottom: '1rem' }}>
                     Ready to explore our complete academic curriculum?
                   </h2>
-                  <button onClick={() => handleLinkClick('/academics/curriculum')} className="btn-navy" style={buttonStyle}>
+                  <button onClick={() => handleLinkClick('/academics/curriculum')} className="btn-navy">
                     Explore Full Curriculum
                   </button>
                 </Card.Body>
@@ -836,13 +838,13 @@ function Home() {
         </Container>
       </section>
 
-      {/* ── BLOG SECTION ── */}
+      {/* Blog Section - Using theme.css classes */}
       <Suspense fallback={<SectionLoader />}>
-        <BlogSection limit={3} showViewAll={true} variant="navy" />
+        <BlogSection limit={3} showViewAll={true} variant="gold" />
       </Suspense>
 
-      {/* ── ADMISSIONS CTA SECTION ── */}
-      <section className="py-5" style={{ background: '#f8f9fa' }}>
+      {/* Admissions CTA Section - Using theme.css classes */}
+      <section className="section-padding bg-light-custom">
         <Container>
           <Row className="justify-content-center">
             <Col lg={10}>
@@ -858,8 +860,8 @@ function Home() {
                     We welcome families seeking a supportive and inspiring learning environment.
                   </p>
                   <div className="d-flex gap-3 justify-content-center flex-wrap">
-                    <button onClick={() => handleLinkClick('/admissions/apply')} className="btn-navy" style={buttonStyle}>Apply Now</button>
-                    <button onClick={scrollToContact} className="btn-navy" style={buttonStyle}>Contact Us</button>
+                    <button onClick={() => handleLinkClick('/admissions/apply')} className="btn-navy">Apply Now</button>
+                    <button onClick={scrollToContact} className="btn-navy">Contact Us</button>
                   </div>
                 </Card.Body>
               </Card>
@@ -868,7 +870,7 @@ function Home() {
         </Container>
       </section>
 
-      {/* ── GET IN TOUCH SECTION ── */}
+      {/* Get In Touch Section - Using theme.css classes */}
       <div id="contactus-wrapper" ref={contactFormRef}>
         <Suspense fallback={<SectionLoader />}>
           <GetInTouch />

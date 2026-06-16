@@ -176,8 +176,7 @@ const Header = () => {
                 />
               </div>
               <span className="brand-text">
-                <span className="visually-hidden">Kitale Progressive School - </span>
-                KITALE PROGRESSIVE SCHOOL
+                <span >KITALE PROGRESSIVE SCHOOL </span>
                 <small>In Pursuit of Excellence</small>
               </span>
             </Link>

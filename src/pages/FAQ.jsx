@@ -1,29 +1,26 @@
-// pages/FAQ.jsx - Fully Updated with Hero Background Image
+// pages/FAQ.jsx - Fully Updated with localStorage integration (Counter Removed)
 import { Helmet } from "react-helmet-async";
-import { Container, Row, Col, Accordion, Card } from "react-bootstrap";
+import { Container, Row, Col, Accordion, Card, Spinner } from "react-bootstrap";
 import { Link } from "react-router-dom";
-import { lazy, Suspense, memo, useCallback } from "react";
+import { lazy, Suspense, memo, useState, useEffect, useCallback } from "react";
 
 // Lazy load non-critical components
 const GetInTouch = lazy(() => import("../components/GetInTouch"));
 
 function FAQ() {
-  // Trust Bar Data
-  const trustItems = [
-    { icon: "✓", label: "CBE Curriculum" },
-    { icon: "✓", label: "ECD to Junior Secondary" },
-    { icon: "✓", label: "Boarding Available" },
-    { icon: "✓", label: "Located in Kitale" }
-  ];
+  // State for FAQ data loaded from localStorage
+  const [faqCategories, setFaqCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // FAQ DATA
-  const faqCategories = [
+  // Default FAQ data (fallback)
+  const getDefaultFAQ = () => [
     {
       category: "Admissions",
       icon: "📋",
       color: "#4299e1",
       questions: [
         {
+          id: 1,
           question: "How can I apply for admission at Kitale Progressive School in Kitale, Kenya?",
           answer: `
             You can apply through our <a href="/admissions/apply" class="text-navy fw-bold">online admissions form</a> or visit the school in person. Our admissions team will guide you through the process.
@@ -32,15 +29,17 @@ function FAQ() {
           `
         },
         {
+          id: 2,
           question: "Is there an admission interview or assessment?",
           answer: `
             Yes. Depending on the grade level, learners may undergo a simple assessment to help us understand their current level.
-            <b>Excemptions are for those beginning school for the first time.</b>
+            <b>Exceptions are for those beginning school for the first time.</b>
             <br/><br/>
             <a href="/contact" class="text-navy fw-bold">Contact admissions</a> to schedule an assessment.
           `
         },
         {
+          id: 3,
           question: "How do I know this is the right school for my child?",
           answer: `
             The best way is to visit the school, meet our teachers, and experience the environment firsthand.
@@ -49,6 +48,7 @@ function FAQ() {
           `
         },
         {
+          id: 4,
           question: "What are the school's hair and grooming guidelines for learners?",
           answer: `
             At Kitale Progressive School, we maintain simple and neat grooming standards.
@@ -69,6 +69,7 @@ function FAQ() {
       color: "#48bb78",
       questions: [
         {
+          id: 5,
           question: "Which curriculum does Kitale Progressive School follow?",
           answer: `
             We follow the <strong>Competency-Based Education (CBE)</strong>, which focuses on developing practical skills, creativity, and critical thinking.
@@ -77,6 +78,7 @@ function FAQ() {
           `
         },
         {
+          id: 6,
           question: "What is the average class size?",
           answer: `
             We maintain manageable class sizes to ensure each learner receives adequate attention and support.
@@ -85,9 +87,10 @@ function FAQ() {
           `
         },
         {
+          id: 7,
           question: "What sports and clubs are available?",
           answer: `
-            Sports & clubs include Football, Volleyball, Netball, Handball, Taekwondo, Swimming, Chess, Music, Debate,Journalism, and wildlife Club.
+            Sports & clubs include Football, Volleyball, Netball, Handball, Taekwondo, Swimming, Chess, Music, Debate, Journalism, and Wildlife Club.
             <br/><br/>
             <a href="/academics/clubs-societies" class="text-navy fw-bold">View clubs & societies →</a>
           `
@@ -100,6 +103,7 @@ function FAQ() {
       color: "#9f7aea",
       questions: [
         {
+          id: 8,
           question: "What are the boarding facilities like?",
           answer: `
             Our boarding facilities provide a safe, structured, and supportive environment.
@@ -108,6 +112,7 @@ function FAQ() {
           `
         },
         {
+          id: 9,
           question: "How is security ensured for boarders?",
           answer: `
             We prioritize student safety through controlled access, supervision, and structured routines.
@@ -115,6 +120,7 @@ function FAQ() {
           `
         },
         {
+          id: 10,
           question: "What is the daily routine for boarders?",
           answer: `
             Boarders follow a structured schedule: Wake up at 5:30 AM, morning prep, classes 8:00 AM–5:00 PM, evening prep, lights out at 9:00 PM.
@@ -130,6 +136,7 @@ function FAQ() {
       color: "#f56565",
       questions: [
         {
+          id: 11,
           question: "How can parents pay school fees?",
           answer: `
             Parents can choose between full payment before the term begins or a structured installment plan.
@@ -138,6 +145,7 @@ function FAQ() {
           `
         },
         {
+          id: 12,
           question: "Are there any additional costs besides fees?",
           answer: `
             All school fees are clearly outlined. Any additional costs are communicated in advance.
@@ -146,6 +154,7 @@ function FAQ() {
           `
         },
         {
+          id: 13,
           question: "Does the school offer sibling discounts?",
           answer: `
             Yes. 5% discount for second and subsequent children from the same family.
@@ -161,6 +170,7 @@ function FAQ() {
       color: "#ed8936",
       questions: [
         {
+          id: 14,
           question: "Does the school provide transport?",
           answer: `
             Yes. We provide reliable school transport services covering key areas within Kitale.
@@ -169,6 +179,7 @@ function FAQ() {
           `
         },
         {
+          id: 15,
           question: "What are the school start and end times?",
           answer: `
             School starts at 8:00 AM and ends at 5:00 PM from Monday to Friday.
@@ -179,6 +190,78 @@ function FAQ() {
       ]
     }
   ];
+
+  // Load FAQ from localStorage
+  const loadFAQ = useCallback(() => {
+    setLoading(true);
+    try {
+      const saved = localStorage.getItem('admin_faq');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.length > 0) {
+          setFaqCategories(parsed);
+          console.log('FAQ loaded from localStorage:', parsed.length, 'categories');
+        } else {
+          setFaqCategories(getDefaultFAQ());
+        }
+      } else {
+        setFaqCategories(getDefaultFAQ());
+      }
+    } catch (error) {
+      console.error('Error loading FAQ:', error);
+      setFaqCategories(getDefaultFAQ());
+    }
+    setLoading(false);
+  }, []);
+
+  // Load FAQ on mount and listen for changes
+  useEffect(() => {
+    loadFAQ();
+
+    // Listen for storage changes (when admin updates FAQ)
+    const handleStorageChange = (e) => {
+      if (e.key === 'admin_faq') {
+        console.log('FAQ: Storage changed, reloading...');
+        loadFAQ();
+      }
+    };
+
+    // Listen for custom event from Admin
+    const handleAdminDataChange = (e) => {
+      if (e.detail?.key === 'admin_faq') {
+        console.log('FAQ: adminDataChange event received, reloading...');
+        loadFAQ();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('adminDataChange', handleAdminDataChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('adminDataChange', handleAdminDataChange);
+    };
+  }, [loadFAQ]);
+
+  // Trust Bar Data
+  const trustItems = [
+    { icon: "✓", label: "CBE Curriculum" },
+    { icon: "✓", label: "ECD to Junior Secondary" },
+    { icon: "✓", label: "Boarding Available" },
+    { icon: "✓", label: "Located in Kitale" }
+  ];
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="text-center py-5">
+        <div className="spinner-border text-primary" role="status" style={{ width: '3rem', height: '3rem' }}>
+          <span className="visually-hidden">Loading FAQ...</span>
+        </div>
+        <p className="mt-3 text-muted">Loading frequently asked questions...</p>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -254,62 +337,68 @@ function FAQ() {
       {/* FAQ CONTENT */}
       <section style={{ padding: '50px 0', background: '#f8f9fa' }}>
         <Container>
-          {faqCategories.map((cat, catIndex) => (
-            <Row key={catIndex} className="mb-4">
-              <Col lg={10} className="mx-auto">
-                <Card className="border-0 shadow-sm overflow-hidden">
-                  <Card.Body className="p-0">
-                    {/* Category Header */}
-                    <div 
-                      style={{
-                        backgroundColor: cat.color,
-                        padding: '1rem 1.5rem',
-                        color: 'white'
-                      }}
-                    >
-                      <div className="d-flex align-items-center gap-2">
-                        <span style={{ fontSize: '1.5rem' }} aria-hidden="true">{cat.icon}</span>
-                        <h2 className="h5 fw-bold mb-0 text-white">
-                          {cat.category}
-                        </h2>
+          {faqCategories.length > 0 ? (
+            faqCategories.map((cat, catIndex) => (
+              <Row key={catIndex} className="mb-4">
+                <Col lg={10} className="mx-auto">
+                  <Card className="border-0 shadow-sm overflow-hidden">
+                    <Card.Body className="p-0">
+                      {/* Category Header - Counter Removed */}
+                      <div 
+                        style={{
+                          backgroundColor: cat.color || "#4299e1",
+                          padding: '1rem 1.5rem',
+                          color: 'white'
+                        }}
+                      >
+                        <div className="d-flex align-items-center gap-2">
+                          <span style={{ fontSize: '1.5rem' }} aria-hidden="true">{cat.icon || "📋"}</span>
+                          <h2 className="h5 fw-bold mb-0 text-white">
+                            {cat.category}
+                          </h2>
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Accordion */}
-                    <div style={{ padding: '0.5rem' }}>
-                      <Accordion flush defaultActiveKey={null}>
-                        {cat.questions.map((item, qIndex) => {
-                          const eventKey = `${catIndex}-${qIndex}`;
-                          return (
-                            <Accordion.Item
-                              eventKey={eventKey}
-                              key={qIndex}
-                              style={{
-                                border: 'none',
-                                borderBottom: qIndex < cat.questions.length - 1 ? '1px solid #e9ecef' : 'none'
-                              }}
-                            >
-                              <Accordion.Header>
-                                <h3 style={{ fontSize: '0.95rem', marginBottom: 0 }}>
-                                  {item.question}
-                                </h3>
-                              </Accordion.Header>
-                              <Accordion.Body>
-                                <div 
-                                  dangerouslySetInnerHTML={{ __html: item.answer }}
-                                  style={{ lineHeight: 1.6, fontSize: '0.9rem' }}
-                                />
-                              </Accordion.Body>
-                            </Accordion.Item>
-                          );
-                        })}
-                      </Accordion>
-                    </div>
-                  </Card.Body>
-                </Card>
-              </Col>
-            </Row>
-          ))}
+                      {/* Accordion */}
+                      <div style={{ padding: '0.5rem' }}>
+                        <Accordion flush defaultActiveKey={null}>
+                          {cat.questions && cat.questions.map((item, qIndex) => {
+                            const eventKey = `${catIndex}-${qIndex}`;
+                            return (
+                              <Accordion.Item
+                                eventKey={eventKey}
+                                key={qIndex}
+                                style={{
+                                  border: 'none',
+                                  borderBottom: qIndex < cat.questions.length - 1 ? '1px solid #e9ecef' : 'none'
+                                }}
+                              >
+                                <Accordion.Header>
+                                  <h3 style={{ fontSize: '0.95rem', marginBottom: 0 }}>
+                                    {item.question}
+                                  </h3>
+                                </Accordion.Header>
+                                <Accordion.Body>
+                                  <div 
+                                    dangerouslySetInnerHTML={{ __html: item.answer }}
+                                    style={{ lineHeight: 1.6, fontSize: '0.9rem' }}
+                                  />
+                                </Accordion.Body>
+                              </Accordion.Item>
+                            );
+                          })}
+                        </Accordion>
+                      </div>
+                    </Card.Body>
+                  </Card>
+                </Col>
+              </Row>
+            ))
+          ) : (
+            <div className="text-center py-5">
+              <p className="text-muted">No FAQ categories available.</p>
+            </div>
+          )}
 
           {/* CTA SECTION */}
           <Row className="mt-5">
@@ -327,47 +416,47 @@ function FAQ() {
                   </p>
                   <div className="d-flex gap-3 justify-content-center flex-wrap">
                     <Link
-                    to="/contact"
-                    className="btn-navy"
-                    style={{
-                      minHeight: '44px',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      textDecoration: 'none',
-                      background: 'white',
-                      color: '#050265',
-                      padding: '12px 32px',
-                      borderRadius: '50px',
-                      fontWeight: '600',
-                      transition: 'all 0.3s ease'
-                    }}
-                    aria-label="Contact our admissions team"
-                  >
-                    Contact Admissions
-                  </Link>
+                      to="/contact"
+                      className="btn-navy"
+                      style={{
+                        minHeight: '44px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        textDecoration: 'none',
+                        background: 'white',
+                        color: '#050265',
+                        padding: '12px 32px',
+                        borderRadius: '50px',
+                        fontWeight: '600',
+                        transition: 'all 0.3s ease'
+                      }}
+                      aria-label="Contact our admissions team"
+                    >
+                      Contact Admissions
+                    </Link>
 
-                  <Link
-                    to="/admissions/apply"
-                    className="btn-navy"
-                    style={{
-                      minHeight: '44px',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      textDecoration: 'none',
-                      background: 'transparent',
-                      color: 'white',
-                      border: '2px solid white',
-                      padding: '12px 32px',
-                      borderRadius: '50px',
-                      fontWeight: '600',
-                      transition: 'all 0.3s ease'
-                    }}
-                    aria-label="Apply for admission now"
-                  >
-                    Apply Now
-                  </Link>
+                    <Link
+                      to="/admissions/apply"
+                      className="btn-navy"
+                      style={{
+                        minHeight: '44px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        textDecoration: 'none',
+                        background: 'transparent',
+                        color: 'white',
+                        border: '2px solid white',
+                        padding: '12px 32px',
+                        borderRadius: '50px',
+                        fontWeight: '600',
+                        transition: 'all 0.3s ease'
+                      }}
+                      aria-label="Apply for admission now"
+                    >
+                      Apply Now
+                    </Link>
                   </div>
                 </Card.Body>
               </Card>
@@ -401,7 +490,7 @@ function FAQ() {
           right: 0;
           bottom: 0;
           background-image: url('/images/optimized/gate2.webp');
-         background-size: cover;
+          background-size: cover;
           background-position: center;
           background-repeat: no-repeat;
           filter: blur(0px);
