@@ -1,7 +1,8 @@
-// pages/FeeStructure.jsx - Updated to fetch images from localStorage
+// pages/FeeStructure.jsx - Updated to use JSON Bin (No localStorage)
 import { Helmet } from "react-helmet-async";
 import { Container, Row, Col, Button, Card, Spinner } from "react-bootstrap";
 import { useState, useCallback, memo, lazy, Suspense, useEffect } from "react";
+import { getFeeStructure } from "../services/dataService";
 
 // Lazy load non-critical components
 const GetInTouch = lazy(() => import("../components/GetInTouch"));
@@ -380,43 +381,13 @@ const DecisionSupport = memo(() => (
 DecisionSupport.displayName = 'DecisionSupport';
 
 // ============================================================
-// Helper function to get fee images from localStorage
+// Default fee images (fallback)
 // ============================================================
-const getFeeImages = () => {
-  const defaultImages = {
-    ecde: "/images/fee-structure/ecde.jpg",
-    primary: "/images/fee-structure/primary.jpg",
-    junior: "/images/fee-structure/junior.jpg",
-    transport: "/images/fee-structure/transport.jpg"
-  };
-
-  try {
-    const saved = localStorage.getItem('admin_fee_structure');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      const storedImages = JSON.parse(localStorage.getItem('admin_uploaded_images') || '{}');
-      
-      const result = {
-        ecde: parsed.ecde?.image || defaultImages.ecde,
-        primary: parsed.primary?.image || defaultImages.primary,
-        junior: parsed.junior?.image || defaultImages.junior,
-        transport: parsed.transport?.image || defaultImages.transport
-      };
-      
-      // Check if any of the images are stored as base64
-      Object.keys(result).forEach(key => {
-        if (storedImages[result[key]]) {
-          result[key] = storedImages[result[key]];
-        }
-      });
-      
-      return result;
-    }
-  } catch (error) {
-    console.error('Error loading fee images from localStorage:', error);
-  }
-  
-  return defaultImages;
+const DEFAULT_FEE_IMAGES = {
+  ecde: "/images/fee-structure/ecde.jpg",
+  primary: "/images/fee-structure/primary.jpg",
+  junior: "/images/fee-structure/junior.jpg",
+  transport: "/images/fee-structure/transport.jpg"
 };
 
 function FeeStructure() {
@@ -424,48 +395,54 @@ function FeeStructure() {
   const [selectedImage, setSelectedImage] = useState(null);
   const [showTransportImage, setShowTransportImage] = useState(false);
   const [imageLoaded, setImageLoaded] = useState({});
-  const [feeImages, setFeeImages] = useState(getFeeImages());
-  const [transportImage, setTransportImage] = useState(getFeeImages().transport);
+  const [feeImages, setFeeImages] = useState(DEFAULT_FEE_IMAGES);
+  const [transportImage, setTransportImage] = useState(DEFAULT_FEE_IMAGES.transport);
   const [loading, setLoading] = useState(true);
 
-  // Load images from localStorage on mount and listen for changes
+  // Load images from JSON Bin (No localStorage)
   useEffect(() => {
-    const loadImages = () => {
-      const images = getFeeImages();
-      setFeeImages({
-        ecde: images.ecde,
-        primary: images.primary,
-        junior: images.junior
-      });
-      setTransportImage(images.transport);
-      setLoading(false);
+    const loadImages = async () => {
+      setLoading(true);
+      try {
+        const data = await getFeeStructure();
+        if (data) {
+          const images = {
+            ecde: data.ecde?.image || DEFAULT_FEE_IMAGES.ecde,
+            primary: data.primary?.image || DEFAULT_FEE_IMAGES.primary,
+            junior: data.junior?.image || DEFAULT_FEE_IMAGES.junior,
+            transport: data.transport?.image || DEFAULT_FEE_IMAGES.transport
+          };
+          setFeeImages({
+            ecde: images.ecde,
+            primary: images.primary,
+            junior: images.junior
+          });
+          setTransportImage(images.transport);
+          console.log('Fee structure images loaded from JSON Bin');
+        } else {
+          // Use defaults if no data
+          setFeeImages({
+            ecde: DEFAULT_FEE_IMAGES.ecde,
+            primary: DEFAULT_FEE_IMAGES.primary,
+            junior: DEFAULT_FEE_IMAGES.junior
+          });
+          setTransportImage(DEFAULT_FEE_IMAGES.transport);
+        }
+      } catch (error) {
+        console.error('Error loading fee images:', error);
+        // Fallback to defaults
+        setFeeImages({
+          ecde: DEFAULT_FEE_IMAGES.ecde,
+          primary: DEFAULT_FEE_IMAGES.primary,
+          junior: DEFAULT_FEE_IMAGES.junior
+        });
+        setTransportImage(DEFAULT_FEE_IMAGES.transport);
+      } finally {
+        setLoading(false);
+      }
     };
 
     loadImages();
-
-    // Listen for storage changes (when admin updates fee structure)
-    const handleStorageChange = (e) => {
-      if (e.key === 'admin_fee_structure' || e.key === 'admin_uploaded_images') {
-        console.log('FeeStructure: Storage changed, reloading images...');
-        loadImages();
-      }
-    };
-
-    // Listen for custom event from Admin
-    const handleAdminDataChange = (e) => {
-      if (e.detail?.key === 'admin_fee_structure' || e.detail?.key === 'admin_uploaded_images') {
-        console.log('FeeStructure: adminDataChange event received, reloading images...');
-        loadImages();
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('adminDataChange', handleAdminDataChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('adminDataChange', handleAdminDataChange);
-    };
   }, []);
 
   useEffect(() => {

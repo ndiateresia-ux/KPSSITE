@@ -1,27 +1,12 @@
-// pages/BoardingLife.jsx - Updated to show boarding items image prominently
+// pages/BoardingLife.jsx - Updated to use JSON Bin (No localStorage)
 import { Helmet } from "react-helmet-async";
 import { Container, Row, Col, Card, Button, Modal } from "react-bootstrap";
 import { useState, useCallback, lazy, Suspense, memo, useEffect, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
+import { getPageContent as fetchPageContent } from "../services/dataService";
 
 // Lazy load non-critical components
 const GetInTouch = lazy(() => import("../components/GetInTouch"));
-
-// ============================================================
-// Helper function to get page content from localStorage
-// ============================================================
-const getPageContent = (sectionId, field) => {
-  try {
-    const saved = localStorage.getItem('admin_all_page_content');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      return parsed['boarding']?.[sectionId]?.[field] || '';
-    }
-  } catch (error) {
-    console.error('Error loading boarding page content:', error);
-  }
-  return '';
-};
 
 // ============================================================
 // Default content (fallback)
@@ -173,23 +158,46 @@ function BoardingLife() {
   const [selectedImage, setSelectedImage] = useState(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [pageContent, setPageContent] = useState(null);
+  const [loading, setLoading] = useState(true);
   
-  // Load content from localStorage
-  const heroTitle = getPageContent('hero', 'title') || getDefaultContent('hero', 'title');
-  const heroSubtitle = getPageContent('hero', 'subtitle') || getDefaultContent('hero', 'subtitle');
-  const overviewTitle = getPageContent('overview', 'title') || getDefaultContent('overview', 'title');
-  const overviewContent = getPageContent('overview', 'content') || getDefaultContent('overview', 'content');
-  const experienceTitle = getPageContent('experience', 'title') || getDefaultContent('experience', 'title');
-  const experienceContent = getPageContent('experience', 'content') || getDefaultContent('experience', 'content');
-  const studyTitle = getPageContent('study', 'title') || getDefaultContent('study', 'title');
-  const studyContent = getPageContent('study', 'content') || getDefaultContent('study', 'content');
-  const recreationTitle = getPageContent('recreation', 'title') || getDefaultContent('recreation', 'title');
-  const recreationContent = getPageContent('recreation', 'content') || getDefaultContent('recreation', 'content');
-  const parentExpectationsTitle = getPageContent('parent_expectations', 'title') || getDefaultContent('parent_expectations', 'title');
-  const outcomesTitle = getPageContent('outcomes', 'title') || getDefaultContent('outcomes', 'title');
-  const routineTitle = getPageContent('routine', 'title') || getDefaultContent('routine', 'title');
-  const checklistTitle = getPageContent('checklist', 'title') || getDefaultContent('checklist', 'title');
-  const checklistContent = getPageContent('checklist', 'content') || getDefaultContent('checklist', 'content');
+  // Load content from JSON Bin (No localStorage)
+  useEffect(() => {
+    const loadContent = async () => {
+      try {
+        const data = await fetchPageContent();
+        setPageContent(data?.boarding || {});
+      } catch (error) {
+        console.error('Error loading boarding page content:', error);
+        setPageContent({});
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadContent();
+  }, []);
+
+  // Get content with fallback
+  const getContent = (sectionId, field) => {
+    if (loading) return '';
+    return pageContent?.[sectionId]?.[field] || getDefaultContent(sectionId, field);
+  };
+
+  const heroTitle = getContent('hero', 'title');
+  const heroSubtitle = getContent('hero', 'subtitle');
+  const overviewTitle = getContent('overview', 'title');
+  const overviewContent = getContent('overview', 'content');
+  const experienceTitle = getContent('experience', 'title');
+  const experienceContent = getContent('experience', 'content');
+  const studyTitle = getContent('study', 'title');
+  const studyContent = getContent('study', 'content');
+  const recreationTitle = getContent('recreation', 'title');
+  const recreationContent = getContent('recreation', 'content');
+  const parentExpectationsTitle = getContent('parent_expectations', 'title');
+  const outcomesTitle = getContent('outcomes', 'title');
+  const routineTitle = getContent('routine', 'title');
+  const checklistTitle = getContent('checklist', 'title');
+  const checklistContent = getContent('checklist', 'content');
   
   // Boarding images
   const boardingImages = useMemo(() => ({
@@ -281,6 +289,18 @@ function BoardingLife() {
   const handleBookVisit = useCallback(() => {
     window.location.href = '/contact';
   }, []);
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="text-center py-5">
+        <div className="spinner-border text-primary" role="status" style={{ width: '3rem', height: '3rem' }}>
+          <span className="visually-hidden">Loading boarding information...</span>
+        </div>
+        <p className="mt-3 text-muted">Loading boarding information...</p>
+      </div>
+    );
+  }
 
   return (
     <>

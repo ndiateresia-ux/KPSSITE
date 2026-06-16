@@ -1,11 +1,25 @@
-// pages/Admin.jsx - Updated with ImgBB ImageUploader
+// pages/Admin.jsx - Complete Admin Panel with JSON Bin Storage (No localStorage)
 import { Helmet } from "react-helmet-async";
 import { Row, Col, Card, Button, Form, Table, Modal, Alert, Spinner } from "react-bootstrap";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import ImageUploader from "../components/ImageUploader"; // Import your new ImageUploader
+import ImageUploader from "../components/ImageUploader";
+import {
+  getBlogs, saveBlogs, addBlog, updateBlog, deleteBlog,
+  getEvents, saveEvents, addEvent, updateEvent, deleteEvent,
+  getGallery, saveGallery, addGalleryImage, deleteGalleryImage,
+  getTestimonials, saveTestimonials, addTestimonial, updateTestimonial, deleteTestimonial,
+  getFAQ, saveFAQ,
+  getPartners, savePartners, addPartner, updatePartner, deletePartner,
+  getFeeStructure, saveFeeStructure,
+  getPageContent, savePageContent,
+  getFooterSettings, saveFooterSettings,
+  getSettings, saveSettings
+} from "../services/dataService";
 
-// Admin authentication hook
+// ============================================================
+// ADMIN AUTHENTICATION HOOK (Uses localStorage for session only)
+// ============================================================
 const useAdminAuth = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -53,7 +67,9 @@ const useAdminAuth = () => {
   return { isAuthenticated, isLoading, login, logout };
 };
 
-// Admin Login Component
+// ============================================================
+// ADMIN LOGIN COMPONENT
+// ============================================================
 const AdminLogin = ({ onLogin }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -129,11 +145,12 @@ const AdminLogin = ({ onLogin }) => {
   );
 };
 
-// Sidebar Component
+// ============================================================
+// SIDEBAR COMPONENT
+// ============================================================
 const AdminSidebar = ({ activeTab, onTabChange, onLogout }) => {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: 'fas fa-tachometer-alt' },
-    { id: 'homepage', label: 'Homepage', icon: 'fas fa-home' },
     { id: 'blogs', label: 'Blogs & News', icon: 'fas fa-newspaper' },
     { id: 'events', label: 'Events', icon: 'fas fa-calendar-alt' },
     { id: 'gallery', label: 'Gallery', icon: 'fas fa-images' },
@@ -172,7 +189,9 @@ const AdminSidebar = ({ activeTab, onTabChange, onLogout }) => {
   );
 };
 
-// Dashboard Overview Component
+// ============================================================
+// DASHBOARD OVERVIEW COMPONENT
+// ============================================================
 const DashboardOverview = ({ stats }) => {
   const statCards = [
     { title: 'Blog Posts', value: stats.blogs, icon: 'fas fa-newspaper', color: '#0d65fb' },
@@ -254,7 +273,7 @@ const DashboardOverview = ({ stats }) => {
 };
 
 // ============================================================
-// BLOGS MANAGER - Updated with ImgBB ImageUploader
+// BLOGS MANAGER - No localStorage
 // ============================================================
 const BlogsManager = () => {
   const [blogs, setBlogs] = useState([]);
@@ -275,6 +294,7 @@ const BlogsManager = () => {
     category: ''
   });
   const [alert, setAlert] = useState({ show: false, type: '', message: '' });
+  const [saving, setSaving] = useState(false);
 
   const generateSlug = (title) => {
     if (!title) return '';
@@ -288,144 +308,90 @@ const BlogsManager = () => {
     return new Date().toISOString().split('T')[0];
   };
 
-  const loadBlogs = () => {
-    console.log('Loading blogs from localStorage...');
-    const saved = localStorage.getItem('admin_blogs');
-    
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        console.log('Blogs loaded successfully:', parsed.length, 'posts');
-        setBlogs(parsed);
-        setLoading(false);
-        return;
-      } catch (e) {
-        console.error('Error parsing blogs:', e);
-      }
+  const loadBlogs = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await getBlogs();
+      setBlogs(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error loading blogs:', error);
+      setAlert({ show: true, type: 'danger', message: 'Failed to load blogs.' });
+    } finally {
+      setLoading(false);
     }
-    
-    setDefaultBlogs();
-  };
-
-  const setDefaultBlogs = () => {
-    console.log('Setting default blogs...');
-    const defaultBlogs = [
-      {
-    id: 1,
-    slug: "annual-sports-day-2024",
-    title: "Annual Sports Day 2024: A Celebration of Talent",
-    excerpt: "Students showcased exceptional athletic abilities during our annual sports day event with record-breaking performances across all categories.",
-    content: "<p>The annual sports day was a spectacular event filled with excitement and competition. Students from all grades participated in various athletic events including track races, field events, and team sports.</p><p>The day began with a colorful parade followed by the lighting of the torch. Students competed fiercely but with great sportsmanship, making it a memorable day for everyone involved.</p>",
-    fullStory: "<p>Students from all grades participated in various athletic events including 100m sprints, long jump, high jump, relay races, and football matches. The school's sports teams demonstrated exceptional skills and teamwork.</p><p>Special recognition was given to the top performers who broke school records. The event concluded with an awards ceremony where medals and certificates were presented to the winners.</p>",
-    featuredImage: "/images/optimized/gallery/sports1.webp",
-    author: "Mr. Omondi",
-    date: "2024-12-01",
-    category: "School Event",
-    tags: ["sports", "competition", "students"]
-  },
-  {
-    id: 2,
-    slug: "excellence-in-cbc-grade-6",
-    title: "Excellence in CBC: Our Grade 6 Learners Shine",
-    excerpt: "Our Grade 6 learners demonstrated outstanding performance in the recent CBC assessments with remarkable scores in all competency areas.",
-    content: "<p>The Competency-Based Curriculum has transformed how our students learn and grow. Our Grade 6 learners have shown remarkable progress in all competency areas including literacy, numeracy, and life skills.</p><p>Parents and teachers have been impressed with the holistic development of the learners, who are now better prepared for higher education and life challenges.</p>",
-    fullStory: "<p>Our Grade 6 learners have shown remarkable progress in all competency areas including literacy, numeracy, creativity, and critical thinking. The CBC approach has fostered independent learning and problem-solving skills.</p><p>The school has invested in modern teaching resources and teacher training to ensure effective implementation of the curriculum. Regular assessments and feedback help track learner progress and identify areas for improvement.</p>",
-    featuredImage: "/images/optimized/academics1.webp",
-    author: "Madam Sarah",
-    date: "2024-11-15",
-    category: "Academic Achievement",
-    tags: ["CBC", "education", "achievement"]
-  },
-  {
-    id: 3,
-    slug: "student-council-elections-2024",
-    title: "Building Future Leaders: Student Council Elections",
-    excerpt: "Democracy in action as our students participated in the annual student council elections with great enthusiasm and civic awareness.",
-    content: "<p>The student council elections provide valuable leadership experience for our learners. Candidates presented their manifestos and campaigned across the school, showcasing their leadership qualities.</p><p>Students exercised their democratic rights by voting for their preferred candidates, making this a practical lesson in democracy and civic responsibility.</p>",
-    fullStory: "<p>Candidates presented their manifestos and campaigned across the school, sharing their vision for improving student welfare and school activities. The election process was conducted with transparency and fairness.</p><p>The newly elected student council will work closely with the school administration to implement student-led initiatives and represent student interests. This experience helps develop essential leadership and communication skills.</p>",
-    featuredImage: "/images/optimized/gallery/events3.webp",
-    author: "Mr. Kipchoge",
-    date: "2024-10-20",
-    category: "Student Leadership",
-    tags: ["leadership", "democracy", "students"]
-  },
-  {
-    id: 4,
-    slug: "science-fair-2024",
-    title: "Innovation Showcase: Annual Science Fair 2024",
-    excerpt: "Young scientists impressed everyone with their innovative projects addressing real-world challenges through creative scientific solutions.",
-    content: "<p>The annual science fair showcased the creativity and scientific thinking of our students. Projects ranged from environmental conservation to technology solutions for everyday problems.</p><p>Students demonstrated their research skills and presented their findings to judges and visitors, showing how science can solve real-world problems.</p>",
-    fullStory: "<p>Projects ranged from environmental conservation to technology solutions for everyday problems. Winners received special recognition and will represent the school at the regional science competition.</p><p>The science fair has become a platform for nurturing young scientists and innovators. Students are encouraged to think critically and apply scientific principles to address community challenges.</p>",
-    featuredImage: "/images/optimized/gallery/science1.webp",
-    author: "Dr. Mwangi",
-    date: "2024-09-28",
-    category: "STEM",
-    tags: ["science", "innovation", "STEM"]
-  },
-  {
-    id: 5,
-    slug: "culture-day-celebration",
-    title: "Celebrating Diversity: Cultural Day 2024",
-    excerpt: "Students showcased Kenya's rich cultural heritage through music, dance, traditional cuisine, and colorful attire from various communities.",
-    content: "<p>Cultural Day was a vibrant celebration of Kenya's diverse cultural heritage. Students and staff dressed in traditional attire representing various Kenyan communities.</p><p>The event featured traditional dances, music performances, storytelling, and a food fair where parents and students shared traditional dishes.</p>",
-    fullStory: "<p>The event featured traditional dances, music performances, storytelling, and a food fair where parents and students shared traditional dishes. This celebration promotes cultural understanding and national unity.</p><p>Parents were invited to participate and share their cultural knowledge with students. The event was a powerful reminder of the beauty in diversity and the importance of preserving cultural heritage.</p>",
-    featuredImage: "/images/optimized/gallery/culture1.webp",
-    author: "Madam Grace",
-    date: "2024-09-15",
-    category: "Cultural Event",
-    tags: ["culture", "diversity", "celebration"]
-  }
-    ];
-    
-    setBlogs(defaultBlogs);
-    localStorage.setItem('admin_blogs', JSON.stringify(defaultBlogs));
-    console.log('Default blogs set:', defaultBlogs.length, 'posts');
-    setLoading(false);
-  };
-
-  const saveBlogs = (newBlogs) => {
-    localStorage.setItem('admin_blogs', JSON.stringify(newBlogs));
-    setBlogs(newBlogs);
-    window.dispatchEvent(new CustomEvent('adminDataChange', { detail: { key: 'admin_blogs' } }));
-    console.log('Blogs saved:', newBlogs.length, 'posts');
-  };
-
-  useEffect(() => {
-    loadBlogs();
-    
-    const handleStorageChange = (e) => {
-      if (e.key === 'admin_blogs') {
-        console.log('Storage event: blogs changed in another tab');
-        loadBlogs();
-      }
-    };
-    
-    const handleCustomEvent = (e) => {
-      if (e.detail?.key === 'admin_blogs') {
-        console.log('Custom event: blogs changed');
-        loadBlogs();
-      }
-    };
-    
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('adminDataChange', handleCustomEvent);
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('adminDataChange', handleCustomEvent);
-    };
   }, []);
 
-  // Updated to handle ImgBB upload
+  const handleSaveBlog = async () => {
+    if (!formData.title || !formData.excerpt || !formData.content) {
+      setAlert({ show: true, type: 'danger', message: 'Please fill in title, excerpt, and content.' });
+      setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
+      return;
+    }
+
+    setSaving(true);
+    try {
+      let slug = formData.slug || generateSlug(formData.title);
+
+      const blogData = {
+        title: formData.title,
+        slug: slug,
+        excerpt: formData.excerpt,
+        content: formData.content,
+        fullStory: formData.fullStory || '',
+        featuredImage: formData.featuredImage || '/images/placeholder.jpg',
+        date: formData.date || getTodayDate(),
+        author: formData.author || 'Admin',
+        category: formData.category || 'General'
+      };
+
+      let result;
+      if (editingBlog) {
+        result = await updateBlog(editingBlog.id, blogData);
+      } else {
+        result = await addBlog(blogData);
+      }
+
+      if (result) {
+        await loadBlogs();
+        handleCloseModal();
+        setAlert({ 
+          show: true, 
+          type: 'success', 
+          message: `Blog ${editingBlog ? 'updated' : 'added'} successfully!` 
+        });
+        setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
+      }
+    } catch (error) {
+      console.error('Error saving blog:', error);
+      setAlert({ show: true, type: 'danger', message: 'Failed to save blog: ' + error.message });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteBlog = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this blog post?')) return;
+    
+    try {
+      const result = await deleteBlog(id);
+      if (result) {
+        await loadBlogs();
+        setAlert({ show: true, type: 'success', message: 'Blog deleted successfully!' });
+        setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
+      }
+    } catch (error) {
+      console.error('Error deleting blog:', error);
+      setAlert({ show: true, type: 'danger', message: 'Failed to delete blog.' });
+    }
+  };
+
   const handleImageUpload = (imageUrl, displayUrl, filename, deleteUrl) => {
     setFormData(prev => ({ ...prev, featuredImage: imageUrl }));
     setImageUrl(imageUrl);
-    console.log('Image uploaded to ImgBB:', imageUrl);
   };
 
   const handleOpenModal = (blog = null) => {
     if (blog) {
-      console.log('Editing blog:', blog.id);
       setEditingBlog(blog);
       setFormData({
         id: blog.id || '',
@@ -441,7 +407,6 @@ const BlogsManager = () => {
       });
       setImageUrl(blog.featuredImage || null);
     } else {
-      console.log('Adding new blog');
       setEditingBlog(null);
       setFormData({
         id: '',
@@ -481,60 +446,14 @@ const BlogsManager = () => {
   const handleFormChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    
     if (name === 'title' && !formData.slug) {
       setFormData(prev => ({ ...prev, slug: generateSlug(value) }));
     }
   };
 
-  const handleSaveBlog = () => {
-    if (!formData.title || !formData.excerpt || !formData.content) {
-      setAlert({ show: true, type: 'danger', message: 'Please fill in title, excerpt, and content.' });
-      setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
-      return;
-    }
-
-    let slug = formData.slug;
-    if (!slug) {
-      slug = generateSlug(formData.title);
-    }
-
-    const blogData = {
-      id: formData.id || Math.max(...blogs.map(b => b.id), 0) + 1,
-      title: formData.title,
-      slug: slug,
-      excerpt: formData.excerpt,
-      content: formData.content,
-      fullStory: formData.fullStory || '',
-      featuredImage: formData.featuredImage || '/images/placeholder.jpg',
-      date: formData.date || getTodayDate(),
-      author: formData.author || 'Admin',
-      category: formData.category || 'General'
-    };
-
-    console.log('Saving blog:', blogData);
-
-    let newBlogs;
-    if (editingBlog) {
-      newBlogs = blogs.map(blog => blog.id === editingBlog.id ? blogData : blog);
-    } else {
-      newBlogs = [...blogs, blogData];
-    }
-    
-    saveBlogs(newBlogs);
-    handleCloseModal();
-    setAlert({ show: true, type: 'success', message: `Blog ${editingBlog ? 'updated' : 'added'} successfully!` });
-    setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
-  };
-
-  const handleDeleteBlog = (id) => {
-    if (window.confirm('Are you sure you want to delete this blog post?')) {
-      const newBlogs = blogs.filter(blog => blog.id !== id);
-      saveBlogs(newBlogs);
-      setAlert({ show: true, type: 'success', message: 'Blog deleted successfully!' });
-      setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
-    }
-  };
+  useEffect(() => {
+    loadBlogs();
+  }, [loadBlogs]);
 
   if (loading) {
     return <div className="text-center py-5"><Spinner animation="border" variant="primary" /></div>;
@@ -543,7 +462,7 @@ const BlogsManager = () => {
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h3 className="h5 fw-bold mb-0">Manage Blog Posts</h3>
+        <h3 className="h5 fw-bold mb-0">Manage Blog Posts ({blogs.length})</h3>
         <Button className="btn-navy" size="sm" onClick={() => handleOpenModal()}>
           <i className="fas fa-plus me-1"></i> Add New Blog
         </Button>
@@ -679,7 +598,6 @@ const BlogsManager = () => {
                 </Form.Group>
               </Col>
               <Col md={6}>
-                {/* NEW: ImgBB ImageUploader */}
                 <ImageUploader 
                   onImageUpload={handleImageUpload}
                   currentImage={imageUrl}
@@ -730,9 +648,16 @@ const BlogsManager = () => {
           </Form>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseModal}>Cancel</Button>
-          <Button className="btn-navy" onClick={handleSaveBlog}>
-            {editingBlog ? 'Update Blog' : 'Save Blog'}
+          <Button variant="secondary" onClick={handleCloseModal} disabled={saving}>Cancel</Button>
+          <Button className="btn-navy" onClick={handleSaveBlog} disabled={saving}>
+            {saving ? (
+              <>
+                <Spinner as="span" animation="border" size="sm" className="me-2" />
+                {editingBlog ? 'Updating...' : 'Saving...'}
+              </>
+            ) : (
+              editingBlog ? 'Update Blog' : 'Save Blog'
+            )}
           </Button>
         </Modal.Footer>
       </Modal>
@@ -741,7 +666,7 @@ const BlogsManager = () => {
 };
 
 // ============================================================
-// EVENTS MANAGER (unchanged)
+// EVENTS MANAGER - No localStorage
 // ============================================================
 const EventsManager = () => {
   const [events, setEvents] = useState([]);
@@ -752,6 +677,7 @@ const EventsManager = () => {
     title: '', date: '', description: '', time: '', location: '', category: '', color: ''
   });
   const [alert, setAlert] = useState({ show: false, type: '', message: '' });
+  const [saving, setSaving] = useState(false);
 
   const categories = [
     { id: "academic", name: "Academic", color: "#0d65fb" },
@@ -761,36 +687,108 @@ const EventsManager = () => {
     { id: "ceremony", name: "Ceremonies", color: "#ff0080" },
   ];
 
-  useEffect(() => { loadEvents(); }, []);
-
-  const loadEvents = () => {
-    const saved = localStorage.getItem('admin_events');
-    if (saved) { setEvents(JSON.parse(saved)); }
-    else {
-      const defaultEvents = [
-        { id: 1, title: "Term 1 Opening Day", date: `${new Date().getFullYear()}-01-08`, description: "School opens for Term 1", time: "8:00 AM", location: "School Assembly Ground", category: "academic", color: "#0d65fb" },
-        { id: 2, title: "Sports Day", date: `${new Date().getFullYear()}-02-15`, description: "Annual inter-house sports competitions", time: "9:00 AM - 4:00 PM", location: "School Sports Ground", category: "sports", color: "#48bb78" },
-        { id: 3, title: "Parents-Teachers Conference", date: `${new Date().getFullYear()}-03-10`, description: "Meet your child's teachers", time: "2:00 PM - 6:00 PM", location: "Various Classrooms", category: "meeting", color: "#ed8936" },
-      ];
-      setEvents(defaultEvents);
-      localStorage.setItem('admin_events', JSON.stringify(defaultEvents));
+  const loadEvents = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await getEvents();
+      setEvents(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error loading events:', error);
+      setAlert({ show: true, type: 'danger', message: 'Failed to load events.' });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
+  }, []);
+
+  const handleSaveEvent = async () => {
+    if (!formData.title || !formData.date || !formData.description) {
+      setAlert({ show: true, type: 'danger', message: 'Please fill in all required fields.' });
+      setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const eventData = {
+        title: formData.title,
+        date: formData.date,
+        description: formData.description,
+        time: formData.time || '',
+        location: formData.location || '',
+        category: formData.category || 'academic',
+        color: formData.color || '#0d65fb'
+      };
+
+      let result;
+      if (editingEvent) {
+        result = await updateEvent(editingEvent.id, eventData);
+      } else {
+        result = await addEvent(eventData);
+      }
+
+      if (result) {
+        await loadEvents();
+        handleCloseModal();
+        setAlert({ 
+          show: true, 
+          type: 'success', 
+          message: `Event ${editingEvent ? 'updated' : 'added'} successfully!` 
+        });
+        setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
+      }
+    } catch (error) {
+      console.error('Error saving event:', error);
+      setAlert({ show: true, type: 'danger', message: 'Failed to save event: ' + error.message });
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const saveEvents = (newEvents) => {
-    localStorage.setItem('admin_events', JSON.stringify(newEvents));
-    setEvents(newEvents);
-    window.dispatchEvent(new CustomEvent('adminDataChange', { detail: { key: 'admin_events' } }));
+  const handleDeleteEvent = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this event?')) return;
+    
+    try {
+      const result = await deleteEvent(id);
+      if (result) {
+        await loadEvents();
+        setAlert({ show: true, type: 'success', message: 'Event deleted successfully!' });
+        setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
+      }
+    } catch (error) {
+      console.error('Error deleting event:', error);
+      setAlert({ show: true, type: 'danger', message: 'Failed to delete event.' });
+    }
   };
 
   const handleOpenModal = (event = null) => {
-    if (event) { setEditingEvent(event); setFormData(event); }
-    else { setEditingEvent(null); setFormData({ title: '', date: '', description: '', time: '', location: '', category: 'academic', color: '#0d65fb' }); }
+    if (event) {
+      setEditingEvent(event);
+      setFormData({
+        title: event.title || '',
+        date: event.date || '',
+        description: event.description || '',
+        time: event.time || '',
+        location: event.location || '',
+        category: event.category || 'academic',
+        color: event.color || '#0d65fb'
+      });
+    } else {
+      setEditingEvent(null);
+      setFormData({
+        title: '', date: '', description: '', time: '', location: '', category: 'academic', color: '#0d65fb'
+      });
+    }
     setShowModal(true);
   };
 
-  const handleCloseModal = () => { setShowModal(false); setEditingEvent(null); };
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setEditingEvent(null);
+    setFormData({
+      title: '', date: '', description: '', time: '', location: '', category: 'academic', color: '#0d65fb'
+    });
+  };
+
   const handleFormChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -800,40 +798,18 @@ const EventsManager = () => {
     }
   };
 
-  const handleSaveEvent = () => {
-    if (!formData.title || !formData.date || !formData.description) {
-      setAlert({ show: true, type: 'danger', message: 'Please fill in all required fields.' });
-      setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
-      return;
-    }
-    let newEvents;
-    if (editingEvent) {
-      newEvents = events.map(event => event.id === editingEvent.id ? { ...formData, id: event.id } : event);
-    } else {
-      const newId = Math.max(...events.map(e => e.id), 0) + 1;
-      newEvents = [...events, { ...formData, id: newId }];
-    }
-    saveEvents(newEvents);
-    handleCloseModal();
-    setAlert({ show: true, type: 'success', message: `Event ${editingEvent ? 'updated' : 'added'} successfully!` });
-    setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
-  };
+  useEffect(() => {
+    loadEvents();
+  }, [loadEvents]);
 
-  const handleDeleteEvent = (id) => {
-    if (window.confirm('Are you sure you want to delete this event?')) {
-      const newEvents = events.filter(event => event.id !== id);
-      saveEvents(newEvents);
-      setAlert({ show: true, type: 'success', message: 'Event deleted successfully!' });
-      setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
-    }
-  };
-
-  if (loading) return <div className="text-center py-5"><Spinner animation="border" variant="primary" /></div>;
+  if (loading) {
+    return <div className="text-center py-5"><Spinner animation="border" variant="primary" /></div>;
+  }
 
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h3 className="h5 fw-bold mb-0">Manage Events</h3>
+        <h3 className="h5 fw-bold mb-0">Manage Events ({events.length})</h3>
         <Button className="btn-navy" size="sm" onClick={() => handleOpenModal()}>
           <i className="fas fa-plus me-1"></i> Add New Event
         </Button>
@@ -843,19 +819,27 @@ const EventsManager = () => {
         <Table responsive hover className="admin-table">
           <thead><tr><th>ID</th><th>Title</th><th>Category</th><th>Date</th><th>Location</th><th>Actions</th></tr></thead>
           <tbody>
-            {events.map(event => (
-              <tr key={event.id}>
-                <td>{event.id}</td>
-                <td className="fw-semibold">{event.title}</td>
-                <td><span className="badge" style={{ backgroundColor: event.color, color: 'white' }}>{event.category}</span></td>
-                <td>{event.date}</td>
-                <td>{event.location || 'TBD'}</td>
-                <td>
-                  <Button variant="outline-primary" size="sm" className="me-1" onClick={() => handleOpenModal(event)}><i className="fas fa-edit"></i></Button>
-                  <Button variant="outline-danger" size="sm" onClick={() => handleDeleteEvent(event.id)}><i className="fas fa-trash"></i></Button>
+            {events.length === 0 ? (
+              <tr>
+                <td colSpan="6" className="text-center text-muted py-4">
+                  No events found. Click "Add New Event" to create one.
                 </td>
               </tr>
-            ))}
+            ) : (
+              events.map(event => (
+                <tr key={event.id}>
+                  <td>{event.id}</td>
+                  <td className="fw-semibold">{event.title}</td>
+                  <td><span className="badge" style={{ backgroundColor: event.color, color: 'white' }}>{event.category}</span></td>
+                  <td>{event.date}</td>
+                  <td>{event.location || 'TBD'}</td>
+                  <td>
+                    <Button variant="outline-primary" size="sm" className="me-1" onClick={() => handleOpenModal(event)}><i className="fas fa-edit"></i></Button>
+                    <Button variant="outline-danger" size="sm" onClick={() => handleDeleteEvent(event.id)}><i className="fas fa-trash"></i></Button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </Table>
       </div>
@@ -873,14 +857,26 @@ const EventsManager = () => {
             <Form.Group className="mb-3"><Form.Label className="fw-semibold small">Description *</Form.Label><Form.Control as="textarea" rows={3} name="description" value={formData.description} onChange={handleFormChange} /></Form.Group>
           </Form>
         </Modal.Body>
-        <Modal.Footer><Button variant="secondary" onClick={handleCloseModal}>Cancel</Button><Button className="btn-navy" onClick={handleSaveEvent}>Save Event</Button></Modal.Footer>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleCloseModal} disabled={saving}>Cancel</Button>
+          <Button className="btn-navy" onClick={handleSaveEvent} disabled={saving}>
+            {saving ? (
+              <>
+                <Spinner as="span" animation="border" size="sm" className="me-2" />
+                {editingEvent ? 'Updating...' : 'Saving...'}
+              </>
+            ) : (
+              editingEvent ? 'Update Event' : 'Save Event'
+            )}
+          </Button>
+        </Modal.Footer>
       </Modal>
     </div>
   );
 };
 
 // ============================================================
-// GALLERY MANAGER - Updated with ImgBB ImageUploader
+// GALLERY MANAGER - No localStorage
 // ============================================================
 const GalleryManager = () => {
   const [images, setImages] = useState([]);
@@ -891,10 +887,10 @@ const GalleryManager = () => {
   const [formData, setFormData] = useState({ filename: '', alt: '', category: '' });
   const [alert, setAlert] = useState({ show: false, type: '', message: '' });
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [saving, setSaving] = useState(false);
 
   const categories = ['academics', 'sports', 'cultural', 'events', 'facilities'];
 
-  // DEFAULT GALLERY IMAGES - now using public URLs
   const DEFAULT_IMAGES = [
     { id: 1, filename: "academics1", alt: "Classroom learning", category: "academics", imageUrl: "/images/optimized/gallery/academics1.jpg" },
     { id: 2, filename: "academics2", alt: "Science experiment", category: "academics", imageUrl: "/images/optimized/gallery/academics2.jpg" },
@@ -928,42 +924,44 @@ const GalleryManager = () => {
   const getDefaultImageIds = () => new Set(DEFAULT_IMAGES.map(img => img.id));
   const getDefaultFilenames = () => new Set(DEFAULT_IMAGES.map(img => img.filename));
 
-  const loadImages = () => {
+  const loadImages = useCallback(async () => {
     setLoading(true);
     try {
-      const storedGallery = JSON.parse(localStorage.getItem('admin_gallery') || '[]');
+      const storedGallery = await getGallery();
       const defaultFilenames = getDefaultFilenames();
       
       let allImages = [...DEFAULT_IMAGES];
-      const storedFilenames = new Set(storedGallery.map(item => item.filename));
       
-      storedGallery.forEach((item) => {
-        const isDefault = defaultFilenames.has(item.filename);
-        if (!isDefault) {
-          const maxId = Math.max(...allImages.map(img => img.id), 0);
-          const newId = maxId + 1;
-          
-          allImages.push({
-            id: newId,
-            filename: item.filename,
-            alt: item.alt || item.filename.replace(/-/g, ' ').replace(/\d+$/, '').trim(),
-            category: item.category || 'facilities',
-            imageUrl: item.imageUrl || null,
-            isUploaded: true
-          });
-        }
-      });
+      if (storedGallery && storedGallery.length > 0) {
+        storedGallery.forEach((item) => {
+          const isDefault = defaultFilenames.has(item.filename);
+          if (!isDefault) {
+            const maxId = Math.max(...allImages.map(img => img.id), 0);
+            const newId = maxId + 1;
+            
+            allImages.push({
+              id: newId,
+              filename: item.filename,
+              alt: item.alt || item.filename.replace(/-/g, ' ').replace(/\d+$/, '').trim(),
+              category: item.category || 'facilities',
+              imageUrl: item.imageUrl || null,
+              isUploaded: true
+            });
+          }
+        });
+      }
       
       setImages(allImages);
       console.log('Gallery loaded:', allImages.length, 'images total');
     } catch (error) {
       console.error('Error loading gallery:', error);
       setImages(DEFAULT_IMAGES);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  };
+  }, []);
 
-  const saveImages = (newImages) => {
+  const saveImages = async (newImages) => {
     const defaultFilenames = getDefaultFilenames();
     const uploadedImages = newImages.filter(img => {
       return img.isUploaded === true || !defaultFilenames.has(img.filename);
@@ -977,13 +975,11 @@ const GalleryManager = () => {
       imageUrl: img.imageUrl
     }));
     
-    localStorage.setItem('admin_gallery', JSON.stringify(galleryMetadata));
+    await saveGallery(galleryMetadata);
     setImages(newImages);
-    window.dispatchEvent(new CustomEvent('adminDataChange', { detail: { key: 'admin_gallery' } }));
     console.log('Gallery saved:', newImages.length, 'images total');
   };
 
-  // Updated for ImgBB
   const handleImageUpload = (imageUrl, displayUrl, filename, deleteUrl) => {
     setFormData(prev => ({ ...prev, filename: filename }));
     setImageUrl(imageUrl);
@@ -1018,7 +1014,7 @@ const GalleryManager = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value }); 
   };
 
-  const handleSaveImage = () => {
+  const handleSaveImage = async () => {
     if (!formData.filename || !formData.alt) {
       setAlert({ show: true, type: 'danger', message: 'Please fill in all required fields.' });
       setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
@@ -1036,45 +1032,53 @@ const GalleryManager = () => {
       return;
     }
 
-    let newImages;
-    if (editingImage) {
-      const defaultIds = getDefaultImageIds();
-      const isDefault = defaultIds.has(editingImage.id);
-      const newFilename = isDefault ? editingImage.filename : formData.filename;
+    setSaving(true);
+    try {
+      let newImages;
+      if (editingImage) {
+        const defaultIds = getDefaultImageIds();
+        const isDefault = defaultIds.has(editingImage.id);
+        const newFilename = isDefault ? editingImage.filename : formData.filename;
+        
+        newImages = images.map(img => 
+          img.id === editingImage.id 
+            ? { 
+                ...img, 
+                filename: newFilename,
+                alt: formData.alt, 
+                category: formData.category,
+                imageUrl: imageUrl || img.imageUrl,
+                isUploaded: isDefault ? false : true
+              } 
+            : img
+        );
+      } else {
+        const maxId = Math.max(...images.map(img => img.id), 0);
+        const newId = maxId + 1;
+        const newImage = {
+          id: newId,
+          filename: formData.filename,
+          alt: formData.alt,
+          category: formData.category,
+          imageUrl: imageUrl,
+          isUploaded: true
+        };
+        newImages = [...images, newImage];
+      }
       
-      newImages = images.map(img => 
-        img.id === editingImage.id 
-          ? { 
-              ...img, 
-              filename: newFilename,
-              alt: formData.alt, 
-              category: formData.category,
-              imageUrl: imageUrl || img.imageUrl,
-              isUploaded: isDefault ? false : true
-            } 
-          : img
-      );
-    } else {
-      const maxId = Math.max(...images.map(img => img.id), 0);
-      const newId = maxId + 1;
-      const newImage = {
-        id: newId,
-        filename: formData.filename,
-        alt: formData.alt,
-        category: formData.category,
-        imageUrl: imageUrl,
-        isUploaded: true
-      };
-      newImages = [...images, newImage];
+      await saveImages(newImages);
+      handleCloseModal();
+      setAlert({ show: true, type: 'success', message: `Image ${editingImage ? 'updated' : 'added'} successfully!` });
+      setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
+    } catch (error) {
+      console.error('Error saving image:', error);
+      setAlert({ show: true, type: 'danger', message: 'Failed to save image: ' + error.message });
+    } finally {
+      setSaving(false);
     }
-    
-    saveImages(newImages);
-    handleCloseModal();
-    setAlert({ show: true, type: 'success', message: `Image ${editingImage ? 'updated' : 'added'} successfully!` });
-    setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
   };
 
-  const handleDeleteImage = (id) => {
+  const handleDeleteImage = async (id) => {
     const imageToDelete = images.find(img => img.id === id);
     if (!imageToDelete) {
       setAlert({ show: true, type: 'warning', message: 'Image not found.' });
@@ -1092,16 +1096,15 @@ const GalleryManager = () => {
     }
     
     if (window.confirm(`Are you sure you want to delete "${imageToDelete.alt}"?`)) {
-      const newImages = images.filter(img => img.id !== id);
-      const storedGallery = JSON.parse(localStorage.getItem('admin_gallery') || '[]');
-      const newGallery = storedGallery.filter(img => img.id !== id && img.filename !== imageToDelete.filename);
-      localStorage.setItem('admin_gallery', JSON.stringify(newGallery));
-      
-      setImages(newImages);
-      window.dispatchEvent(new CustomEvent('adminDataChange', { detail: { key: 'admin_gallery' } }));
-      
-      setAlert({ show: true, type: 'success', message: 'Image deleted successfully!' });
-      setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
+      try {
+        const newImages = images.filter(img => img.id !== id);
+        await saveImages(newImages);
+        setAlert({ show: true, type: 'success', message: 'Image deleted successfully!' });
+        setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
+      } catch (error) {
+        console.error('Error deleting image:', error);
+        setAlert({ show: true, type: 'danger', message: 'Failed to delete image.' });
+      }
     }
   };
 
@@ -1113,7 +1116,9 @@ const GalleryManager = () => {
     ? images 
     : images.filter(img => img.category === selectedCategory);
 
-  useEffect(() => { loadImages(); }, []);
+  useEffect(() => {
+    loadImages();
+  }, [loadImages]);
 
   if (loading) return <div className="text-center py-5"><Spinner animation="border" variant="primary" /></div>;
 
@@ -1210,7 +1215,6 @@ const GalleryManager = () => {
         </Modal.Header>
         <Modal.Body style={{ maxHeight: '70vh', overflowY: 'auto' }}>
           <Form>
-            {/* NEW: ImgBB ImageUploader */}
             <ImageUploader 
               onImageUpload={handleImageUpload}
               currentImage={imageUrl}
@@ -1256,9 +1260,16 @@ const GalleryManager = () => {
           </Form>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseModal}>Cancel</Button>
-          <Button className="btn-navy" onClick={handleSaveImage}>
-            {editingImage ? 'Update Image' : 'Save Image'}
+          <Button variant="secondary" onClick={handleCloseModal} disabled={saving}>Cancel</Button>
+          <Button className="btn-navy" onClick={handleSaveImage} disabled={saving}>
+            {saving ? (
+              <>
+                <Spinner as="span" animation="border" size="sm" className="me-2" />
+                {editingImage ? 'Updating...' : 'Saving...'}
+              </>
+            ) : (
+              editingImage ? 'Update Image' : 'Save Image'
+            )}
           </Button>
         </Modal.Footer>
       </Modal>
@@ -1361,103 +1372,159 @@ const GalleryManager = () => {
 };
 
 // ============================================================
-// TESTIMONIALS MANAGER (unchanged)
+// TESTIMONIALS MANAGER - No localStorage
 // ============================================================
 const TestimonialsManager = () => {
-  // ... (keep the same as before)
   const [testimonials, setTestimonials] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingTestimonial, setEditingTestimonial] = useState(null);
   const [formData, setFormData] = useState({ name: '', title: '', parentType: '', section: '', quote: '', rating: 5 });
   const [alert, setAlert] = useState({ show: false, type: '', message: '' });
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => { loadTestimonials(); }, []);
-
-  const loadTestimonials = () => {
-    const saved = localStorage.getItem('admin_testimonials');
-    if (saved) { setTestimonials(JSON.parse(saved)); }
-    else {
-      const defaultTestimonials = [
-        { id: 1, name: "Jane Akinyi", title: "Mrs.", parentType: "ECD Parent", section: "Early Childhood Development", quote: "Our child joined in ECD, and we have seen tremendous growth...", rating: 5 },
-        { id: 2, name: "John Omondi", title: "Mr.", parentType: "Primary Parent", section: "Primary School", quote: "Kitale Progressive School has given our child a strong academic foundation...", rating: 5 },
-        { id: 3, name: "Sarah Kipchoge", title: "Mrs.", parentType: "Junior Secondary Parent", section: "Junior Secondary", quote: "We wanted a school that prepares our child for the future...", rating: 5 },
-      ];
-      setTestimonials(defaultTestimonials);
-      localStorage.setItem('admin_testimonials', JSON.stringify(defaultTestimonials));
+  const loadTestimonials = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await getTestimonials();
+      setTestimonials(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error loading testimonials:', error);
+      setAlert({ show: true, type: 'danger', message: 'Failed to load testimonials.' });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  };
+  }, []);
 
-  const saveTestimonials = (newTestimonials) => {
-    localStorage.setItem('admin_testimonials', JSON.stringify(newTestimonials));
-    setTestimonials(newTestimonials);
-    window.dispatchEvent(new CustomEvent('adminDataChange', { detail: { key: 'admin_testimonials' } }));
-  };
-
-  const handleOpenModal = (testimonial = null) => {
-    if (testimonial) { setEditingTestimonial(testimonial); setFormData(testimonial); }
-    else { setEditingTestimonial(null); setFormData({ name: '', title: 'Mr.', parentType: '', section: '', quote: '', rating: 5 }); }
-    setShowModal(true);
-  };
-
-  const handleCloseModal = () => { setShowModal(false); setEditingTestimonial(null); };
-  const handleFormChange = (e) => { setFormData({ ...formData, [e.target.name]: e.target.value }); };
-  
-  const handleSaveTestimonial = () => {
+  const handleSaveTestimonial = async () => {
     if (!formData.name || !formData.quote) {
       setAlert({ show: true, type: 'danger', message: 'Please fill in name and quote.' });
       setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
       return;
     }
-    let newTestimonials;
-    if (editingTestimonial) {
-      newTestimonials = testimonials.map(t => t.id === editingTestimonial.id ? { ...formData, id: t.id } : t);
-    } else {
-      const newId = Math.max(...testimonials.map(t => t.id), 0) + 1;
-      newTestimonials = [...testimonials, { ...formData, id: newId }];
-    }
-    saveTestimonials(newTestimonials);
-    handleCloseModal();
-    setAlert({ show: true, type: 'success', message: `Testimonial ${editingTestimonial ? 'updated' : 'added'} successfully!` });
-    setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
-  };
-  
-  const handleDeleteTestimonial = (id) => {
-    if (window.confirm('Are you sure you want to delete this testimonial?')) {
-      const newTestimonials = testimonials.filter(t => t.id !== id);
-      saveTestimonials(newTestimonials);
-      setAlert({ show: true, type: 'success', message: 'Testimonial deleted successfully!' });
-      setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
+
+    setSaving(true);
+    try {
+      const testimonialData = {
+        name: formData.name,
+        title: formData.title || 'Mr.',
+        parentType: formData.parentType || '',
+        section: formData.section || '',
+        quote: formData.quote,
+        rating: parseInt(formData.rating) || 5
+      };
+
+      let result;
+      if (editingTestimonial) {
+        result = await updateTestimonial(editingTestimonial.id, testimonialData);
+      } else {
+        result = await addTestimonial(testimonialData);
+      }
+
+      if (result) {
+        await loadTestimonials();
+        handleCloseModal();
+        setAlert({ 
+          show: true, 
+          type: 'success', 
+          message: `Testimonial ${editingTestimonial ? 'updated' : 'added'} successfully!` 
+        });
+        setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
+      }
+    } catch (error) {
+      console.error('Error saving testimonial:', error);
+      setAlert({ show: true, type: 'danger', message: 'Failed to save testimonial: ' + error.message });
+    } finally {
+      setSaving(false);
     }
   };
 
-  if (loading) return <div className="text-center py-5"><Spinner animation="border" variant="primary" /></div>;
+  const handleDeleteTestimonial = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this testimonial?')) return;
+    
+    try {
+      const result = await deleteTestimonial(id);
+      if (result) {
+        await loadTestimonials();
+        setAlert({ show: true, type: 'success', message: 'Testimonial deleted successfully!' });
+        setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
+      }
+    } catch (error) {
+      console.error('Error deleting testimonial:', error);
+      setAlert({ show: true, type: 'danger', message: 'Failed to delete testimonial.' });
+    }
+  };
+
+  const handleOpenModal = (testimonial = null) => {
+    if (testimonial) {
+      setEditingTestimonial(testimonial);
+      setFormData({
+        name: testimonial.name || '',
+        title: testimonial.title || 'Mr.',
+        parentType: testimonial.parentType || '',
+        section: testimonial.section || '',
+        quote: testimonial.quote || '',
+        rating: testimonial.rating || 5
+      });
+    } else {
+      setEditingTestimonial(null);
+      setFormData({ name: '', title: 'Mr.', parentType: '', section: '', quote: '', rating: 5 });
+    }
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setEditingTestimonial(null);
+    setFormData({ name: '', title: 'Mr.', parentType: '', section: '', quote: '', rating: 5 });
+  };
+
+  const handleFormChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  useEffect(() => {
+    loadTestimonials();
+  }, [loadTestimonials]);
+
+  if (loading) {
+    return <div className="text-center py-5"><Spinner animation="border" variant="primary" /></div>;
+  }
 
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h3 className="h5 fw-bold mb-0">Manage Testimonials</h3>
-        <Button className="btn-navy" size="sm" onClick={() => handleOpenModal()}><i className="fas fa-plus me-1"></i> Add New Testimonial</Button>
+        <h3 className="h5 fw-bold mb-0">Manage Testimonials ({testimonials.length})</h3>
+        <Button className="btn-navy" size="sm" onClick={() => handleOpenModal()}>
+          <i className="fas fa-plus me-1"></i> Add New Testimonial
+        </Button>
       </div>
       {alert.show && <Alert variant={alert.type} dismissible onClose={() => setAlert({ show: false })} className="mb-3">{alert.message}</Alert>}
       <div className="admin-table-wrapper">
         <Table responsive hover className="admin-table">
           <thead><tr><th>ID</th><th>Name</th><th>Parent Type</th><th>Rating</th><th>Quote</th><th>Actions</th></tr></thead>
           <tbody>
-            {testimonials.map(t => (
-              <tr key={t.id}>
-                <td>{t.id}</td>
-                <td className="fw-semibold">{t.title} {t.name}</td>
-                <td>{t.parentType}</td>
-                <td>{'★'.repeat(t.rating)}{'☆'.repeat(5-t.rating)}</td>
-                <td className="text-truncate" style={{ maxWidth: '300px' }}>{t.quote.substring(0, 80)}...</td>
-                <td>
-                  <Button variant="outline-primary" size="sm" className="me-1" onClick={() => handleOpenModal(t)}><i className="fas fa-edit"></i></Button>
-                  <Button variant="outline-danger" size="sm" onClick={() => handleDeleteTestimonial(t.id)}><i className="fas fa-trash"></i></Button>
+            {testimonials.length === 0 ? (
+              <tr>
+                <td colSpan="6" className="text-center text-muted py-4">
+                  No testimonials found. Click "Add New Testimonial" to create one.
                 </td>
               </tr>
-            ))}
+            ) : (
+              testimonials.map(t => (
+                <tr key={t.id}>
+                  <td>{t.id}</td>
+                  <td className="fw-semibold">{t.title} {t.name}</td>
+                  <td>{t.parentType}</td>
+                  <td>{'★'.repeat(t.rating)}{'☆'.repeat(5 - t.rating)}</td>
+                  <td className="text-truncate" style={{ maxWidth: '300px' }}>{t.quote?.substring(0, 80)}...</td>
+                  <td>
+                    <Button variant="outline-primary" size="sm" className="me-1" onClick={() => handleOpenModal(t)}><i className="fas fa-edit"></i></Button>
+                    <Button variant="outline-danger" size="sm" onClick={() => handleDeleteTestimonial(t.id)}><i className="fas fa-trash"></i></Button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </Table>
       </div>
@@ -1465,25 +1532,72 @@ const TestimonialsManager = () => {
         <Modal.Header closeButton><Modal.Title>{editingTestimonial ? 'Edit Testimonial' : 'Add New Testimonial'}</Modal.Title></Modal.Header>
         <Modal.Body style={{ maxHeight: '70vh', overflowY: 'auto' }}>
           <Form>
-            <Row><Col md={4}><Form.Group className="mb-3"><Form.Label className="fw-semibold small">Title</Form.Label><Form.Select name="title" value={formData.title} onChange={handleFormChange}><option>Mr.</option><option>Mrs.</option><option>Ms.</option><option>Dr.</option></Form.Select></Form.Group></Col>
-            <Col md={8}><Form.Group className="mb-3"><Form.Label className="fw-semibold small">Full Name *</Form.Label><Form.Control type="text" name="name" value={formData.name} onChange={handleFormChange} /></Form.Group></Col></Row>
-            <Row><Col md={6}><Form.Group className="mb-3"><Form.Label className="fw-semibold small">Parent Type</Form.Label><Form.Control type="text" name="parentType" value={formData.parentType} onChange={handleFormChange} placeholder="e.g., ECD Parent" /></Form.Group></Col>
-            <Col md={6}><Form.Group className="mb-3"><Form.Label className="fw-semibold small">Section</Form.Label><Form.Control type="text" name="section" value={formData.section} onChange={handleFormChange} placeholder="e.g., Primary School" /></Form.Group></Col></Row>
-            <Form.Group className="mb-3"><Form.Label className="fw-semibold small">Rating</Form.Label><Form.Select name="rating" value={formData.rating} onChange={handleFormChange}><option value="5">5 Stars</option><option value="4">4 Stars</option><option value="3">3 Stars</option></Form.Select></Form.Group>
-            <Form.Group className="mb-3"><Form.Label className="fw-semibold small">Quote *</Form.Label><Form.Control as="textarea" rows={4} name="quote" value={formData.quote} onChange={handleFormChange} placeholder="Parent testimonial quote..." /></Form.Group>
+            <Row>
+              <Col md={4}>
+                <Form.Group className="mb-3">
+                  <Form.Label className="fw-semibold small">Title</Form.Label>
+                  <Form.Select name="title" value={formData.title} onChange={handleFormChange}>
+                    <option>Mr.</option><option>Mrs.</option><option>Ms.</option><option>Dr.</option>
+                  </Form.Select>
+                </Form.Group>
+              </Col>
+              <Col md={8}>
+                <Form.Group className="mb-3">
+                  <Form.Label className="fw-semibold small">Full Name *</Form.Label>
+                  <Form.Control type="text" name="name" value={formData.name} onChange={handleFormChange} />
+                </Form.Group>
+              </Col>
+            </Row>
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label className="fw-semibold small">Parent Type</Form.Label>
+                  <Form.Control type="text" name="parentType" value={formData.parentType} onChange={handleFormChange} placeholder="e.g., ECD Parent" />
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label className="fw-semibold small">Section</Form.Label>
+                  <Form.Control type="text" name="section" value={formData.section} onChange={handleFormChange} placeholder="e.g., Primary School" />
+                </Form.Group>
+              </Col>
+            </Row>
+            <Form.Group className="mb-3">
+              <Form.Label className="fw-semibold small">Rating</Form.Label>
+              <Form.Select name="rating" value={formData.rating} onChange={handleFormChange}>
+                <option value="5">5 Stars</option>
+                <option value="4">4 Stars</option>
+                <option value="3">3 Stars</option>
+              </Form.Select>
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label className="fw-semibold small">Quote *</Form.Label>
+              <Form.Control as="textarea" rows={4} name="quote" value={formData.quote} onChange={handleFormChange} placeholder="Parent testimonial quote..." />
+            </Form.Group>
           </Form>
         </Modal.Body>
-        <Modal.Footer><Button variant="secondary" onClick={handleCloseModal}>Cancel</Button><Button className="btn-navy" onClick={handleSaveTestimonial}>Save Testimonial</Button></Modal.Footer>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleCloseModal} disabled={saving}>Cancel</Button>
+          <Button className="btn-navy" onClick={handleSaveTestimonial} disabled={saving}>
+            {saving ? (
+              <>
+                <Spinner as="span" animation="border" size="sm" className="me-2" />
+                {editingTestimonial ? 'Updating...' : 'Saving...'}
+              </>
+            ) : (
+              editingTestimonial ? 'Update Testimonial' : 'Save Testimonial'
+            )}
+          </Button>
+        </Modal.Footer>
       </Modal>
     </div>
   );
 };
 
 // ============================================================
-// FAQ MANAGER (unchanged)
+// FAQ MANAGER - No localStorage
 // ============================================================
 const FAQManager = () => {
-  // ... (keep the same as before - all 15 FAQ questions)
   const [faqCategories, setFaqCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -1491,6 +1605,7 @@ const FAQManager = () => {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [formData, setFormData] = useState({ question: '', answer: '', category: '' });
   const [alert, setAlert] = useState({ show: false, type: '', message: '' });
+  const [saving, setSaving] = useState(false);
 
   const categoriesList = [
     { id: "Admissions", name: "Admissions", icon: "📋", color: "#4299e1" },
@@ -1500,267 +1615,149 @@ const FAQManager = () => {
     { id: "School Transport", name: "School Transport", icon: "🚌", color: "#ed8936" },
   ];
 
-  useEffect(() => { loadFAQ(); }, []);
-
-  const loadFAQ = () => {
+  const loadFAQ = useCallback(async () => {
     setLoading(true);
-    const saved = localStorage.getItem('admin_faq');
-    if (saved) {
-      try { 
-        const parsed = JSON.parse(saved);
-        console.log('FAQ loaded from localStorage:', parsed.length, 'categories');
-        const updated = parsed.map(cat => {
-          const catInfo = categoriesList.find(c => c.id === cat.category);
-          return {
-            ...cat,
-            icon: cat.icon || catInfo?.icon || "📋",
-            color: cat.color || catInfo?.color || "#4299e1",
-            questions: cat.questions || []
-          };
-        });
-        setFaqCategories(updated);
-      } catch (e) { 
-        console.error('Error parsing FAQ:', e); 
-        setDefaultFAQ(); 
-      }
-    } else { 
-      console.log('No FAQ in localStorage, using defaults');
-      setDefaultFAQ(); 
-    }
-    setLoading(false);
-  };
-
-  const setDefaultFAQ = () => {
-    const defaultFaq = [
-      { 
-        category: "Admissions", 
-        icon: "📋", 
-        color: "#4299e1", 
-        questions: [
-          { 
-            id: 1, 
-            question: "How can I apply for admission at Kitale Progressive School in Kitale, Kenya?", 
-            answer: `You can apply through our <a href="/admissions/apply" class="text-navy fw-bold">online admissions form</a> or visit the school in person. Our admissions team will guide you through the process.<br/><br/><a href="/admissions/apply" class="text-navy fw-bold">Begin your application here →</a>`
-          },
-          { 
-            id: 2, 
-            question: "Is there an admission interview or assessment?", 
-            answer: `Yes. Depending on the grade level, learners may undergo a simple assessment to help us understand their current level.<br/><br/><b>Exceptions are for those beginning school for the first time.</b><br/><br/><a href="/contact" class="text-navy fw-bold">Contact admissions</a> to schedule an assessment.`
-          },
-          { 
-            id: 3, 
-            question: "How do I know this is the right school for my child?", 
-            answer: `The best way is to visit the school, meet our teachers, and experience the environment firsthand.<br/><br/><a href="/contact" class="text-navy fw-bold">Book a school visit →</a>`
-          },
-          { 
-            id: 4, 
-            question: "What are the school's hair and grooming guidelines for learners?", 
-            answer: `At Kitale Progressive School, we maintain simple and neat grooming standards.<br/><br/><strong>For girls:</strong><br/>• Allowed styles include push-back styles, ponytails, half-lines, twists, and three-strand braids.<br/>• Hair should always be kept away from the face.<br/><br/><strong>For boys:</strong><br/>• Hair should be neatly shaved or kept short and clean.`
-          }
-        ]
-      },
-      { 
-        category: "Academics & Co-curricular", 
-        icon: "🏆", 
-        color: "#48bb78", 
-        questions: [
-          { 
-            id: 5, 
-            question: "Which curriculum does Kitale Progressive School follow?", 
-            answer: `We follow the <strong>Competency-Based Education (CBE)</strong>, which focuses on developing practical skills, creativity, and critical thinking.<br/><br/><a href="/academics/curriculum" class="text-navy fw-bold">View full curriculum →</a>`
-          },
-          { 
-            id: 6, 
-            question: "What is the average class size?", 
-            answer: `We maintain manageable class sizes to ensure each learner receives adequate attention and support.<br/><br/><a href="/academics/curriculum" class="text-navy fw-bold">Learn about our teaching approach →</a>`
-          },
-          { 
-            id: 7, 
-            question: "What sports and clubs are available?", 
-            answer: `Sports & clubs include Football, Volleyball, Netball, Handball, Taekwondo, Swimming, Chess, Music, Debate, Journalism, and Wildlife Club.<br/><br/><a href="/academics/clubs-societies" class="text-navy fw-bold">View clubs & societies →</a>`
-          }
-        ]
-      },
-      { 
-        category: "Boarding & Student Life", 
-        icon: "🏡", 
-        color: "#9f7aea", 
-        questions: [
-          { 
-            id: 8, 
-            question: "What are the boarding facilities like?", 
-            answer: `Our boarding facilities provide a safe, structured, and supportive environment.<br/><br/><a href="/school-life/boarding" class="text-navy fw-bold">View boarding facilities →</a>`
-          },
-          { 
-            id: 9, 
-            question: "How is security ensured for boarders?", 
-            answer: `We prioritize student safety through controlled access, supervision, and structured routines.`
-          },
-          { 
-            id: 10, 
-            question: "What is the daily routine for boarders?", 
-            answer: `Boarders follow a structured schedule: Wake up at 5:30 AM, morning prep, classes 8:00 AM–5:00 PM, evening prep, lights out at 9:00 PM.<br/><br/><a href="/school-life/events" class="text-navy fw-bold">View events calendar →</a>`
-          }
-        ]
-      },
-      { 
-        category: "Fees & Payments", 
-        icon: "💰", 
-        color: "#f56565", 
-        questions: [
-          { 
-            id: 11, 
-            question: "How can parents pay school fees?", 
-            answer: `Parents can choose between full payment before the term begins or a structured installment plan.<br/><br/><a href="/admissions/fee-structure" class="text-navy fw-bold">View fee structure →</a>`
-          },
-          { 
-            id: 12, 
-            question: "Are there any additional costs besides fees?", 
-            answer: `All school fees are clearly outlined. Any additional costs are communicated in advance.<br/><br/><a href="/admissions/fee-structure" class="text-navy fw-bold">View complete fee breakdown →</a>`
-          },
-          { 
-            id: 13, 
-            question: "Does the school offer sibling discounts?", 
-            answer: `Yes. 5% discount for second and subsequent children from the same family.<br/><br/><a href="/admissions/fee-structure" class="text-navy fw-bold">View fee structure →</a>`
-          }
-        ]
-      },
-      { 
-        category: "School Transport", 
-        icon: "🚌", 
-        color: "#ed8936", 
-        questions: [
-          { 
-            id: 14, 
-            question: "Does the school provide transport?", 
-            answer: `Yes. We provide reliable school transport services covering key areas within Kitale.<br/><br/><a href="/contact" class="text-navy fw-bold">Contact transport office →</a>`
-          },
-          { 
-            id: 15, 
-            question: "What are the school start and end times?", 
-            answer: `School starts at 8:00 AM and ends at 5:00 PM from Monday to Friday.<br/><br/><a href="/school-life/events" class="text-navy fw-bold">View school calendar →</a>`
-          }
-        ]
-      }
-    ];
-    setFaqCategories(defaultFaq);
-    localStorage.setItem('admin_faq', JSON.stringify(defaultFaq));
-    console.log('Default FAQ saved to localStorage with', defaultFaq.length, 'categories');
-  };
-
-  const saveFAQ = (newFaq) => {
     try {
-      const updatedFaq = newFaq.map(cat => {
-        const catInfo = categoriesList.find(c => c.id === cat.category);
-        return {
-          ...cat,
-          icon: cat.icon || catInfo?.icon || "📋",
-          color: cat.color || catInfo?.color || "#4299e1",
-          questions: cat.questions || []
-        };
-      });
-      
-      localStorage.setItem('admin_faq', JSON.stringify(updatedFaq));
-      setFaqCategories(updatedFaq);
-      window.dispatchEvent(new CustomEvent('adminDataChange', { detail: { key: 'admin_faq' } }));
-      console.log('FAQ saved to localStorage:', updatedFaq.length, 'categories');
+      const data = await getFAQ();
+      if (data && data.length > 0) {
+        setFaqCategories(data);
+      } else {
+        setFaqCategories([]);
+      }
     } catch (error) {
-      console.error('Error saving FAQ:', error);
-      setAlert({ show: true, type: 'danger', message: 'Error saving FAQ. Please try again.' });
-      setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
+      console.error('Error loading FAQ:', error);
+      setAlert({ show: true, type: 'danger', message: 'Failed to load FAQ.' });
+    } finally {
+      setLoading(false);
     }
-  };
+  }, []);
 
-  const handleOpenModal = (item = null, category = '') => {
-    if (item) {
-      setEditingItem(item);
-      setFormData({ 
-        question: item.question, 
-        answer: item.answer, 
-        category: item.category || category 
-      });
-    } else {
-      setEditingItem(null);
-      setFormData({ 
-        question: '', 
-        answer: '', 
-        category: category || categoriesList[0].id 
-      });
-    }
-    setShowModal(true);
-  };
-
-  const handleCloseModal = () => { 
-    setShowModal(false); 
-    setEditingItem(null); 
-    setFormData({ question: '', answer: '', category: '' }); 
-  };
-
-  const handleFormChange = (e) => { 
-    setFormData({ ...formData, [e.target.name]: e.target.value }); 
-  };
-
-  const handleSaveFAQ = () => {
+  const handleSaveFAQ = async () => {
     if (!formData.question || !formData.answer) {
       setAlert({ show: true, type: 'danger', message: 'Please fill in both question and answer.' });
       setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
       return;
     }
 
-    let newFaq = [...faqCategories];
-    let catIndex = newFaq.findIndex(c => c.category === formData.category);
-    if (catIndex === -1) {
-      const catInfo = categoriesList.find(c => c.id === formData.category);
-      newFaq.push({ 
-        category: formData.category, 
-        icon: catInfo?.icon || "📋", 
-        color: catInfo?.color || "#4299e1", 
-        questions: [] 
-      });
-      catIndex = newFaq.length - 1;
-    }
-    
-    if (editingItem) {
-      const qIndex = newFaq[catIndex].questions.findIndex(q => q.id === editingItem.id);
-      if (qIndex !== -1) { 
-        newFaq[catIndex].questions[qIndex] = { 
-          ...editingItem, 
-          question: formData.question, 
-          answer: formData.answer 
-        }; 
+    setSaving(true);
+    try {
+      let newFaq = [...faqCategories];
+      let catIndex = newFaq.findIndex(c => c.category === formData.category);
+      
+      if (catIndex === -1) {
+        const catInfo = categoriesList.find(c => c.id === formData.category);
+        newFaq.push({
+          category: formData.category,
+          icon: catInfo?.icon || "📋",
+          color: catInfo?.color || "#4299e1",
+          questions: []
+        });
+        catIndex = newFaq.length - 1;
       }
+
+      if (editingItem) {
+        const qIndex = newFaq[catIndex].questions.findIndex(q => q.id === editingItem.id);
+        if (qIndex !== -1) {
+          newFaq[catIndex].questions[qIndex] = {
+            ...editingItem,
+            question: formData.question,
+            answer: formData.answer
+          };
+        }
+      } else {
+        const allIds = newFaq.flatMap(c => c.questions.map(q => q.id));
+        const newId = allIds.length > 0 ? Math.max(...allIds) + 1 : 1;
+        newFaq[catIndex].questions.push({
+          id: newId,
+          question: formData.question,
+          answer: formData.answer
+        });
+      }
+
+      const result = await saveFAQ(newFaq);
+      if (result) {
+        await loadFAQ();
+        handleCloseModal();
+        setAlert({
+          show: true,
+          type: 'success',
+          message: `FAQ ${editingItem ? 'updated' : 'added'} successfully!`
+        });
+        setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
+      }
+    } catch (error) {
+      console.error('Error saving FAQ:', error);
+      setAlert({ show: true, type: 'danger', message: 'Failed to save FAQ: ' + error.message });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteFAQ = async (category, id) => {
+    if (!window.confirm('Are you sure you want to delete this FAQ?')) return;
+
+    try {
+      const newFaq = faqCategories.map(cat =>
+        cat.category === category
+          ? { ...cat, questions: cat.questions.filter(q => q.id !== id) }
+          : cat
+      ).filter(cat => cat.questions.length > 0);
+
+      const result = await saveFAQ(newFaq);
+      if (result) {
+        await loadFAQ();
+        setAlert({ show: true, type: 'success', message: 'FAQ deleted successfully!' });
+        setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
+      }
+    } catch (error) {
+      console.error('Error deleting FAQ:', error);
+      setAlert({ show: true, type: 'danger', message: 'Failed to delete FAQ.' });
+    }
+  };
+
+  const handleOpenModal = (item = null, category = '') => {
+    if (item) {
+      setEditingItem(item);
+      setFormData({
+        question: item.question || '',
+        answer: item.answer || '',
+        category: item.category || category
+      });
     } else {
-      const allIds = newFaq.flatMap(c => c.questions.map(q => q.id));
-      const newId = allIds.length > 0 ? Math.max(...allIds) + 1 : 1;
-      newFaq[catIndex].questions.push({ 
-        id: newId, 
-        question: formData.question, 
-        answer: formData.answer 
+      setEditingItem(null);
+      setFormData({
+        question: '',
+        answer: '',
+        category: category || categoriesList[0].id
       });
     }
-    saveFAQ(newFaq);
-    handleCloseModal();
-    setAlert({ show: true, type: 'success', message: `FAQ ${editingItem ? 'updated' : 'added'} successfully!` });
-    setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
+    setShowModal(true);
   };
 
-  const handleDeleteFAQ = (category, id) => {
-    if (window.confirm('Are you sure you want to delete this FAQ?')) {
-      const newFaq = faqCategories.map(cat => 
-        cat.category === category ? { ...cat, questions: cat.questions.filter(q => q.id !== id) } : cat
-      ).filter(cat => cat.questions.length > 0);
-      saveFAQ(newFaq);
-      setAlert({ show: true, type: 'success', message: 'FAQ deleted successfully!' });
-      setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
-    }
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setEditingItem(null);
+    setFormData({ question: '', answer: '', category: '' });
   };
 
-  if (loading) return <div className="text-center py-5"><Spinner animation="border" variant="primary" /></div>;
+  const handleFormChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  useEffect(() => {
+    loadFAQ();
+  }, [loadFAQ]);
+
+  if (loading) {
+    return <div className="text-center py-5"><Spinner animation="border" variant="primary" /></div>;
+  }
+
+  const totalQuestions = faqCategories.reduce((acc, cat) => acc + (cat.questions?.length || 0), 0);
 
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-        <h3 className="h5 fw-bold mb-0">Manage FAQs ({faqCategories.reduce((acc, cat) => acc + (cat.questions?.length || 0), 0)} questions)</h3>
+        <h3 className="h5 fw-bold mb-0">Manage FAQs ({totalQuestions} questions)</h3>
         <div className="d-flex gap-2">
           <Form.Select size="sm" style={{ width: '200px' }} value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)}>
             {categoriesList.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
@@ -1770,83 +1767,74 @@ const FAQManager = () => {
           </Button>
         </div>
       </div>
-      
+
       {alert.show && <Alert variant={alert.type} dismissible onClose={() => setAlert({ show: false })} className="mb-3">{alert.message}</Alert>}
-      
-      <Button 
-        variant="outline-warning" 
-        size="sm" 
-        className="mb-3"
-        onClick={() => {
-          if (window.confirm('Reset all FAQ data to default? This will overwrite all current FAQ data.')) {
-            setDefaultFAQ();
-            setAlert({ show: true, type: 'success', message: 'FAQ reset to default successfully!' });
-            setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
-          }
-        }}
-      >
-        <i className="fas fa-undo me-1"></i> Reset to Default FAQs
-      </Button>
-      
-      {faqCategories.map((category, catIndex) => (
-        <div key={catIndex} className="mb-4">
-          <div className="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
-            <div className="d-flex align-items-center gap-2">
-              <span style={{ fontSize: '1.2rem' }}>{category.icon || "📋"}</span>
-              <h4 className="h6 fw-bold mb-0">{category.category}</h4>
-              <span className="badge" style={{ backgroundColor: category.color || "#4299e1", color: 'white' }}>
-                {category.questions?.length || 0} questions
-              </span>
+
+      {faqCategories.length === 0 ? (
+        <div className="text-center py-5 bg-white rounded-3 shadow-sm">
+          <p className="text-muted">No FAQ categories available. Add a new FAQ to get started.</p>
+        </div>
+      ) : (
+        faqCategories.map((category, catIndex) => (
+          <div key={catIndex} className="mb-4">
+            <div className="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+              <div className="d-flex align-items-center gap-2">
+                <span style={{ fontSize: '1.2rem' }}>{category.icon || "📋"}</span>
+                <h4 className="h6 fw-bold mb-0">{category.category}</h4>
+                <span className="badge" style={{ backgroundColor: category.color || "#4299e1", color: 'white' }}>
+                  {category.questions?.length || 0} questions
+                </span>
+              </div>
+            </div>
+            <div className="admin-table-wrapper">
+              <Table responsive hover className="admin-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: '5%' }}>#</th>
+                    <th style={{ width: '35%' }}>Question</th>
+                    <th style={{ width: '50%' }}>Answer (HTML supported)</th>
+                    <th style={{ width: '10%' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {category.questions && category.questions.map((q, idx) => (
+                    <tr key={q.id}>
+                      <td>{idx + 1}</td>
+                      <td className="fw-semibold">{q.question}</td>
+                      <td>
+                        <div
+                          dangerouslySetInnerHTML={{
+                            __html: q.answer.length > 150
+                              ? q.answer.substring(0, 150) + '...'
+                              : q.answer
+                          }}
+                          style={{ fontSize: '0.85rem' }}
+                        />
+                      </td>
+                      <td>
+                        <Button variant="outline-primary" size="sm" className="me-1" onClick={() => handleOpenModal(q, category.category)}>
+                          <i className="fas fa-edit"></i>
+                        </Button>
+                        <Button variant="outline-danger" size="sm" onClick={() => handleDeleteFAQ(category.category, q.id)}>
+                          <i className="fas fa-trash"></i>
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                  {(!category.questions || category.questions.length === 0) && (
+                    <tr>
+                      <td colSpan="4" className="text-center text-muted py-3">
+                        No FAQs in this category. Click "Add FAQ" to add one.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </Table>
             </div>
           </div>
-          <div className="admin-table-wrapper">
-            <Table responsive hover className="admin-table">
-              <thead>
-                <tr>
-                  <th style={{ width: '5%' }}>#</th>
-                  <th style={{ width: '35%' }}>Question</th>
-                  <th style={{ width: '50%' }}>Answer (HTML supported)</th>
-                  <th style={{ width: '10%' }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {category.questions && category.questions.map((q, idx) => (
-                  <tr key={q.id}>
-                    <td>{idx + 1}</td>
-                    <td className="fw-semibold">{q.question}</td>
-                    <td>
-                      <div 
-                        dangerouslySetInnerHTML={{ 
-                          __html: q.answer.length > 150 
-                            ? q.answer.substring(0, 150) + '...' 
-                            : q.answer 
-                        }} 
-                        style={{ fontSize: '0.85rem' }}
-                      />
-                    </td>
-                    <td>
-                      <Button variant="outline-primary" size="sm" className="me-1" onClick={() => handleOpenModal(q, category.category)}>
-                        <i className="fas fa-edit"></i>
-                      </Button>
-                      <Button variant="outline-danger" size="sm" onClick={() => handleDeleteFAQ(category.category, q.id)}>
-                        <i className="fas fa-trash"></i>
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-                {(!category.questions || category.questions.length === 0) && (
-                  <tr>
-                    <td colSpan="4" className="text-center text-muted py-3">
-                      No FAQs in this category. Click "Add FAQ" to add one.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </Table>
-          </div>
-        </div>
-      ))}
-      
+        ))
+      )}
+
       <Modal show={showModal} onHide={handleCloseModal} size="lg" centered>
         <Modal.Header closeButton>
           <Modal.Title>{editingItem ? 'Edit FAQ' : 'Add New FAQ'}</Modal.Title>
@@ -1861,22 +1849,22 @@ const FAQManager = () => {
             </Form.Group>
             <Form.Group className="mb-3">
               <Form.Label className="fw-semibold small">Question *</Form.Label>
-              <Form.Control 
-                type="text" 
-                name="question" 
-                value={formData.question} 
-                onChange={handleFormChange} 
+              <Form.Control
+                type="text"
+                name="question"
+                value={formData.question}
+                onChange={handleFormChange}
                 placeholder="Enter the question here..."
               />
             </Form.Group>
             <Form.Group className="mb-3">
               <Form.Label className="fw-semibold small">Answer *</Form.Label>
-              <Form.Control 
-                as="textarea" 
-                rows={6} 
-                name="answer" 
-                value={formData.answer} 
-                onChange={handleFormChange} 
+              <Form.Control
+                as="textarea"
+                rows={6}
+                name="answer"
+                value={formData.answer}
+                onChange={handleFormChange}
                 placeholder="Enter the answer here. You can use HTML tags like &lt;br&gt;, &lt;strong&gt;, &lt;a href=&quot;/path&quot;&gt;link&lt;/a&gt;"
               />
               <Form.Text className="text-muted">
@@ -1886,9 +1874,16 @@ const FAQManager = () => {
           </Form>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={handleCloseModal}>Cancel</Button>
-          <Button className="btn-navy" onClick={handleSaveFAQ}>
-            {editingItem ? 'Update FAQ' : 'Save FAQ'}
+          <Button variant="secondary" onClick={handleCloseModal} disabled={saving}>Cancel</Button>
+          <Button className="btn-navy" onClick={handleSaveFAQ} disabled={saving}>
+            {saving ? (
+              <>
+                <Spinner as="span" animation="border" size="sm" className="me-2" />
+                {editingItem ? 'Updating...' : 'Saving...'}
+              </>
+            ) : (
+              editingItem ? 'Update FAQ' : 'Save FAQ'
+            )}
           </Button>
         </Modal.Footer>
       </Modal>
@@ -1897,7 +1892,199 @@ const FAQManager = () => {
 };
 
 // ============================================================
-// FEE STRUCTURE MANAGER - Updated with ImgBB ImageUploader
+// PARTNERS MANAGER - No localStorage
+// ============================================================
+const PartnersManager = () => {
+  const [partners, setPartners] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [editingPartner, setEditingPartner] = useState(null);
+  const [formData, setFormData] = useState({ name: '', logo: '', website: '', description: '' });
+  const [alert, setAlert] = useState({ show: false, type: '', message: '' });
+  const [saving, setSaving] = useState(false);
+
+  const loadPartners = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await getPartners();
+      setPartners(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error loading partners:', error);
+      setAlert({ show: true, type: 'danger', message: 'Failed to load partners.' });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const handleSavePartner = async () => {
+    if (!formData.name) {
+      setAlert({ show: true, type: 'danger', message: 'Please enter partner name.' });
+      setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const partnerData = {
+        name: formData.name,
+        logo: formData.logo || '',
+        website: formData.website || '',
+        description: formData.description || ''
+      };
+
+      let result;
+      if (editingPartner) {
+        result = await updatePartner(editingPartner.id, partnerData);
+      } else {
+        result = await addPartner(partnerData);
+      }
+
+      if (result) {
+        await loadPartners();
+        handleCloseModal();
+        setAlert({
+          show: true,
+          type: 'success',
+          message: `Partner ${editingPartner ? 'updated' : 'added'} successfully!`
+        });
+        setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
+      }
+    } catch (error) {
+      console.error('Error saving partner:', error);
+      setAlert({ show: true, type: 'danger', message: 'Failed to save partner: ' + error.message });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeletePartner = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this partner?')) return;
+
+    try {
+      const result = await deletePartner(id);
+      if (result) {
+        await loadPartners();
+        setAlert({ show: true, type: 'success', message: 'Partner deleted successfully!' });
+        setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
+      }
+    } catch (error) {
+      console.error('Error deleting partner:', error);
+      setAlert({ show: true, type: 'danger', message: 'Failed to delete partner.' });
+    }
+  };
+
+  const handleOpenModal = (partner = null) => {
+    if (partner) {
+      setEditingPartner(partner);
+      setFormData({
+        name: partner.name || '',
+        logo: partner.logo || '',
+        website: partner.website || '',
+        description: partner.description || ''
+      });
+    } else {
+      setEditingPartner(null);
+      setFormData({ name: '', logo: '', website: '', description: '' });
+    }
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setEditingPartner(null);
+    setFormData({ name: '', logo: '', website: '', description: '' });
+  };
+
+  const handleFormChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  useEffect(() => {
+    loadPartners();
+  }, [loadPartners]);
+
+  if (loading) {
+    return <div className="text-center py-5"><Spinner animation="border" variant="primary" /></div>;
+  }
+
+  return (
+    <div>
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h3 className="h5 fw-bold mb-0">Manage Partners & Sponsors ({partners.length})</h3>
+        <Button className="btn-navy" size="sm" onClick={() => handleOpenModal()}>
+          <i className="fas fa-plus me-1"></i> Add Partner
+        </Button>
+      </div>
+      {alert.show && <Alert variant={alert.type} dismissible onClose={() => setAlert({ show: false })} className="mb-3">{alert.message}</Alert>}
+      <div className="admin-table-wrapper">
+        <Table responsive hover className="admin-table">
+          <thead><tr><th>ID</th><th>Name</th><th>Description</th><th>Website</th><th>Actions</th></tr></thead>
+          <tbody>
+            {partners.length === 0 ? (
+              <tr>
+                <td colSpan="5" className="text-center text-muted py-4">
+                  No partners found. Click "Add Partner" to add one.
+                </td>
+              </tr>
+            ) : (
+              partners.map(partner => (
+                <tr key={partner.id}>
+                  <td>{partner.id}</td>
+                  <td className="fw-semibold">{partner.name}</td>
+                  <td className="text-truncate" style={{ maxWidth: '300px' }}>{partner.description?.substring(0, 80)}...</td>
+                  <td>{partner.website && <a href={partner.website} target="_blank" rel="noopener noreferrer">Link</a>}</td>
+                  <td>
+                    <Button variant="outline-primary" size="sm" className="me-1" onClick={() => handleOpenModal(partner)}><i className="fas fa-edit"></i></Button>
+                    <Button variant="outline-danger" size="sm" onClick={() => handleDeletePartner(partner.id)}><i className="fas fa-trash"></i></Button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </Table>
+      </div>
+      <Modal show={showModal} onHide={handleCloseModal} centered>
+        <Modal.Header closeButton><Modal.Title>{editingPartner ? 'Edit Partner' : 'Add New Partner'}</Modal.Title></Modal.Header>
+        <Modal.Body style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+          <Form>
+            <Form.Group className="mb-3">
+              <Form.Label className="fw-semibold small">Partner Name *</Form.Label>
+              <Form.Control type="text" name="name" value={formData.name} onChange={handleFormChange} />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label className="fw-semibold small">Logo URL</Form.Label>
+              <Form.Control type="text" name="logo" value={formData.logo} onChange={handleFormChange} placeholder="/images/partners/..." />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label className="fw-semibold small">Website</Form.Label>
+              <Form.Control type="url" name="website" value={formData.website} onChange={handleFormChange} placeholder="https://..." />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label className="fw-semibold small">Description</Form.Label>
+              <Form.Control as="textarea" rows={3} name="description" value={formData.description} onChange={handleFormChange} />
+            </Form.Group>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleCloseModal} disabled={saving}>Cancel</Button>
+          <Button className="btn-navy" onClick={handleSavePartner} disabled={saving}>
+            {saving ? (
+              <>
+                <Spinner as="span" animation="border" size="sm" className="me-2" />
+                {editingPartner ? 'Updating...' : 'Saving...'}
+              </>
+            ) : (
+              editingPartner ? 'Update Partner' : 'Save Partner'
+            )}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+    </div>
+  );
+};
+
+// ============================================================
+// FEE STRUCTURE MANAGER - No localStorage
 // ============================================================
 const FeeStructureManager = () => {
   const [loading, setLoading] = useState(true);
@@ -1910,6 +2097,7 @@ const FeeStructureManager = () => {
   const [editingKey, setEditingKey] = useState(null);
   const [imageUrl, setImageUrl] = useState(null);
   const [alert, setAlert] = useState({ show: false, type: '', message: '' });
+  const [saving, setSaving] = useState(false);
 
   const defaultImages = {
     ecde: '/images/fee-structure/ecde.jpg',
@@ -1925,46 +2113,55 @@ const FeeStructureManager = () => {
     { key: 'transport', label: 'Transport Costs', icon: 'fas fa-bus' }
   ];
 
-  useEffect(() => { loadFeeData(); }, []);
-
-  const loadFeeData = () => {
+  const loadFeeData = useCallback(async () => {
     setLoading(true);
-    const saved = localStorage.getItem('admin_fee_structure');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setFeeData(parsed);
-        console.log('Fee structure loaded from localStorage');
-      } catch (e) {
-        console.error('Error parsing fee structure:', e);
-        setDefaultFeeData();
+    try {
+      const data = await getFeeStructure();
+      if (data) {
+        setFeeData({
+          ecde: { image: data.ecde?.image || defaultImages.ecde, label: data.ecde?.label || 'ECDE Fee Structure' },
+          primary: { image: data.primary?.image || defaultImages.primary, label: data.primary?.label || 'Primary Fee Structure' },
+          junior: { image: data.junior?.image || defaultImages.junior, label: data.junior?.label || 'Junior Secondary Fee Structure' },
+          transport: { image: data.transport?.image || defaultImages.transport, label: data.transport?.label || 'Transport Costs' }
+        });
+      } else {
+        setFeeData({
+          ecde: { image: defaultImages.ecde, label: 'ECDE Fee Structure' },
+          primary: { image: defaultImages.primary, label: 'Primary Fee Structure' },
+          junior: { image: defaultImages.junior, label: 'Junior Secondary Fee Structure' },
+          transport: { image: defaultImages.transport, label: 'Transport Costs' }
+        });
       }
-    } else {
-      setDefaultFeeData();
+    } catch (error) {
+      console.error('Error loading fee structure:', error);
+      setFeeData({
+        ecde: { image: defaultImages.ecde, label: 'ECDE Fee Structure' },
+        primary: { image: defaultImages.primary, label: 'Primary Fee Structure' },
+        junior: { image: defaultImages.junior, label: 'Junior Secondary Fee Structure' },
+        transport: { image: defaultImages.transport, label: 'Transport Costs' }
+      });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
+  }, []);
+
+  const saveFeeData = async (newData) => {
+    setSaving(true);
+    try {
+      const result = await saveFeeStructure(newData);
+      if (result) {
+        setFeeData(newData);
+        setAlert({ show: true, type: 'success', message: 'Fee structure saved successfully!' });
+        setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
+      }
+    } catch (error) {
+      console.error('Error saving fee structure:', error);
+      setAlert({ show: true, type: 'danger', message: 'Failed to save fee structure: ' + error.message });
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const setDefaultFeeData = () => {
-    const defaults = {
-      ecde: { image: defaultImages.ecde, label: 'ECDE Fee Structure' },
-      primary: { image: defaultImages.primary, label: 'Primary Fee Structure' },
-      junior: { image: defaultImages.junior, label: 'Junior Secondary Fee Structure' },
-      transport: { image: defaultImages.transport, label: 'Transport Costs' }
-    };
-    setFeeData(defaults);
-    localStorage.setItem('admin_fee_structure', JSON.stringify(defaults));
-    console.log('Default fee structure saved');
-  };
-
-  const saveFeeData = (newData) => {
-    localStorage.setItem('admin_fee_structure', JSON.stringify(newData));
-    setFeeData(newData);
-    window.dispatchEvent(new CustomEvent('adminDataChange', { detail: { key: 'admin_fee_structure' } }));
-    console.log('Fee structure saved');
-  };
-
-  // Updated for ImgBB
   const handleImageUpload = (imageUrl, displayUrl, filename, deleteUrl) => {
     setImageUrl(imageUrl);
     if (editingKey) {
@@ -1975,10 +2172,10 @@ const FeeStructureManager = () => {
           image: imageUrl
         }
       };
-      setFeeData(updatedData);
       saveFeeData(updatedData);
+      setEditingKey(null);
+      setImageUrl(null);
     }
-    console.log('Image uploaded to ImgBB for fee structure:', imageUrl);
   };
 
   const handleEdit = (key) => {
@@ -1994,28 +2191,28 @@ const FeeStructureManager = () => {
 
   const handleReset = () => {
     if (window.confirm('Reset all fee structure images to default? This will remove all custom uploaded images.')) {
-      setDefaultFeeData();
-      setAlert({ show: true, type: 'success', message: 'Fee structure reset to default successfully!' });
-      setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
+      const defaults = {
+        ecde: { image: defaultImages.ecde, label: 'ECDE Fee Structure' },
+        primary: { image: defaultImages.primary, label: 'Primary Fee Structure' },
+        junior: { image: defaultImages.junior, label: 'Junior Secondary Fee Structure' },
+        transport: { image: defaultImages.transport, label: 'Transport Costs' }
+      };
+      saveFeeData(defaults);
     }
   };
 
   const handleResetIndividual = (key) => {
     if (window.confirm(`Reset ${feeData[key]?.label || key} to default image?`)) {
-      const defaultImage = defaultImages[key];
       const updatedData = {
         ...feeData,
         [key]: {
           ...feeData[key],
-          image: defaultImage
+          image: defaultImages[key]
         }
       };
-      
       saveFeeData(updatedData);
       setEditingKey(null);
       setImageUrl(null);
-      setAlert({ show: true, type: 'success', message: `${feeData[key]?.label || key} reset to default!` });
-      setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
     }
   };
 
@@ -2025,26 +2222,32 @@ const FeeStructureManager = () => {
     return data.image || defaultImages[key];
   };
 
-  if (loading) return <div className="text-center py-5"><Spinner animation="border" variant="primary" /></div>;
+  useEffect(() => {
+    loadFeeData();
+  }, [loadFeeData]);
+
+  if (loading) {
+    return <div className="text-center py-5"><Spinner animation="border" variant="primary" /></div>;
+  }
 
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h3 className="h5 fw-bold mb-0">Manage Fee Structure Images</h3>
-        <Button variant="outline-danger" size="sm" onClick={handleReset}>
+        <Button variant="outline-danger" size="sm" onClick={handleReset} disabled={saving}>
           <i className="fas fa-undo me-1"></i> Reset All to Default
         </Button>
       </div>
-      
+
       {alert.show && <Alert variant={alert.type} dismissible onClose={() => setAlert({ show: false })} className="mb-3">{alert.message}</Alert>}
-      
+
       <Row className="g-4">
         {feeOptions.map((option) => {
           const data = feeData[option.key] || {};
           const isEditing = editingKey === option.key;
           const imageSrc = getImageSrc(option.key);
           const isDefault = data.image === defaultImages[option.key] || !data.image;
-          
+
           return (
             <Col key={option.key} md={6}>
               <Card className="border-0 shadow-sm h-100">
@@ -2059,28 +2262,28 @@ const FeeStructureManager = () => {
                     </div>
                     {isEditing ? (
                       <div>
-                        <Button variant="outline-secondary" size="sm" className="me-1" onClick={handleCancelEdit}>
+                        <Button variant="outline-secondary" size="sm" className="me-1" onClick={handleCancelEdit} disabled={saving}>
                           <i className="fas fa-times"></i>
                         </Button>
-                        <Button 
-                          variant="outline-danger" 
-                          size="sm" 
-                          className="me-1" 
+                        <Button
+                          variant="outline-danger"
+                          size="sm"
+                          className="me-1"
                           onClick={() => handleResetIndividual(option.key)}
+                          disabled={saving}
                           title="Reset to default image"
                         >
                           <i className="fas fa-undo"></i>
                         </Button>
                       </div>
                     ) : (
-                      <Button variant="outline-primary" size="sm" onClick={() => handleEdit(option.key)}>
+                      <Button variant="outline-primary" size="sm" onClick={() => handleEdit(option.key)} disabled={saving}>
                         <i className="fas fa-edit"></i> Update Image
                       </Button>
                     )}
                   </div>
-                  
-                  {/* Image Preview */}
-                  <div 
+
+                  <div
                     style={{
                       width: '100%',
                       height: '200px',
@@ -2092,8 +2295,8 @@ const FeeStructureManager = () => {
                     }}
                   >
                     {imageSrc ? (
-                      <img 
-                        src={imageSrc} 
+                      <img
+                        src={imageSrc}
                         alt={option.label}
                         style={{
                           width: '100%',
@@ -2114,11 +2317,10 @@ const FeeStructureManager = () => {
                       </div>
                     )}
                   </div>
-                  
-                  {/* NEW: ImgBB ImageUploader - visible when editing */}
+
                   {isEditing && (
                     <div className="mt-3">
-                      <ImageUploader 
+                      <ImageUploader
                         onImageUpload={handleImageUpload}
                         currentImage={imageUrl}
                         label={`Upload new image for ${option.label}`}
@@ -2126,8 +2328,7 @@ const FeeStructureManager = () => {
                       />
                     </div>
                   )}
-                  
-                  {/* Status info */}
+
                   <div className="mt-2 d-flex justify-content-between align-items-center">
                     <small className="text-muted">
                       {isDefault ? 'Using default image' : 'Using custom uploaded image'}
@@ -2139,8 +2340,7 @@ const FeeStructureManager = () => {
                       </small>
                     )}
                   </div>
-                  
-                  {/* File path info */}
+
                   <div className="mt-1">
                     <small className="text-muted" style={{ fontSize: '0.65rem', wordBreak: 'break-all' }}>
                       {feeData[option.key]?.image || defaultImages[option.key]}
@@ -2152,8 +2352,7 @@ const FeeStructureManager = () => {
           );
         })}
       </Row>
-      
-      {/* Instructions */}
+
       <Card className="border-0 shadow-sm mt-4">
         <Card.Body>
           <h5 className="h6 fw-bold mb-2">
@@ -2173,126 +2372,18 @@ const FeeStructureManager = () => {
 };
 
 // ============================================================
-// PARTNERS MANAGER (unchanged)
-// ============================================================
-const PartnersManager = () => {
-  // ... (keep the same as before)
-  const [partners, setPartners] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [editingPartner, setEditingPartner] = useState(null);
-  const [formData, setFormData] = useState({ name: '', logo: '', website: '', description: '' });
-  const [alert, setAlert] = useState({ show: false, type: '', message: '' });
-
-  useEffect(() => { loadPartners(); }, []);
-
-  const loadPartners = () => {
-    const saved = localStorage.getItem('admin_partners');
-    if (saved) { setPartners(JSON.parse(saved)); }
-    else { setPartners([]); localStorage.setItem('admin_partners', JSON.stringify([])); }
-    setLoading(false);
-  };
-
-  const savePartners = (newPartners) => {
-    localStorage.setItem('admin_partners', JSON.stringify(newPartners));
-    setPartners(newPartners);
-    window.dispatchEvent(new CustomEvent('adminDataChange', { detail: { key: 'admin_partners' } }));
-  };
-
-  const handleOpenModal = (partner = null) => {
-    if (partner) { setEditingPartner(partner); setFormData(partner); }
-    else { setEditingPartner(null); setFormData({ name: '', logo: '', website: '', description: '' }); }
-    setShowModal(true);
-  };
-
-  const handleCloseModal = () => { setShowModal(false); setEditingPartner(null); };
-  const handleFormChange = (e) => { setFormData({ ...formData, [e.target.name]: e.target.value }); };
-
-  const handleSavePartner = () => {
-    if (!formData.name) {
-      setAlert({ show: true, type: 'danger', message: 'Please enter partner name.' });
-      setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
-      return;
-    }
-    let newPartners;
-    if (editingPartner) {
-      newPartners = partners.map(p => p.id === editingPartner.id ? { ...formData, id: p.id } : p);
-    } else {
-      const newId = Math.max(...partners.map(p => p.id), 0) + 1;
-      newPartners = [...partners, { ...formData, id: newId }];
-    }
-    savePartners(newPartners);
-    handleCloseModal();
-    setAlert({ show: true, type: 'success', message: `Partner ${editingPartner ? 'updated' : 'added'} successfully!` });
-    setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
-  };
-
-  const handleDeletePartner = (id) => {
-    if (window.confirm('Are you sure you want to delete this partner?')) {
-      const newPartners = partners.filter(p => p.id !== id);
-      savePartners(newPartners);
-      setAlert({ show: true, type: 'success', message: 'Partner deleted successfully!' });
-      setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
-    }
-  };
-
-  if (loading) return <div className="text-center py-5"><Spinner animation="border" variant="primary" /></div>;
-
-  return (
-    <div>
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h3 className="h5 fw-bold mb-0">Manage Partners & Sponsors</h3>
-        <Button className="btn-navy" size="sm" onClick={() => handleOpenModal()}><i className="fas fa-plus me-1"></i> Add Partner</Button>
-      </div>
-      {alert.show && <Alert variant={alert.type} dismissible onClose={() => setAlert({ show: false })} className="mb-3">{alert.message}</Alert>}
-      <div className="admin-table-wrapper">
-        <Table responsive hover className="admin-table">
-          <thead><tr><th>ID</th><th>Name</th><th>Description</th><th>Website</th><th>Actions</th></tr></thead>
-          <tbody>
-            {partners.map(partner => (
-              <tr key={partner.id}>
-                <td>{partner.id}</td>
-                <td className="fw-semibold">{partner.name}</td>
-                <td className="text-truncate" style={{ maxWidth: '300px' }}>{partner.description?.substring(0, 80)}...</td>
-                <td>{partner.website && <a href={partner.website} target="_blank" rel="noopener noreferrer">Link</a>}</td>
-                <td>
-                  <Button variant="outline-primary" size="sm" className="me-1" onClick={() => handleOpenModal(partner)}><i className="fas fa-edit"></i></Button>
-                  <Button variant="outline-danger" size="sm" onClick={() => handleDeletePartner(partner.id)}><i className="fas fa-trash"></i></Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </Table>
-      </div>
-      <Modal show={showModal} onHide={handleCloseModal} centered>
-        <Modal.Header closeButton><Modal.Title>{editingPartner ? 'Edit Partner' : 'Add New Partner'}</Modal.Title></Modal.Header>
-        <Modal.Body style={{ maxHeight: '70vh', overflowY: 'auto' }}>
-          <Form>
-            <Form.Group className="mb-3"><Form.Label className="fw-semibold small">Partner Name *</Form.Label><Form.Control type="text" name="name" value={formData.name} onChange={handleFormChange} /></Form.Group>
-            <Form.Group className="mb-3"><Form.Label className="fw-semibold small">Logo URL</Form.Label><Form.Control type="text" name="logo" value={formData.logo} onChange={handleFormChange} placeholder="/images/partners/..." /></Form.Group>
-            <Form.Group className="mb-3"><Form.Label className="fw-semibold small">Website</Form.Label><Form.Control type="url" name="website" value={formData.website} onChange={handleFormChange} placeholder="https://..." /></Form.Group>
-            <Form.Group className="mb-3"><Form.Label className="fw-semibold small">Description</Form.Label><Form.Control as="textarea" rows={3} name="description" value={formData.description} onChange={handleFormChange} /></Form.Group>
-          </Form>
-        </Modal.Body>
-        <Modal.Footer><Button variant="secondary" onClick={handleCloseModal}>Cancel</Button><Button className="btn-navy" onClick={handleSavePartner}>Save Partner</Button></Modal.Footer>
-      </Modal>
-    </div>
-  );
-};
-
-// ============================================================
-// PAGES CONTENT MANAGER (unchanged)
+// PAGES CONTENT MANAGER - No localStorage
 // ============================================================
 const PagesManager = () => {
-  // ... (keep the same as before - all pages content management)
   const [pageContent, setPageContent] = useState({});
   const [loading, setLoading] = useState(true);
   const [editingPage, setEditingPage] = useState(null);
   const [formData, setFormData] = useState({});
   const [alert, setAlert] = useState({ show: false, type: '', message: '' });
   const [activeCategory, setActiveCategory] = useState('homepage');
+  const [saving, setSaving] = useState(false);
 
-  // Define all pages with their fields (same as before)
+  // Complete page definitions
   const pageDefinitions = {
     homepage: {
       name: 'Homepage',
@@ -2303,7 +2394,133 @@ const PagesManager = () => {
         { id: 'why_choose_us', name: 'Why Choose Us', fields: ['title', 'intro', 'items'] },
       ]
     },
-    // ... rest of page definitions (same as before)
+    about: {
+      name: 'About Us',
+      icon: 'fas fa-info-circle',
+      sections: [
+        { id: 'hero', name: 'Hero Section', fields: ['title', 'subtitle'] },
+        { id: 'content', name: 'Content Section', fields: ['title', 'content', 'mission', 'vision', 'values'] },
+      ]
+    },
+    academics: {
+      name: 'Academics',
+      icon: 'fas fa-graduation-cap',
+      sections: [
+        { id: 'hero', name: 'Hero Section', fields: ['title', 'subtitle'] },
+        { id: 'content', name: 'Content Section', fields: ['title', 'content'] },
+      ]
+    },
+    curriculum: {
+      name: 'Curriculum',
+      icon: 'fas fa-book-open',
+      sections: [
+        { id: 'hero', name: 'Hero Section', fields: ['title', 'subtitle'] },
+        { id: 'content', name: 'Content Section', fields: ['title', 'content'] },
+      ]
+    },
+    clubs: {
+      name: 'Clubs & Societies',
+      icon: 'fas fa-users',
+      sections: [
+        { id: 'hero', name: 'Hero Section', fields: ['title', 'subtitle'] },
+        { id: 'content', name: 'Content Section', fields: ['title', 'content'] },
+      ]
+    },
+    boarding: {
+      name: 'Boarding Life',
+      icon: 'fas fa-bed',
+      sections: [
+        { id: 'hero', name: 'Hero Section', fields: ['title', 'subtitle'] },
+        { id: 'overview', name: 'Overview Section', fields: ['title', 'content'] },
+        { id: 'experience', name: 'Experience Section', fields: ['title', 'content'] },
+        { id: 'study', name: 'Study Section', fields: ['title', 'content'] },
+        { id: 'recreation', name: 'Recreation Section', fields: ['title', 'content'] },
+        { id: 'parent_expectations', name: 'Parent Expectations', fields: ['title', 'content'] },
+        { id: 'outcomes', name: 'Outcomes Section', fields: ['title', 'content'] },
+        { id: 'routine', name: 'Daily Routine', fields: ['title', 'content'] },
+        { id: 'checklist', name: 'Boarding Checklist', fields: ['title', 'content'] },
+      ]
+    },
+    dining: {
+      name: 'Dining',
+      icon: 'fas fa-utensils',
+      sections: [
+        { id: 'hero', name: 'Hero Section', fields: ['title', 'subtitle'] },
+        { id: 'content', name: 'Content Section', fields: ['title', 'content'] },
+      ]
+    },
+    gallery: {
+      name: 'Gallery',
+      icon: 'fas fa-images',
+      sections: [
+        { id: 'hero', name: 'Hero Section', fields: ['title', 'subtitle'] },
+        { id: 'content', name: 'Content Section', fields: ['title', 'content'] },
+      ]
+    },
+    faq: {
+      name: 'FAQ',
+      icon: 'fas fa-question-circle',
+      sections: [
+        { id: 'hero', name: 'Hero Section', fields: ['title', 'subtitle'] },
+        { id: 'content', name: 'Content Section', fields: ['title', 'content'] },
+      ]
+    },
+    fee_structure: {
+      name: 'Fee Structure',
+      icon: 'fas fa-money-bill-wave',
+      sections: [
+        { id: 'hero', name: 'Hero Section', fields: ['title', 'subtitle'] },
+        { id: 'content', name: 'Content Section', fields: ['title', 'content'] },
+      ]
+    },
+    apply: {
+      name: 'Apply',
+      icon: 'fas fa-file-alt',
+      sections: [
+        { id: 'hero', name: 'Hero Section', fields: ['title', 'subtitle'] },
+        { id: 'content', name: 'Content Section', fields: ['title', 'content'] },
+      ]
+    },
+    contact: {
+      name: 'Contact',
+      icon: 'fas fa-envelope',
+      sections: [
+        { id: 'hero', name: 'Hero Section', fields: ['title', 'subtitle'] },
+        { id: 'content', name: 'Content Section', fields: ['title', 'content'] },
+      ]
+    },
+    partner: {
+      name: 'Partners',
+      icon: 'fas fa-handshake',
+      sections: [
+        { id: 'hero', name: 'Hero Section', fields: ['title', 'subtitle'] },
+        { id: 'content', name: 'Content Section', fields: ['title', 'content'] },
+      ]
+    },
+    blog: {
+      name: 'Blog',
+      icon: 'fas fa-newspaper',
+      sections: [
+        { id: 'hero', name: 'Hero Section', fields: ['title', 'subtitle'] },
+        { id: 'content', name: 'Content Section', fields: ['title', 'content'] },
+      ]
+    },
+    privacy_policy: {
+      name: 'Privacy Policy',
+      icon: 'fas fa-shield-alt',
+      sections: [
+        { id: 'hero', name: 'Hero Section', fields: ['title', 'subtitle'] },
+        { id: 'content', name: 'Content Section', fields: ['title', 'content'] },
+      ]
+    },
+    terms: {
+      name: 'Terms of Service',
+      icon: 'fas fa-file-contract',
+      sections: [
+        { id: 'hero', name: 'Hero Section', fields: ['title', 'subtitle'] },
+        { id: 'content', name: 'Content Section', fields: ['title', 'content'] },
+      ]
+    },
   };
 
   const pageCategories = [
@@ -2325,37 +2542,38 @@ const PagesManager = () => {
     { id: 'terms', label: 'Terms of Service', icon: 'fas fa-file-contract' },
   ];
 
-  useEffect(() => { loadPageContent(); }, []);
-
-  const loadPageContent = () => {
+  const loadPageContent = useCallback(async () => {
     setLoading(true);
-    const saved = localStorage.getItem('admin_all_page_content');
-    if (saved) { 
-      try {
-        setPageContent(JSON.parse(saved));
-      } catch (e) {
-        console.error('Error parsing page content:', e);
-        setDefaultPageContent();
+    try {
+      const data = await getPageContent();
+      if (data) {
+        setPageContent(data);
+      } else {
+        setPageContent({});
       }
-    } else {
-      setDefaultPageContent();
+    } catch (error) {
+      console.error('Error loading page content:', error);
+      setAlert({ show: true, type: 'danger', message: 'Failed to load page content.' });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  };
+  }, []);
 
-  const setDefaultPageContent = () => {
-    const defaults = {};
-    Object.keys(pageDefinitions).forEach(pageKey => {
-      defaults[pageKey] = {};
-      pageDefinitions[pageKey].sections.forEach(section => {
-        defaults[pageKey][section.id] = {};
-        section.fields.forEach(field => {
-          defaults[pageKey][section.id][field] = getDefaultContent(pageKey, section.id, field);
-        });
-      });
-    });
-    setPageContent(defaults);
-    localStorage.setItem('admin_all_page_content', JSON.stringify(defaults));
+  const savePageContentToJsonBin = async (newContent) => {
+    setSaving(true);
+    try {
+      const result = await savePageContent(newContent);
+      if (result) {
+        setPageContent(newContent);
+        setAlert({ show: true, type: 'success', message: 'Page content updated successfully!' });
+        setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
+      }
+    } catch (error) {
+      console.error('Error saving page content:', error);
+      setAlert({ show: true, type: 'danger', message: 'Failed to save page content: ' + error.message });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const getDefaultContent = (pageKey, sectionId, field) => {
@@ -2369,15 +2587,71 @@ const PagesManager = () => {
         hero: { title: 'About Kitale Progressive School', subtitle: 'Learn about our history, mission, and values.' },
         content: { title: 'Our Story', content: 'Kitale Progressive School was founded with a vision to provide quality education...', mission: 'To provide quality education that nurtures every child\'s potential.', vision: 'To be a leading institution in holistic education.', values: 'Excellence, Integrity, Discipline, Compassion' }
       },
-      // ... rest of default content (same as before)
+      academics: {
+        hero: { title: 'Academics at Kitale Progressive School', subtitle: 'A comprehensive approach to learning and development.' },
+        content: { title: 'Our Academic Programs', content: 'We offer a comprehensive academic program that prepares learners for success.' }
+      },
+      curriculum: {
+        hero: { title: 'Our Curriculum', subtitle: 'Competency-Based Education (CBE) approved by KICD.' },
+        content: { title: 'Curriculum Overview', content: 'Our curriculum focuses on developing practical skills, creativity, and critical thinking.' }
+      },
+      clubs: {
+        hero: { title: 'Clubs & Societies', subtitle: 'Discover your passion and develop new skills.' },
+        content: { title: 'Co-Curricular Activities', content: 'We offer a wide range of clubs and societies to develop talents and interests.' }
+      },
+      boarding: {
+        hero: { title: 'A Safe and Structured Boarding Experience', subtitle: 'Our boarding program provides a structured, disciplined and supportive environment.' },
+        overview: { title: 'What Your Child Will Experience', content: 'Every day in our boarding program is designed to support academic success and personal growth.' },
+        experience: { title: 'Comfortable Living Spaces', content: 'Our dormitories are thoughtfully designed to be a true home away from home.' },
+        study: { title: 'Supervised Study Time', content: 'Evening prep sessions are supervised by qualified teachers.' },
+        recreation: { title: 'Recreation & Wellness', content: 'We believe in holistic development.' },
+        parent_expectations: { title: 'What to Expect as a Parent', content: '' },
+        outcomes: { title: 'Learners Develop', content: '' },
+        routine: { title: 'Daily Routine for Boarders', content: '' },
+        checklist: { title: 'Boarding Checklist', content: 'Essential Items Your Child will need for Boarding' }
+      },
+      dining: {
+        hero: { title: 'Nutritious Meals Every Day', subtitle: 'Balanced, healthy meals prepared with care.' },
+        content: { title: 'Dining at KPS', content: 'We provide nutritious meals to support your child\'s health and learning.' }
+      },
+      gallery: {
+        hero: { title: 'Our Gallery', subtitle: 'A glimpse into daily life at Kitale Progressive School.' },
+        content: { title: 'School Life', content: 'Explore our school through photos and videos.' }
+      },
+      faq: {
+        hero: { title: 'Frequently Asked Questions', subtitle: 'Find answers to your questions.' },
+        content: { title: 'FAQ', content: 'Find answers to common questions about our school.' }
+      },
+      fee_structure: {
+        hero: { title: 'Clear, Flexible, and Value-Driven School Fees', subtitle: 'Transparent and manageable fee structure.' },
+        content: { title: 'Fee Structure', content: 'Our fee structure is designed to balance affordability with quality education.' }
+      },
+      apply: {
+        hero: { title: 'Apply Now', subtitle: 'Start your child\'s journey at Kitale Progressive School.' },
+        content: { title: 'Application Process', content: 'Complete the application form to begin the admissions process.' }
+      },
+      contact: {
+        hero: { title: 'Get In Touch', subtitle: 'We\'re here to answer your questions.' },
+        content: { title: 'Contact Us', content: 'Reach out to us for any inquiries.' }
+      },
+      partner: {
+        hero: { title: 'Partner With Us', subtitle: 'Collaborate with us to expand access to quality education.' },
+        content: { title: 'Partnership Opportunities', content: 'We welcome partners who share our vision.' }
+      },
+      blog: {
+        hero: { title: 'Blog', subtitle: 'Insights and stories from Kitale Progressive School.' },
+        content: { title: 'Latest Posts', content: 'Stay updated with our latest articles and news.' }
+      },
+      privacy_policy: {
+        hero: { title: 'Privacy Policy', subtitle: 'How we protect and handle your information.' },
+        content: { title: 'Privacy Policy', content: 'Read our privacy policy to understand how we handle your data.' }
+      },
+      terms: {
+        hero: { title: 'Terms of Service', subtitle: 'Please read these terms carefully.' },
+        content: { title: 'Terms of Service', content: 'Read our terms of service.' }
+      },
     };
     return defaults[pageKey]?.[sectionId]?.[field] || '';
-  };
-
-  const savePageContent = (newContent) => {
-    localStorage.setItem('admin_all_page_content', JSON.stringify(newContent));
-    setPageContent(newContent);
-    window.dispatchEvent(new CustomEvent('adminDataChange', { detail: { key: 'admin_all_page_content' } }));
   };
 
   const handleEditSection = (pageKey, sectionId) => {
@@ -2391,11 +2665,9 @@ const PagesManager = () => {
     const updatedContent = { ...pageContent };
     if (!updatedContent[pageKey]) updatedContent[pageKey] = {};
     updatedContent[pageKey][sectionId] = { ...formData };
-    savePageContent(updatedContent);
+    savePageContentToJsonBin(updatedContent);
     setEditingPage(null);
     setFormData({});
-    setAlert({ show: true, type: 'success', message: 'Page content updated successfully!' });
-    setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
   };
 
   const handleCancelEdit = () => {
@@ -2418,13 +2690,17 @@ const PagesManager = () => {
           updatedContent[pageKey][section.id][field] = getDefaultContent(pageKey, section.id, field);
         });
       });
-      savePageContent(updatedContent);
-      setAlert({ show: true, type: 'success', message: `Page reset to default!` });
-      setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
+      savePageContentToJsonBin(updatedContent);
     }
   };
 
-  if (loading) return <div className="text-center py-5"><Spinner animation="border" variant="primary" /></div>;
+  useEffect(() => {
+    loadPageContent();
+  }, [loadPageContent]);
+
+  if (loading) {
+    return <div className="text-center py-5"><Spinner animation="border" variant="primary" /></div>;
+  }
 
   const currentPage = pageDefinitions[activeCategory];
   const currentPageContent = pageContent[activeCategory] || {};
@@ -2438,6 +2714,7 @@ const PagesManager = () => {
             variant="outline-danger" 
             size="sm" 
             onClick={() => handleResetPage(activeCategory)}
+            disabled={saving}
           >
             <i className="fas fa-undo me-1"></i> Reset This Page
           </Button>
@@ -2501,10 +2778,10 @@ const PagesManager = () => {
                         <h5 className="h6 fw-bold mb-0">{section.name}</h5>
                         {isEditing ? (
                           <div>
-                            <Button variant="outline-secondary" size="sm" className="me-1" onClick={handleCancelEdit}>
+                            <Button variant="outline-secondary" size="sm" className="me-1" onClick={handleCancelEdit} disabled={saving}>
                               <i className="fas fa-times"></i>
                             </Button>
-                            <Button variant="primary" size="sm" onClick={handleSaveContent}>
+                            <Button variant="primary" size="sm" onClick={handleSaveContent} disabled={saving}>
                               <i className="fas fa-save"></i>
                             </Button>
                           </div>
@@ -2580,10 +2857,9 @@ const PagesManager = () => {
 };
 
 // ============================================================
-// FOOTER SETTINGS MANAGER (unchanged)
+// FOOTER SETTINGS MANAGER - No localStorage
 // ============================================================
 const FooterSettingsManager = () => {
-  // ... (keep the same as before)
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState({
     schoolName: "Kitale Progressive School",
@@ -2604,6 +2880,7 @@ const FooterSettingsManager = () => {
   const [editingSocialIndex, setEditingSocialIndex] = useState(null);
   const [socialFormData, setSocialFormData] = useState({ icon: '', url: '', label: '' });
   const [showSocialModal, setShowSocialModal] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const socialIcons = [
     'bi-facebook', 'bi-instagram', 'bi-youtube', 'bi-tiktok', 'bi-whatsapp',
@@ -2611,28 +2888,36 @@ const FooterSettingsManager = () => {
     'bi-discord', 'bi-reddit', 'bi-tumblr', 'bi-vimeo', 'bi-yelp'
   ];
 
-  useEffect(() => { loadSettings(); }, []);
-
-  const loadSettings = () => {
+  const loadSettings = useCallback(async () => {
     setLoading(true);
     try {
-      const saved = localStorage.getItem('admin_footer_settings');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        setSettings(parsed);
-        console.log('Footer settings loaded from localStorage');
+      const data = await getFooterSettings();
+      if (data) {
+        setSettings(data);
+        console.log('Footer settings loaded from JSON Bin');
       }
     } catch (error) {
       console.error('Error loading footer settings:', error);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  };
+  }, []);
 
-  const saveSettings = (newSettings) => {
-    localStorage.setItem('admin_footer_settings', JSON.stringify(newSettings));
-    setSettings(newSettings);
-    window.dispatchEvent(new CustomEvent('adminDataChange', { detail: { key: 'admin_footer_settings' } }));
-    console.log('Footer settings saved');
+  const saveSettingsToJsonBin = async (newSettings) => {
+    setSaving(true);
+    try {
+      const result = await saveFooterSettings(newSettings);
+      if (result) {
+        setSettings(newSettings);
+        setAlert({ show: true, type: 'success', message: 'Footer settings saved successfully!' });
+        setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
+      }
+    } catch (error) {
+      console.error('Error saving footer settings:', error);
+      setAlert({ show: true, type: 'danger', message: 'Failed to save footer settings: ' + error.message });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleChange = (e) => {
@@ -2641,9 +2926,7 @@ const FooterSettingsManager = () => {
   };
 
   const handleSave = () => {
-    saveSettings(settings);
-    setAlert({ show: true, type: 'success', message: 'Footer settings saved successfully!' });
-    setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
+    saveSettingsToJsonBin(settings);
   };
 
   const handleReset = () => {
@@ -2663,9 +2946,7 @@ const FooterSettingsManager = () => {
           { icon: "bi-whatsapp", url: "https://wa.me/254780841116", label: "WhatsApp" }
         ]
       };
-      saveSettings(defaultSettings);
-      setAlert({ show: true, type: 'success', message: 'Footer settings reset to default!' });
-      setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
+      saveSettingsToJsonBin(defaultSettings);
     }
   };
 
@@ -2685,9 +2966,7 @@ const FooterSettingsManager = () => {
     if (window.confirm('Delete this social media link?')) {
       const newSocialLinks = settings.socialLinks.filter((_, i) => i !== index);
       const newSettings = { ...settings, socialLinks: newSocialLinks };
-      saveSettings(newSettings);
-      setAlert({ show: true, type: 'success', message: 'Social link deleted!' });
-      setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
+      saveSettingsToJsonBin(newSettings);
     }
   };
 
@@ -2708,23 +2987,29 @@ const FooterSettingsManager = () => {
     }
 
     const newSettings = { ...settings, socialLinks: newSocialLinks };
-    saveSettings(newSettings);
+    saveSettingsToJsonBin(newSettings);
     setShowSocialModal(false);
     setAlert({ show: true, type: 'success', message: `Social link ${editingSocialIndex !== null ? 'updated' : 'added'}!` });
     setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
   };
 
-  if (loading) return <div className="text-center py-5"><Spinner animation="border" variant="primary" /></div>;
+  useEffect(() => {
+    loadSettings();
+  }, [loadSettings]);
+
+  if (loading) {
+    return <div className="text-center py-5"><Spinner animation="border" variant="primary" /></div>;
+  }
 
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h3 className="h5 fw-bold mb-0">Footer Settings</h3>
         <div className="d-flex gap-2">
-          <Button variant="outline-danger" size="sm" onClick={handleReset}>
+          <Button variant="outline-danger" size="sm" onClick={handleReset} disabled={saving}>
             <i className="fas fa-undo me-1"></i> Reset to Default
           </Button>
-          <Button className="btn-navy" size="sm" onClick={handleSave}>
+          <Button className="btn-navy" size="sm" onClick={handleSave} disabled={saving}>
             <i className="fas fa-save me-1"></i> Save All
           </Button>
         </div>
@@ -2820,7 +3105,7 @@ const FooterSettingsManager = () => {
         <Card.Body>
           <div className="d-flex justify-content-between align-items-center mb-3">
             <h4 className="h6 fw-bold mb-0">Social Media Links</h4>
-            <Button variant="outline-primary" size="sm" onClick={handleAddSocial}>
+            <Button variant="outline-primary" size="sm" onClick={handleAddSocial} disabled={saving}>
               <i className="fas fa-plus me-1"></i> Add Social Link
             </Button>
           </div>
@@ -2849,10 +3134,10 @@ const FooterSettingsManager = () => {
                         </a>
                       </td>
                       <td>
-                        <Button variant="outline-primary" size="sm" className="me-1" onClick={() => handleEditSocial(index)}>
+                        <Button variant="outline-primary" size="sm" className="me-1" onClick={() => handleEditSocial(index)} disabled={saving}>
                           <i className="fas fa-edit"></i>
                         </Button>
-                        <Button variant="outline-danger" size="sm" onClick={() => handleDeleteSocial(index)}>
+                        <Button variant="outline-danger" size="sm" onClick={() => handleDeleteSocial(index)} disabled={saving}>
                           <i className="fas fa-trash"></i>
                         </Button>
                       </td>
@@ -2914,8 +3199,8 @@ const FooterSettingsManager = () => {
           </Form>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowSocialModal(false)}>Cancel</Button>
-          <Button className="btn-navy" onClick={handleSaveSocial}>
+          <Button variant="secondary" onClick={() => setShowSocialModal(false)} disabled={saving}>Cancel</Button>
+          <Button className="btn-navy" onClick={handleSaveSocial} disabled={saving}>
             {editingSocialIndex !== null ? 'Update' : 'Add'}
           </Button>
         </Modal.Footer>
@@ -2959,87 +3244,160 @@ const FooterSettingsManager = () => {
 };
 
 // ============================================================
-// SETTINGS MANAGER (unchanged)
+// SETTINGS MANAGER - No localStorage
 // ============================================================
 const SettingsManager = () => {
   const [settings, setSettings] = useState({});
   const [loading, setLoading] = useState(true);
   const [alert, setAlert] = useState({ show: false, type: '', message: '' });
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => { loadSettings(); }, []);
-
-  const loadSettings = () => {
-    const saved = localStorage.getItem('admin_settings');
-    if (saved) { setSettings(JSON.parse(saved)); }
-    else {
-      const defaultSettings = {
-        schoolName: "Kitale Progressive School",
-        schoolEmail: "kitaleprogressivesocial@gmail.com",
-        schoolPhone: "+254 736 756 595",
-        schoolAddress: "Kitale - Kapenguria RD",
-        facebookUrl: "https://www.facebook.com/kitaleprogressive/",
-        instagramUrl: "https://www.instagram.com/kitaleprogrsv1338/",
-        youtubeUrl: "https://www.youtube.com/@KPSConnect",
-        tiktokUrl: "https://www.tiktok.com/@kitale.progressive",
-        whatsappUrl: "https://wa.me/254780841116",
-        googleMapsEmbed: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3989.1549118880284!2d34.995235373490296!3d1.0448587624833654!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x178226623113cbbd%3A0x9bc6b39a5f193f4a!2sKitale%20Progressive%20School%3A%20Top%20Private%20Christian%20School%20in%20Trans%20Nzoia%3A!5e0!3m2!1sen!2ske!4v1777746404738!5m2!1sen!2ske"
-      };
-      setSettings(defaultSettings);
-      localStorage.setItem('admin_settings', JSON.stringify(defaultSettings));
+  const loadSettings = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await getSettings();
+      if (data) {
+        setSettings(data);
+        console.log('Settings loaded from JSON Bin');
+      }
+    } catch (error) {
+      console.error('Error loading settings:', error);
+      setAlert({ show: true, type: 'danger', message: 'Failed to load settings.' });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
+  }, []);
+
+  const saveSettingsToJsonBin = async (newSettings) => {
+    setSaving(true);
+    try {
+      const result = await saveSettings(newSettings);
+      if (result) {
+        setSettings(newSettings);
+        setAlert({ show: true, type: 'success', message: 'Settings saved successfully!' });
+        setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
+      }
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      setAlert({ show: true, type: 'danger', message: 'Failed to save settings: ' + error.message });
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const saveSettings = (newSettings) => {
-    localStorage.setItem('admin_settings', JSON.stringify(newSettings));
-    setSettings(newSettings);
-    window.dispatchEvent(new CustomEvent('adminDataChange', { detail: { key: 'admin_settings' } }));
+  const handleChange = (e) => {
+    setSettings({ ...settings, [e.target.name]: e.target.value });
   };
 
-  const handleChange = (e) => { setSettings({ ...settings, [e.target.name]: e.target.value }); };
-  
   const handleSave = () => {
-    saveSettings(settings);
-    setAlert({ show: true, type: 'success', message: 'Settings saved successfully!' });
-    setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
+    saveSettingsToJsonBin(settings);
   };
-  
+
   const handleReset = () => {
     if (window.confirm('Are you sure you want to reset all data? This will delete all custom content.')) {
-      localStorage.clear();
+      // Only reset auth session, not data
+      localStorage.removeItem('adminAuthenticated');
+      localStorage.removeItem('adminExpiry');
       window.location.reload();
     }
   };
 
-  if (loading) return <div className="text-center py-5"><Spinner animation="border" variant="primary" /></div>;
+  useEffect(() => {
+    loadSettings();
+  }, [loadSettings]);
+
+  if (loading) {
+    return <div className="text-center py-5"><Spinner animation="border" variant="primary" /></div>;
+  }
 
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h3 className="h5 fw-bold mb-0">Site Settings</h3>
-        <Button variant="outline-danger" size="sm" onClick={handleReset}><i className="fas fa-trash-alt me-1"></i> Reset All Data</Button>
+        <Button variant="outline-danger" size="sm" onClick={handleReset} disabled={saving}>
+          <i className="fas fa-trash-alt me-1"></i> Reset Session
+        </Button>
       </div>
       {alert.show && <Alert variant={alert.type} dismissible onClose={() => setAlert({ show: false })} className="mb-3">{alert.message}</Alert>}
       <Card className="border-0 shadow-sm">
         <Card.Body>
           <h4 className="h6 fw-bold mb-3">General Information</h4>
           <Row className="g-3 mb-4">
-            <Col md={6}><Form.Group><Form.Label className="small fw-semibold">School Name</Form.Label><Form.Control type="text" name="schoolName" value={settings.schoolName} onChange={handleChange} /></Form.Group></Col>
-            <Col md={6}><Form.Group><Form.Label className="small fw-semibold">School Email</Form.Label><Form.Control type="email" name="schoolEmail" value={settings.schoolEmail} onChange={handleChange} /></Form.Group></Col>
-            <Col md={6}><Form.Group><Form.Label className="small fw-semibold">School Phone</Form.Label><Form.Control type="text" name="schoolPhone" value={settings.schoolPhone} onChange={handleChange} /></Form.Group></Col>
-            <Col md={6}><Form.Group><Form.Label className="small fw-semibold">School Address</Form.Label><Form.Control type="text" name="schoolAddress" value={settings.schoolAddress} onChange={handleChange} /></Form.Group></Col>
+            <Col md={6}>
+              <Form.Group>
+                <Form.Label className="small fw-semibold">School Name</Form.Label>
+                <Form.Control type="text" name="schoolName" value={settings.schoolName || ''} onChange={handleChange} />
+              </Form.Group>
+            </Col>
+            <Col md={6}>
+              <Form.Group>
+                <Form.Label className="small fw-semibold">School Email</Form.Label>
+                <Form.Control type="email" name="schoolEmail" value={settings.schoolEmail || ''} onChange={handleChange} />
+              </Form.Group>
+            </Col>
+            <Col md={6}>
+              <Form.Group>
+                <Form.Label className="small fw-semibold">School Phone</Form.Label>
+                <Form.Control type="text" name="schoolPhone" value={settings.schoolPhone || ''} onChange={handleChange} />
+              </Form.Group>
+            </Col>
+            <Col md={6}>
+              <Form.Group>
+                <Form.Label className="small fw-semibold">School Address</Form.Label>
+                <Form.Control type="text" name="schoolAddress" value={settings.schoolAddress || ''} onChange={handleChange} />
+              </Form.Group>
+            </Col>
           </Row>
           <h4 className="h6 fw-bold mb-3">Social Media Links</h4>
           <Row className="g-3 mb-4">
-            <Col md={4}><Form.Group><Form.Label className="small fw-semibold">Facebook</Form.Label><Form.Control type="url" name="facebookUrl" value={settings.facebookUrl} onChange={handleChange} /></Form.Group></Col>
-            <Col md={4}><Form.Group><Form.Label className="small fw-semibold">Instagram</Form.Label><Form.Control type="url" name="instagramUrl" value={settings.instagramUrl} onChange={handleChange} /></Form.Group></Col>
-            <Col md={4}><Form.Group><Form.Label className="small fw-semibold">YouTube</Form.Label><Form.Control type="url" name="youtubeUrl" value={settings.youtubeUrl} onChange={handleChange} /></Form.Group></Col>
-            <Col md={4}><Form.Group><Form.Label className="small fw-semibold">TikTok</Form.Label><Form.Control type="url" name="tiktokUrl" value={settings.tiktokUrl} onChange={handleChange} /></Form.Group></Col>
-            <Col md={4}><Form.Group><Form.Label className="small fw-semibold">WhatsApp</Form.Label><Form.Control type="url" name="whatsappUrl" value={settings.whatsappUrl} onChange={handleChange} /></Form.Group></Col>
+            <Col md={4}>
+              <Form.Group>
+                <Form.Label className="small fw-semibold">Facebook</Form.Label>
+                <Form.Control type="url" name="facebookUrl" value={settings.facebookUrl || ''} onChange={handleChange} />
+              </Form.Group>
+            </Col>
+            <Col md={4}>
+              <Form.Group>
+                <Form.Label className="small fw-semibold">Instagram</Form.Label>
+                <Form.Control type="url" name="instagramUrl" value={settings.instagramUrl || ''} onChange={handleChange} />
+              </Form.Group>
+            </Col>
+            <Col md={4}>
+              <Form.Group>
+                <Form.Label className="small fw-semibold">YouTube</Form.Label>
+                <Form.Control type="url" name="youtubeUrl" value={settings.youtubeUrl || ''} onChange={handleChange} />
+              </Form.Group>
+            </Col>
+            <Col md={4}>
+              <Form.Group>
+                <Form.Label className="small fw-semibold">TikTok</Form.Label>
+                <Form.Control type="url" name="tiktokUrl" value={settings.tiktokUrl || ''} onChange={handleChange} />
+              </Form.Group>
+            </Col>
+            <Col md={4}>
+              <Form.Group>
+                <Form.Label className="small fw-semibold">WhatsApp</Form.Label>
+                <Form.Control type="url" name="whatsappUrl" value={settings.whatsappUrl || ''} onChange={handleChange} />
+              </Form.Group>
+            </Col>
           </Row>
           <h4 className="h6 fw-bold mb-3">Google Maps</h4>
-          <Form.Group className="mb-4"><Form.Label className="small fw-semibold">Google Maps Embed URL</Form.Label><Form.Control as="textarea" rows={3} name="googleMapsEmbed" value={settings.googleMapsEmbed} onChange={handleChange} /></Form.Group>
-          <div className="text-end"><Button className="btn-navy" onClick={handleSave}>Save All Settings</Button></div>
+          <Form.Group className="mb-4">
+            <Form.Label className="small fw-semibold">Google Maps Embed URL</Form.Label>
+            <Form.Control as="textarea" rows={3} name="googleMapsEmbed" value={settings.googleMapsEmbed || ''} onChange={handleChange} />
+          </Form.Group>
+          <div className="text-end">
+            <Button className="btn-navy" onClick={handleSave} disabled={saving}>
+              {saving ? (
+                <>
+                  <Spinner as="span" animation="border" size="sm" className="me-2" />
+                  Saving...
+                </>
+              ) : (
+                'Save All Settings'
+              )}
+            </Button>
+          </div>
         </Card.Body>
       </Card>
     </div>
@@ -3054,36 +3412,50 @@ function Admin() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [stats, setStats] = useState({ blogs: 0, events: 0, gallery: 0, testimonials: 0, faq: 0, partners: 0 });
 
-  const updateStats = () => {
-    const blogs = JSON.parse(localStorage.getItem('admin_blogs') || '[]');
-    const events = JSON.parse(localStorage.getItem('admin_events') || '[]');
-    const gallery = JSON.parse(localStorage.getItem('admin_gallery') || '[]');
-    const testimonials = JSON.parse(localStorage.getItem('admin_testimonials') || '[]');
-    const faq = JSON.parse(localStorage.getItem('admin_faq') || '[]');
-    const partners = JSON.parse(localStorage.getItem('admin_partners') || '[]');
-    const faqCount = faq.reduce((sum, cat) => sum + (cat.questions?.length || 0), 0);
-    setStats({ blogs: blogs.length, events: events.length, gallery: gallery.length, testimonials: testimonials.length, faq: faqCount, partners: partners.length });
-  };
+  const updateStats = useCallback(async () => {
+    try {
+      const blogs = await getBlogs();
+      const events = await getEvents();
+      const gallery = await getGallery();
+      const testimonials = await getTestimonials();
+      const faq = await getFAQ();
+      const partners = await getPartners();
+      
+      const faqCount = faq ? faq.reduce((sum, cat) => sum + (cat.questions?.length || 0), 0) : 0;
+      
+      setStats({
+        blogs: Array.isArray(blogs) ? blogs.length : 0,
+        events: Array.isArray(events) ? events.length : 0,
+        gallery: Array.isArray(gallery) ? gallery.length : 0,
+        testimonials: Array.isArray(testimonials) ? testimonials.length : 0,
+        faq: faqCount,
+        partners: Array.isArray(partners) ? partners.length : 0
+      });
+    } catch (error) {
+      console.error('Error updating stats:', error);
+    }
+  }, []);
 
   useEffect(() => {
     updateStats();
-    
-    const handleDataChange = () => {
-      updateStats();
-    };
-    
-    window.addEventListener('adminDataChange', handleDataChange);
-    
-    return () => {
-      window.removeEventListener('adminDataChange', handleDataChange);
-    };
-  }, []);
+  }, [updateStats]);
 
   if (isLoading) {
-    return (<div className="admin-loading"><div className="text-center"><div className="spinner-border text-primary" role="status"><span className="visually-hidden">Loading...</span></div><p className="mt-2 text-muted small">Loading admin panel...</p></div></div>);
+    return (
+      <div className="admin-loading">
+        <div className="text-center">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+          <p className="mt-2 text-muted small">Loading admin panel...</p>
+        </div>
+      </div>
+    );
   }
 
-  if (!isAuthenticated) { return <AdminLogin onLogin={login} />; }
+  if (!isAuthenticated) {
+    return <AdminLogin onLogin={login} />;
+  }
 
   const renderContent = () => {
     switch (activeTab) {
@@ -3104,11 +3476,20 @@ function Admin() {
 
   return (
     <>
-      <Helmet><title>Admin Dashboard | Kitale Progressive School</title><meta name="robots" content="noindex, nofollow" /></Helmet>
+      <Helmet>
+        <title>Admin Dashboard | Kitale Progressive School</title>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
       <div className="admin-wrapper">
         <AdminSidebar activeTab={activeTab} onTabChange={setActiveTab} onLogout={logout} />
         <main className="admin-main">
-          <div className="admin-header"><h1 className="h4 fw-bold mb-0">Admin Dashboard</h1><div className="admin-user"><i className="fas fa-user-shield me-1"></i><span className="small">Administrator</span></div></div>
+          <div className="admin-header">
+            <h1 className="h4 fw-bold mb-0">Admin Dashboard</h1>
+            <div className="admin-user">
+              <i className="fas fa-user-shield me-1"></i>
+              <span className="small">Administrator</span>
+            </div>
+          </div>
           <div className="admin-content">{renderContent()}</div>
         </main>
       </div>
@@ -3132,7 +3513,7 @@ function Admin() {
         .admin-stat-value { font-size: 1.8rem; font-weight: 700; color: #050265; }
         .admin-stat-label { font-size: 0.75rem; color: #6c757d; text-transform: uppercase; letter-spacing: 0.5px; }
         .admin-stat-icon { width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; }
-        .admin-table-wrapper { overflow-x: auto; background: white; borderRadius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .admin-table-wrapper { overflow-x: auto; background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         .admin-table { margin-bottom: 0; }
         .admin-table th { background: #f8f9fa; border-bottom: 2px solid #e9ecef; font-weight: 600; font-size: 0.8rem; }
         .admin-gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; }
@@ -3148,7 +3529,12 @@ function Admin() {
         .admin-loading { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f5f7fb; }
         .image-upload-area { border: 2px dashed #dee2e6; border-radius: 12px; padding: 1rem; text-align: center; cursor: pointer; background-color: #f8f9fa; transition: all 0.2s ease; }
         .image-upload-area:hover { border-color: #0d65fb; background-color: #f0f4ff; }
-        @media (max-width: 768px) { .admin-sidebar { transform: translateX(-100%); transition: transform 0.3s ease; } .admin-sidebar.open { transform: translateX(0); } .admin-main { margin-left: 0; } .admin-gallery-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); } }
+        @media (max-width: 768px) { 
+          .admin-sidebar { transform: translateX(-100%); transition: transform 0.3s ease; } 
+          .admin-sidebar.open { transform: translateX(0); } 
+          .admin-main { margin-left: 0; } 
+          .admin-gallery-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); } 
+        }
       `}} />
     </>
   );

@@ -1,37 +1,11 @@
-// pages/Gallery.jsx - Fixed to remove scroll bar on images
+// pages/Gallery.jsx - Updated to use JSON Bin (No localStorage)
 import { Helmet } from "react-helmet-async";
 import { Container, Row, Col } from "react-bootstrap";
 import { useState, useEffect, useCallback, lazy, Suspense, memo, useMemo, useRef } from "react";
+import { getGallery } from "../services/dataService";
 
 // Lazy load non-critical components
 const GetInTouch = lazy(() => import("../components/GetInTouch"));
-
-// ==================== HELPER FUNCTIONS ====================
-
-// Load gallery images from localStorage (admin_uploaded_images and admin_gallery)
-const loadGalleryFromStorage = () => {
-  const storedImages = JSON.parse(localStorage.getItem('admin_uploaded_images') || '{}');
-  const storedGallery = JSON.parse(localStorage.getItem('admin_gallery') || '[]');
-  
-  // If we have gallery metadata, use it
-  if (storedGallery && storedGallery.length > 0) {
-    // Enrich gallery items with actual image data
-    const enrichedGallery = storedGallery.map(item => {
-      // Find the image data in storedImages
-      const imagePath = `/images/optimized/gallery/${item.filename}.jpg`;
-      const imageData = storedImages[imagePath] || null;
-      return {
-        ...item,
-        imageData: imageData,
-        // Use the stored alt or generate from filename
-        alt: item.alt || item.filename.replace(/-/g, ' ').replace(/\d+$/, '').trim(),
-      };
-    });
-    return enrichedGallery;
-  }
-  
-  return null;
-};
 
 // ==================== ORIGINAL GALLERY DATA (PRESERVED - DO NOT MODIFY) ====================
 const getDefaultGalleryData = () => ({
@@ -99,7 +73,7 @@ const getDefaultGalleryData = () => ({
   ]
 });
 
-// Merge default images with admin uploaded images (preserving all defaults)
+// ==================== MERGE GALLERY DATA ====================
 const mergeGalleryData = (defaultData, adminItems) => {
   // Start with a deep copy of default data
   const mergedData = {
@@ -116,9 +90,6 @@ const mergeGalleryData = (defaultData, adminItems) => {
     return mergedData;
   }
   
-  // Get stored image data
-  const storedImages = JSON.parse(localStorage.getItem('admin_uploaded_images') || '{}');
-  
   // Track existing filenames to avoid duplicates
   const existingFilenames = new Set();
   mergedData.all.forEach(img => existingFilenames.add(img.filename));
@@ -132,8 +103,6 @@ const mergeGalleryData = (defaultData, adminItems) => {
     
     // Generate alt text
     const altText = item.alt || item.filename.replace(/-/g, ' ').replace(/\d+$/, '').trim();
-    const imagePath = `/images/optimized/gallery/${item.filename}.jpg`;
-    const imageData = storedImages[imagePath] || null;
     
     const newId = Math.max(...mergedData.all.map(img => img.id), 0) + 1;
     const imageObj = {
@@ -141,8 +110,7 @@ const mergeGalleryData = (defaultData, adminItems) => {
       filename: item.filename,
       alt: altText,
       category: item.category || 'facilities',
-      imageData: imageData,
-      dataUrl: imageData,
+      imageUrl: item.imageUrl || `/images/optimized/gallery/${item.filename}.jpg`,
       isUploaded: true // Flag to identify uploaded images
     };
     
@@ -167,28 +135,25 @@ const GalleryImage = memo(({ image, onClick, priority = false }) => {
   const imgRef = useRef(null);
   const imageId = `gallery-img-${image.id}`;
 
-  // Get the image source - use dataUrl if available (uploaded image), otherwise use path
+  // Get the image source
   const getImageSrc = useCallback(() => {
-    if (image.imageData) {
-      return image.imageData;
-    }
-    if (image.dataUrl) {
-      return image.dataUrl;
+    if (image.imageUrl) {
+      return image.imageUrl;
     }
     return `/images/optimized/gallery/${image.filename}.jpg`;
-  }, [image.imageData, image.dataUrl, image.filename]);
+  }, [image.imageUrl, image.filename]);
 
   // Get webp source (only for non-uploaded images)
   const getWebpSrc = useCallback(() => {
-    if (image.imageData || image.dataUrl) {
-      return null; // Uploaded images are already base64
+    if (image.imageUrl) {
+      return null; // Uploaded images use their URL
     }
     return `/images/optimized/gallery/${image.filename}.webp`;
-  }, [image.imageData, image.dataUrl, image.filename]);
+  }, [image.imageUrl, image.filename]);
 
   // Preload priority images
   useEffect(() => {
-    if (priority && image.filename && !image.imageData && !image.dataUrl) {
+    if (priority && image.filename && !image.imageUrl) {
       const link = document.createElement('link');
       link.rel = 'preload';
       link.as = 'image';
@@ -200,7 +165,7 @@ const GalleryImage = memo(({ image, onClick, priority = false }) => {
         if (link.parentNode) document.head.removeChild(link);
       };
     }
-  }, [priority, image.filename, image.imageData, image.dataUrl]);
+  }, [priority, image.filename, image.imageUrl]);
 
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -211,7 +176,7 @@ const GalleryImage = memo(({ image, onClick, priority = false }) => {
 
   const imageSrc = getImageSrc();
   const webpSrc = getWebpSrc();
-  const isUploaded = !!(image.imageData || image.dataUrl);
+  const isUploaded = !!image.imageUrl;
 
   // Error fallback
   if (error) {
@@ -282,7 +247,7 @@ const GalleryImage = memo(({ image, onClick, priority = false }) => {
       )}
       
       {isUploaded ? (
-        // For uploaded images (base64 data)
+        // For uploaded images (ImgBB URLs)
         <img
           ref={imgRef}
           id={imageId}
@@ -394,17 +359,14 @@ const LightboxModal = memo(({ selectedImage, onClose, onPrev, onNext }) => {
   const closeButtonRef = useRef(null);
 
   const getImageSrc = useCallback(() => {
-    if (selectedImage?.imageData) {
-      return selectedImage.imageData;
-    }
-    if (selectedImage?.dataUrl) {
-      return selectedImage.dataUrl;
+    if (selectedImage?.imageUrl) {
+      return selectedImage.imageUrl;
     }
     return `/images/optimized/gallery/${selectedImage?.filename}.jpg`;
   }, [selectedImage]);
 
   const getWebpSrc = useCallback(() => {
-    if (selectedImage?.imageData || selectedImage?.dataUrl) {
+    if (selectedImage?.imageUrl) {
       return null;
     }
     return `/images/optimized/gallery/${selectedImage?.filename}.webp`;
@@ -440,7 +402,7 @@ const LightboxModal = memo(({ selectedImage, onClose, onPrev, onNext }) => {
 
   const imageSrc = getImageSrc();
   const webpSrc = getWebpSrc();
-  const isUploaded = !!(selectedImage.imageData || selectedImage.dataUrl);
+  const isUploaded = !!selectedImage.imageUrl;
 
   return (
     <div
@@ -634,21 +596,20 @@ function Gallery() {
     { id: "facilities", name: "Facilities", icon: "🏫" }
   ], []);
 
-  // Load gallery data from localStorage and merge with defaults
-  const loadGalleryData = useCallback(() => {
+  // Load gallery data from JSON Bin (No localStorage)
+  const loadGalleryData = useCallback(async () => {
     setIsLoading(true);
     try {
       // Get default data first
       const defaultData = getDefaultGalleryData();
       
-      // Try to load admin uploaded images
-      const adminItems = loadGalleryFromStorage();
+      // Try to load admin uploaded images from JSON Bin
+      const adminItems = await getGallery();
       
       // Merge default data with admin items (preserves all defaults)
       const mergedData = mergeGalleryData(defaultData, adminItems);
       
       setGalleryData(mergedData);
-      setIsLoading(false);
       console.log('Gallery loaded with', mergedData.all.length, 'total images');
       if (adminItems && adminItems.length > 0) {
         console.log('Including', adminItems.length, 'admin uploaded images');
@@ -656,40 +617,14 @@ function Gallery() {
     } catch (error) {
       console.error('Error loading gallery:', error);
       setGalleryData(getDefaultGalleryData());
+    } finally {
       setIsLoading(false);
     }
   }, []);
 
-  // Initial load and event listeners
+  // Initial load (No localStorage listeners needed)
   useEffect(() => {
     loadGalleryData();
-
-    // Listen for storage changes (when admin updates gallery)
-    const handleStorageChange = (e) => {
-      if (e.key === 'admin_gallery' || e.key === 'admin_uploaded_images') {
-        console.log('Gallery: Storage changed, reloading...');
-        loadGalleryData();
-        // Reset visible images when data changes
-        setVisibleImages(9);
-      }
-    };
-
-    // Listen for custom event from Admin
-    const handleAdminDataChange = (e) => {
-      if (e.detail?.key === 'admin_gallery' || e.detail?.key === 'admin_uploaded_images') {
-        console.log('Gallery: adminDataChange event received, reloading...');
-        loadGalleryData();
-        setVisibleImages(9);
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('adminDataChange', handleAdminDataChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('adminDataChange', handleAdminDataChange);
-    };
   }, [loadGalleryData]);
 
   // Reset visible images when category changes
@@ -817,8 +752,6 @@ function Gallery() {
             ))}
           </div>
 
-          
-
           {/* Photo Grid - 3 columns on desktop */}
           {displayedImages.length > 0 ? (
             <>
@@ -828,7 +761,7 @@ function Gallery() {
                   display: 'grid',
                   gridTemplateColumns: 'repeat(3, 1fr)',
                   gap: '1.5rem',
-                  overflow: 'hidden' // This removes the scroll bar
+                  overflow: 'hidden'
                 }}
                 role="list"
                 aria-label="Gallery images"
@@ -871,8 +804,6 @@ function Gallery() {
                   </button>
                 </div>
               )}
-              
-              
             </>
           ) : (
             <div className="text-center py-5">

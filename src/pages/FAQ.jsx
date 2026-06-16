@@ -1,18 +1,19 @@
-// pages/FAQ.jsx - Fully Updated with localStorage integration (Counter Removed)
+// pages/FAQ.jsx - Updated with complete FAQ data (No localStorage)
 import { Helmet } from "react-helmet-async";
 import { Container, Row, Col, Accordion, Card, Spinner } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import { lazy, Suspense, memo, useState, useEffect, useCallback } from "react";
+import { getFAQ } from "../services/dataService";
 
 // Lazy load non-critical components
 const GetInTouch = lazy(() => import("../components/GetInTouch"));
 
 function FAQ() {
-  // State for FAQ data loaded from localStorage
+  // State for FAQ data loaded from JSON Bin
   const [faqCategories, setFaqCategories] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Default FAQ data (fallback)
+  // Default FAQ data (fallback) - COMPLETE with all questions
   const getDefaultFAQ = () => [
     {
       category: "Admissions",
@@ -191,56 +192,28 @@ function FAQ() {
     }
   ];
 
-  // Load FAQ from localStorage
-  const loadFAQ = useCallback(() => {
+  // Load FAQ from JSON Bin (No localStorage)
+  const loadFAQ = useCallback(async () => {
     setLoading(true);
     try {
-      const saved = localStorage.getItem('admin_faq');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed && parsed.length > 0) {
-          setFaqCategories(parsed);
-          console.log('FAQ loaded from localStorage:', parsed.length, 'categories');
-        } else {
-          setFaqCategories(getDefaultFAQ());
-        }
+      const data = await getFAQ();
+      if (data && data.length > 0) {
+        setFaqCategories(data);
+        console.log('FAQ loaded from JSON Bin:', data.length, 'categories');
       } else {
         setFaqCategories(getDefaultFAQ());
       }
     } catch (error) {
       console.error('Error loading FAQ:', error);
       setFaqCategories(getDefaultFAQ());
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
-  // Load FAQ on mount and listen for changes
+  // Load FAQ on mount (No localStorage listeners needed)
   useEffect(() => {
     loadFAQ();
-
-    // Listen for storage changes (when admin updates FAQ)
-    const handleStorageChange = (e) => {
-      if (e.key === 'admin_faq') {
-        console.log('FAQ: Storage changed, reloading...');
-        loadFAQ();
-      }
-    };
-
-    // Listen for custom event from Admin
-    const handleAdminDataChange = (e) => {
-      if (e.detail?.key === 'admin_faq') {
-        console.log('FAQ: adminDataChange event received, reloading...');
-        loadFAQ();
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('adminDataChange', handleAdminDataChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('adminDataChange', handleAdminDataChange);
-    };
   }, [loadFAQ]);
 
   // Trust Bar Data
@@ -343,7 +316,7 @@ function FAQ() {
                 <Col lg={10} className="mx-auto">
                   <Card className="border-0 shadow-sm overflow-hidden">
                     <Card.Body className="p-0">
-                      {/* Category Header - Counter Removed */}
+                      {/* Category Header */}
                       <div 
                         style={{
                           backgroundColor: cat.color || "#4299e1",

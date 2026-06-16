@@ -1,9 +1,10 @@
-// pages/Home.jsx - Fixed syntax errors
+// pages/Home.jsx - Updated to use JSON Bin (No localStorage)
 import { Helmet } from "react-helmet-async";
 import { Container, Row, Col, Card } from "react-bootstrap";
 import { useLocation, useNavigate } from "react-router-dom";
 import React, { useEffect, lazy, Suspense, useCallback, useMemo, useState, useRef } from 'react';
 import { BlogSection } from './Blogs';
+import { getTestimonials } from '../services/dataService';
 import '../theme.css';
 
 // Lazy load non-critical components
@@ -245,7 +246,7 @@ function Home() {
   const navigate = useNavigate();
   const contactFormRef = useRef(null);
   
-  // State for testimonials loaded from localStorage
+  // State for testimonials loaded from JSON Bin
   const [testimonials, setTestimonials] = useState([]);
   const [testimonialIndex, setTestimonialIndex] = useState(0);
   const [isLoadingTestimonials, setIsLoadingTestimonials] = useState(true);
@@ -299,54 +300,28 @@ function Home() {
     }
   ];
 
-  // Load testimonials from localStorage
-  const loadTestimonials = useCallback(() => {
+  // Load testimonials from JSON Bin (No localStorage)
+  const loadTestimonials = useCallback(async () => {
     setIsLoadingTestimonials(true);
     try {
-      const saved = localStorage.getItem('admin_testimonials');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed && parsed.length > 0) {
-          setTestimonials(parsed);
-          console.log('Loaded testimonials from admin:', parsed.length);
-        } else {
-          setTestimonials(getDefaultTestimonials());
-        }
+      const data = await getTestimonials();
+      if (data && data.length > 0) {
+        setTestimonials(data);
+        console.log('Loaded testimonials from JSON Bin:', data.length);
       } else {
         setTestimonials(getDefaultTestimonials());
       }
     } catch (error) {
       console.error('Error loading testimonials:', error);
       setTestimonials(getDefaultTestimonials());
+    } finally {
+      setIsLoadingTestimonials(false);
     }
-    setIsLoadingTestimonials(false);
   }, []);
 
-  // Load testimonials on mount and listen for changes
+  // Load testimonials on mount (No localStorage listeners needed)
   useEffect(() => {
     loadTestimonials();
-
-    const handleStorageChange = (e) => {
-      if (e.key === 'admin_testimonials') {
-        console.log('Home: Testimonials storage changed, reloading...');
-        loadTestimonials();
-      }
-    };
-
-    const handleAdminDataChange = (e) => {
-      if (e.detail?.key === 'admin_testimonials') {
-        console.log('Home: adminDataChange event received, reloading testimonials...');
-        loadTestimonials();
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('adminDataChange', handleAdminDataChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('adminDataChange', handleAdminDataChange);
-    };
   }, [loadTestimonials]);
 
   // Auto-rotate testimonials
@@ -536,7 +511,7 @@ function Home() {
         </Container>
       </section>
 
-      {/* Testimonials Section - Using theme.css classes, loaded from admin */}
+      {/* Testimonials Section - Using theme.css classes, loaded from JSON Bin */}
       <section className="testimonials-section section-padding" aria-labelledby="testimonials-heading">
         <Container>
           <Row className="justify-content-center text-center mb-4">

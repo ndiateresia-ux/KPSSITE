@@ -1,78 +1,10 @@
-// pages/Blogs.jsx - Complete Working Version
+// pages/Blogs.jsx - Uses JSON Bin (No localStorage)
 import React, { useState, useEffect, useCallback, memo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Container, Row, Col, Spinner, Alert, Modal, Badge, Card } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { FacebookShareButton, TwitterShareButton, WhatsappShareButton, LinkedinShareButton } from 'react-share';
-
-// ==================== INITIAL DATA ====================
-const INITIAL_BLOGS = [
-  {
-    id: 1,
-    slug: "annual-sports-day-2024",
-    title: "Annual Sports Day 2024: A Celebration of Talent",
-    excerpt: "Students showcased exceptional athletic abilities during our annual sports day event with record-breaking performances across all categories.",
-    content: "<p>The annual sports day was a spectacular event filled with excitement and competition. Students from all grades participated in various athletic events including track races, field events, and team sports.</p><p>The day began with a colorful parade followed by the lighting of the torch. Students competed fiercely but with great sportsmanship, making it a memorable day for everyone involved.</p>",
-    fullStory: "<p>Students from all grades participated in various athletic events including 100m sprints, long jump, high jump, relay races, and football matches. The school's sports teams demonstrated exceptional skills and teamwork.</p><p>Special recognition was given to the top performers who broke school records. The event concluded with an awards ceremony where medals and certificates were presented to the winners.</p>",
-    featuredImage: "/images/optimized/gallery/sports1.webp",
-    author: "Mr. Omondi",
-    date: "2024-12-01",
-    category: "School Event",
-    tags: ["sports", "competition", "students"]
-  },
-  {
-    id: 2,
-    slug: "excellence-in-cbc-grade-6",
-    title: "Excellence in CBC: Our Grade 6 Learners Shine",
-    excerpt: "Our Grade 6 learners demonstrated outstanding performance in the recent CBC assessments with remarkable scores in all competency areas.",
-    content: "<p>The Competency-Based Curriculum has transformed how our students learn and grow. Our Grade 6 learners have shown remarkable progress in all competency areas including literacy, numeracy, and life skills.</p><p>Parents and teachers have been impressed with the holistic development of the learners, who are now better prepared for higher education and life challenges.</p>",
-    fullStory: "<p>Our Grade 6 learners have shown remarkable progress in all competency areas including literacy, numeracy, creativity, and critical thinking. The CBC approach has fostered independent learning and problem-solving skills.</p><p>The school has invested in modern teaching resources and teacher training to ensure effective implementation of the curriculum. Regular assessments and feedback help track learner progress and identify areas for improvement.</p>",
-    featuredImage: "/images/optimized/academics1.webp",
-    author: "Madam Sarah",
-    date: "2024-11-15",
-    category: "Academic Achievement",
-    tags: ["CBC", "education", "achievement"]
-  },
-  {
-    id: 3,
-    slug: "student-council-elections-2024",
-    title: "Building Future Leaders: Student Council Elections",
-    excerpt: "Democracy in action as our students participated in the annual student council elections with great enthusiasm and civic awareness.",
-    content: "<p>The student council elections provide valuable leadership experience for our learners. Candidates presented their manifestos and campaigned across the school, showcasing their leadership qualities.</p><p>Students exercised their democratic rights by voting for their preferred candidates, making this a practical lesson in democracy and civic responsibility.</p>",
-    fullStory: "<p>Candidates presented their manifestos and campaigned across the school, sharing their vision for improving student welfare and school activities. The election process was conducted with transparency and fairness.</p><p>The newly elected student council will work closely with the school administration to implement student-led initiatives and represent student interests. This experience helps develop essential leadership and communication skills.</p>",
-    featuredImage: "/images/optimized/gallery/events3.webp",
-    author: "Mr. Kipchoge",
-    date: "2024-10-20",
-    category: "Student Leadership",
-    tags: ["leadership", "democracy", "students"]
-  },
-  {
-    id: 4,
-    slug: "science-fair-2024",
-    title: "Innovation Showcase: Annual Science Fair 2024",
-    excerpt: "Young scientists impressed everyone with their innovative projects addressing real-world challenges through creative scientific solutions.",
-    content: "<p>The annual science fair showcased the creativity and scientific thinking of our students. Projects ranged from environmental conservation to technology solutions for everyday problems.</p><p>Students demonstrated their research skills and presented their findings to judges and visitors, showing how science can solve real-world problems.</p>",
-    fullStory: "<p>Projects ranged from environmental conservation to technology solutions for everyday problems. Winners received special recognition and will represent the school at the regional science competition.</p><p>The science fair has become a platform for nurturing young scientists and innovators. Students are encouraged to think critically and apply scientific principles to address community challenges.</p>",
-    featuredImage: "/images/optimized/gallery/science1.webp",
-    author: "Dr. Mwangi",
-    date: "2024-09-28",
-    category: "STEM",
-    tags: ["science", "innovation", "STEM"]
-  },
-  {
-    id: 5,
-    slug: "culture-day-celebration",
-    title: "Celebrating Diversity: Cultural Day 2024",
-    excerpt: "Students showcased Kenya's rich cultural heritage through music, dance, traditional cuisine, and colorful attire from various communities.",
-    content: "<p>Cultural Day was a vibrant celebration of Kenya's diverse cultural heritage. Students and staff dressed in traditional attire representing various Kenyan communities.</p><p>The event featured traditional dances, music performances, storytelling, and a food fair where parents and students shared traditional dishes.</p>",
-    fullStory: "<p>The event featured traditional dances, music performances, storytelling, and a food fair where parents and students shared traditional dishes. This celebration promotes cultural understanding and national unity.</p><p>Parents were invited to participate and share their cultural knowledge with students. The event was a powerful reminder of the beauty in diversity and the importance of preserving cultural heritage.</p>",
-    featuredImage: "/images/optimized/gallery/culture1.webp",
-    author: "Madam Grace",
-    date: "2024-09-15",
-    category: "Cultural Event",
-    tags: ["culture", "diversity", "celebration"]
-  }
-];
+import { getBlogs } from '../services/dataService';
 
 // ==================== UTILITY FUNCTIONS ====================
 const getReadingTime = (content) => {
@@ -95,59 +27,14 @@ const formatShortDate = (dateString) => {
   return new Date(dateString).toLocaleDateString('en-US', options);
 };
 
-// ==================== STORAGE UTILITY ====================
-const loadBlogsFromStorage = () => {
-  try {
-    if (typeof window === 'undefined') return null;
-    const saved = localStorage.getItem('admin_blogs');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        console.log('Blogs loaded from localStorage:', parsed.length);
-        return parsed;
-      }
-    }
-  } catch (e) {
-    console.error('Error parsing blogs from localStorage:', e);
-  }
-  return null;
-};
-
-const saveBlogsToStorage = (blogs) => {
-  try {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('admin_blogs', JSON.stringify(blogs));
-      return true;
-    }
-  } catch (e) {
-    console.error('Error saving blogs to localStorage:', e);
-  }
-  return false;
-};
-
-const initializeBlogs = () => {
-  // Try to load from localStorage first
-  const stored = loadBlogsFromStorage();
-  if (stored) {
-    return stored;
-  }
-  
-  // If no stored data, save initial data and return it
-  console.log('No stored blogs found, initializing with default data');
-  saveBlogsToStorage(INITIAL_BLOGS);
-  return INITIAL_BLOGS;
-};
-
 // ==================== CONTENT RENDERER ====================
 const renderContent = (content) => {
   if (!content) return '';
   
-  // If already has HTML tags, return as is
   if (/<[a-z][\s\S]*>/i.test(content)) {
     return content;
   }
   
-  // Convert markdown-like text to HTML
   let html = content;
   html = html.replace(/^# (.*?)(?:\n|$)/gm, '<h2>$1</h2>');
   html = html.replace(/^## (.*?)(?:\n|$)/gm, '<h3>$1</h3>');
@@ -155,7 +42,6 @@ const renderContent = (content) => {
   html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
   html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
   
-  // Wrap paragraphs
   const paragraphs = html.split('\n\n').filter(p => p.trim());
   html = paragraphs
     .map(para => {
@@ -677,11 +563,10 @@ export const BlogSection = ({ limit = 3, showViewAll = true, variant = 'gold' })
   const [showShareModal, setShowShareModal] = useState(false);
   const [currentShareUrl, setCurrentShareUrl] = useState('');
 
-  const loadPosts = useCallback(() => {
+  const loadPosts = useCallback(async () => {
     setLoading(true);
     try {
-      // Always initialize to ensure data exists
-      const posts = initializeBlogs();
+      const posts = await getBlogs();
       const limitedPosts = limit ? posts.slice(0, limit) : posts;
       setBlogPosts(limitedPosts);
       setError(null);
@@ -696,30 +581,6 @@ export const BlogSection = ({ limit = 3, showViewAll = true, variant = 'gold' })
 
   useEffect(() => {
     loadPosts();
-
-    // Listen for storage changes (from other tabs)
-    const handleStorageChange = (e) => {
-      if (e.key === 'admin_blogs') {
-        console.log('BlogSection: Storage changed, reloading...');
-        loadPosts();
-      }
-    };
-
-    // Listen for custom events (from admin panel)
-    const handleAdminDataChange = (e) => {
-      if (e.detail?.key === 'admin_blogs') {
-        console.log('BlogSection: Admin data changed, reloading...');
-        loadPosts();
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('adminDataChange', handleAdminDataChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('adminDataChange', handleAdminDataChange);
-    };
   }, [loadPosts]);
 
   const handleReadMore = (post) => {
@@ -866,10 +727,10 @@ const Blogs = () => {
   const [showShareModal, setShowShareModal] = useState(false);
   const [currentShareUrl, setCurrentShareUrl] = useState('');
 
-  const loadPosts = useCallback(() => {
+  const loadPosts = useCallback(async () => {
     setLoading(true);
     try {
-      const posts = initializeBlogs();
+      const posts = await getBlogs();
       setBlogPosts(posts);
       setError(null);
       console.log('Blogs page loaded:', posts.length, 'posts');
@@ -883,28 +744,6 @@ const Blogs = () => {
 
   useEffect(() => {
     loadPosts();
-
-    const handleStorageChange = (e) => {
-      if (e.key === 'admin_blogs') {
-        console.log('Blogs page: Storage changed, reloading...');
-        loadPosts();
-      }
-    };
-
-    const handleAdminDataChange = (e) => {
-      if (e.detail?.key === 'admin_blogs') {
-        console.log('Blogs page: Admin data changed, reloading...');
-        loadPosts();
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('adminDataChange', handleAdminDataChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('adminDataChange', handleAdminDataChange);
-    };
   }, [loadPosts]);
 
   const filteredPosts = selectedCategory 
