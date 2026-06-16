@@ -1,4 +1,4 @@
-// pages/Apply.jsx - Fixed navigation, Google sign-in, and form submission
+// pages/Apply.jsx - Fixed for your Google OAuth configuration
 import { Helmet } from "react-helmet-async";
 import { Container, Row, Col, Form, Button, Card, Alert } from "react-bootstrap";
 import { useState, useEffect, useCallback, memo, lazy, Suspense } from "react";
@@ -309,12 +309,28 @@ function Apply() {
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [dateError, setDateError] = useState("");
+  const [debugInfo, setDebugInfo] = useState("");
 
   // ==================== ENVIRONMENT VARIABLES ====================
   const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
   const ADMISSIONS_EMAIL = import.meta.env.VITE_ADMISSIONS_EMAIL || 'ndiateresia@gmail.com';
   const GMAIL_SCOPES = import.meta.env.VITE_GMAIL_SCOPES || 'https://www.googleapis.com/auth/gmail.send';
   const SITE_URL = import.meta.env.VITE_SITE_URL || window.location.origin;
+
+  // Log environment variables for debugging
+  useEffect(() => {
+    console.log('🔍 Environment Variables:');
+    console.log('VITE_GOOGLE_CLIENT_ID:', GOOGLE_CLIENT_ID);
+    console.log('VITE_ADMISSIONS_EMAIL:', ADMISSIONS_EMAIL);
+    console.log('VITE_SITE_URL:', SITE_URL);
+    console.log('VITE_GMAIL_SCOPES:', GMAIL_SCOPES);
+    
+    if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID === '') {
+      console.error('❌ Google Client ID is missing!');
+    } else {
+      console.log('✅ Google Client ID is configured');
+    }
+  }, [GOOGLE_CLIENT_ID, ADMISSIONS_EMAIL, SITE_URL, GMAIL_SCOPES]);
 
   // ==================== HELPER FUNCTIONS ====================
   const getTodayDate = () => {
@@ -419,12 +435,11 @@ function Apply() {
     return true;
   }, [formData, dateError]);
 
-  // ==================== NAVIGATION HANDLERS - FIXED (NO SCROLL) ====================
+  // ==================== NAVIGATION HANDLERS ====================
   const handleNextStep = useCallback(() => {
     if (validateStep(currentStep)) {
       setCurrentStep(prev => Math.min(prev + 1, 4));
       setValidated(false);
-      // REMOVED: window.scrollTo - stay in same position
     } else {
       setValidated(true);
       setSubmitStatus({ 
@@ -439,7 +454,6 @@ function Apply() {
   const handlePrevStep = useCallback(() => {
     setCurrentStep(prev => Math.max(prev - 1, 1));
     setValidated(false);
-    // REMOVED: window.scrollTo - stay in same position
   }, []);
 
   // ==================== GENERATE PDF ====================
@@ -536,9 +550,15 @@ function Apply() {
   // ==================== SEND EMAIL ====================
   const sendEmailViaGmail = useCallback(async (accessToken, pdfDoc) => {
     try {
+      console.log('📧 Starting email send process...');
+      
       const pdfOutput = pdfDoc.output('datauristring');
       const pdfBase64 = pdfOutput.split(',')[1];
       const applicationRef = `KPS/${new Date().getFullYear()}/${String(applicationCounter).padStart(4, '0')}`;
+      
+      console.log('📝 Application Reference:', applicationRef);
+      console.log('📧 Sending to:', formData.email);
+      console.log('📧 CC:', ADMISSIONS_EMAIL);
       
       const emailContent = `
         <html><body>
@@ -582,6 +602,8 @@ function Apply() {
         `--${emailBoundary}--`
       ].join('\r\n');
       
+      console.log('📤 Sending email via Gmail API...');
+      
       const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
         method: 'POST',
         headers: { 
@@ -593,27 +615,39 @@ function Apply() {
       
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('❌ Gmail API Error:', errorData);
         throw new Error(errorData.error?.message || 'Failed to send email');
       }
       
+      console.log('✅ Email sent successfully!');
       return true;
     } catch (error) {
-      console.error('Error sending email:', error);
+      console.error('❌ Error sending email:', error);
       throw error;
     }
   }, [formData, applicationCounter, ADMISSIONS_EMAIL]);
 
-  // ==================== GOOGLE LOGIN ====================
+  // ==================== GOOGLE LOGIN - FIXED ====================
   const login = useGoogleLogin({
-    clientId: GOOGLE_CLIENT_ID,
-    scope: GMAIL_SCOPES,
-    redirectUri: `${SITE_URL}/auth/callback`,
     onSuccess: async (tokenResponse) => {
+      console.log('✅ Google Login Success:', tokenResponse);
       setSubmitting(true);
+      setDebugInfo("Google login successful, processing application...");
+      
       try {
+        // Save application number
         localStorage.setItem('lastApplicationNumber', applicationCounter.toString());
+        setDebugInfo("Generating PDF...");
+        
+        // Generate PDF
         const pdfDoc = await generatePDF();
+        setDebugInfo("PDF generated, sending email...");
+        
+        // Send email
         await sendEmailViaGmail(tokenResponse.access_token, pdfDoc);
+        setDebugInfo("Email sent successfully!");
+        
+        // Success
         setFormSubmitted(true);
         setSubmitStatus({ 
           show: true, 
@@ -624,18 +658,19 @@ function Apply() {
         setPhone("");
         setCurrentStep(1);
       } catch (error) {
-        console.error('Submission error:', error);
+        console.error('❌ Submission error:', error);
+        setDebugInfo(`Error: ${error.message}`);
         setSubmitStatus({ 
           show: true, 
           success: false, 
-          message: error.message || "Failed to submit application. Please try again or contact the school directly." 
+          message: `Error: ${error.message}. Please try again or contact the school directly.` 
         });
       } finally {
         setSubmitting(false);
       }
     },
     onError: (errorResponse) => {
-      console.error('Login Failed:', errorResponse);
+      console.error('❌ Login Failed:', errorResponse);
       let errorMessage = "Google sign-in failed. ";
       
       if (errorResponse?.error === 'popup_blocked_by_browser') {
@@ -644,26 +679,30 @@ function Apply() {
         errorMessage += "You denied access to your account.";
       } else if (errorResponse?.error === 'invalid_client') {
         errorMessage += "The application is not properly configured. Please contact support.";
+      } else if (errorResponse?.error === 'idpiframe_initialization_failed') {
+        errorMessage += "Google login configuration error. Please check your Client ID.";
       } else {
-        errorMessage += "Please try again.";
+        errorMessage += `Error: ${errorResponse?.error || 'Unknown error'}`;
       }
       
+      setDebugInfo(`Login Error: ${errorMessage}`);
       setSubmitStatus({ show: true, success: false, message: errorMessage });
       setSubmitting(false);
-    }
+    },
+    // Removed redirectUri and clientId from here as they're handled by the GoogleOAuthProvider
   });
 
   // ==================== HANDLE FORM SUBMIT ====================
   const handleSubmit = useCallback((e) => {
     e.preventDefault();
+    console.log('📝 Form submitted');
     
     // Check if Google Client ID is configured
     if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID === '' || GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID') {
-      // Show a more helpful message with alternative contact method
       setSubmitStatus({ 
         show: true, 
         success: false, 
-        message: "Online application is temporarily unavailable. Please contact our admissions office directly at +254 736 756 595 or email admissions@kitaleprogressiveschool.com to complete your application." 
+        message: "Google sign-in is not configured. Please contact the school directly at +254 736 756 595." 
       });
       return;
     }
@@ -677,6 +716,8 @@ function Apply() {
       return;
     }
     
+    console.log('🔄 Initiating Google login...');
+    setDebugInfo("Initiating Google login...");
     login();
   }, [formData.agreeToTerms, phoneError, phone, login, GOOGLE_CLIENT_ID]);
 
@@ -776,6 +817,15 @@ function Apply() {
             <Row className="justify-content-center">
               <Col lg={11}>
                 <StatusAlert show={submitStatus.show} success={submitStatus.success} message={submitStatus.message} onClose={handleDismissAlert} />
+                
+                {/* Debug Info - Shows the process */}
+                {debugInfo && (
+                  <Alert variant="info" className="mb-3 small">
+                    <i className="fas fa-spinner fa-spin me-2"></i>
+                    {debugInfo}
+                  </Alert>
+                )}
+                
                 <Card className="card-custom shadow-lg border-0">
                   <Card.Body className="p-4 p-lg-5">
                     <h2 className="section-heading mb-4">Complete Your Application</h2>
