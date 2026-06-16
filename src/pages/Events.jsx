@@ -1,15 +1,92 @@
-// pages/Events.jsx - Reads from Google Calendar API only
+// pages/Events.jsx - Reads from Google Calendar API with improved category detection
 import { Helmet } from "react-helmet-async";
 import { Container, Row, Col, Spinner, Alert, Badge } from "react-bootstrap";
 import { useState, useEffect, useMemo, useCallback, lazy, Suspense, memo } from "react";
 
 const GetInTouch = lazy(() => import("../components/GetInTouch"));
 
+// ==================== CATEGORY KEYWORDS ====================
+const CATEGORY_KEYWORDS = {
+  sports: {
+    keywords: [
+      'sports', 'football', 'athletics', 'running', 'jumping', 'throwing',
+      'netball', 'volleyball', 'handball', 'swimming', 'chess', 'taekwondo',
+      'match', 'tournament', 'competition', 'game', 'team', 'training',
+      'practice', 'sporting', 'soccer', 'basketball', 'rugby', 'cricket',
+      'badminton', 'table tennis', 'track', 'field', 'marathon'
+    ],
+    color: '#48bb78',
+    icon: '⚽'
+  },
+  cultural: {
+    keywords: [
+      'cultural', 'music', 'dance', 'drama', 'theatre', 'art', 'exhibition',
+      'traditional', 'culture', 'festival', 'performance', 'show', 'concert',
+      'singing', 'choir', 'instrument', 'painting', 'sculpture', 'craft',
+      'heritage', 'tribal', 'folk', 'poetry', 'storytelling'
+    ],
+    color: '#9f7aea',
+    icon: '🎭'
+  },
+  meeting: {
+    keywords: [
+      'meeting', 'conference', 'parent', 'teacher', 'ptc', 'workshop',
+      'seminar', 'assembly', 'discussion', 'forum', 'board', 'committee',
+      'parents', 'teachers', 'staff', 'training', 'orientation'
+    ],
+    color: '#ed8936',
+    icon: '🤝'
+  },
+  ceremony: {
+    keywords: [
+      'graduation', 'ceremony', 'award', 'prize', 'giving', 'valedictory',
+      'farewell', 'closing', 'opening', 'inauguration', 'honor', 'recognition',
+      'certificate', 'diploma', 'speech', 'guest', 'chief', 'guest of honor'
+    ],
+    color: '#ff0080',
+    icon: '🏆'
+  },
+  academic: {
+    keywords: [
+      'academic', 'class', 'lesson', 'lecture', 'study', 'exam', 'test',
+      'quiz', 'assignment', 'project', 'research', 'library', 'book',
+      'reading', 'writing', 'mathematics', 'science', 'history', 'geography',
+      'english', 'kiswahili', 'cbc', 'curriculum', 'learning', 'education',
+      'school', 'term', 'holiday', 'break', 'revision', 'tutorial'
+    ],
+    color: '#0d65fb',
+    icon: '📚'
+  }
+};
+
 // ==================== GOOGLE CALENDAR CONFIG ====================
-// Your Google Calendar API Key
 const GOOGLE_CALENDAR_API_KEY = import.meta.env.VITE_GOOGLE_CALENDAR_API_KEY;
-// Your Google Calendar ID (found in calendar settings)
 const CALENDAR_ID = import.meta.env.VITE_GOOGLE_CALENDAR_ID;
+
+// ==================== DETECT CATEGORY ====================
+const detectCategory = (title, description) => {
+  const textToCheck = `${title || ''} ${description || ''}`.toLowerCase();
+  
+  // Check each category
+  for (const [category, data] of Object.entries(CATEGORY_KEYWORDS)) {
+    for (const keyword of data.keywords) {
+      if (textToCheck.includes(keyword.toLowerCase())) {
+        return {
+          category: category,
+          color: data.color,
+          icon: data.icon
+        };
+      }
+    }
+  }
+  
+  // Default to academic if no match
+  return {
+    category: 'academic',
+    color: '#0d65fb',
+    icon: '📚'
+  };
+};
 
 // ==================== FETCH EVENTS FROM GOOGLE CALENDAR ====================
 const fetchGoogleCalendarEvents = async () => {
@@ -18,7 +95,6 @@ const fetchGoogleCalendarEvents = async () => {
       throw new Error('Google Calendar API key or Calendar ID not configured');
     }
 
-    // Get current date and date 3 months from now
     const now = new Date();
     const threeMonthsLater = new Date(now);
     threeMonthsLater.setMonth(threeMonthsLater.getMonth() + 3);
@@ -26,7 +102,6 @@ const fetchGoogleCalendarEvents = async () => {
     const timeMin = now.toISOString();
     const timeMax = threeMonthsLater.toISOString();
 
-    // Fetch events from Google Calendar API
     const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID)}/events?key=${GOOGLE_CALENDAR_API_KEY}&timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime`;
 
     const response = await fetch(url);
@@ -38,7 +113,7 @@ const fetchGoogleCalendarEvents = async () => {
     const data = await response.json();
     
     if (!data.items || data.items.length === 0) {
-      return []; // No events found, return empty array
+      return [];
     }
 
     // Transform Google Calendar events to our event format
@@ -47,25 +122,12 @@ const fetchGoogleCalendarEvents = async () => {
       const end = item.end?.dateTime || item.end?.date;
       const date = start ? new Date(start) : new Date();
       
-      // Parse description for category and color
+      const title = item.summary || 'Untitled Event';
       const description = item.description || '';
-      let category = 'academic';
-      let color = '#0d65fb';
       
-      if (description.toLowerCase().includes('sports') || description.toLowerCase().includes('football') || description.toLowerCase().includes('athletics')) {
-        category = 'sports';
-        color = '#48bb78';
-      } else if (description.toLowerCase().includes('cultural') || description.toLowerCase().includes('music') || description.toLowerCase().includes('dance')) {
-        category = 'cultural';
-        color = '#9f7aea';
-      } else if (description.toLowerCase().includes('meeting') || description.toLowerCase().includes('conference') || description.toLowerCase().includes('parent')) {
-        category = 'meeting';
-        color = '#ed8936';
-      } else if (description.toLowerCase().includes('graduation') || description.toLowerCase().includes('ceremony') || description.toLowerCase().includes('award')) {
-        category = 'ceremony';
-        color = '#ff0080';
-      }
-
+      // Detect category from title and description
+      const categoryInfo = detectCategory(title, description);
+      
       // Extract time from start and end
       let time = 'All day';
       if (item.start?.dateTime && item.end?.dateTime) {
@@ -76,14 +138,15 @@ const fetchGoogleCalendarEvents = async () => {
 
       return {
         id: index + 1,
-        title: item.summary || 'Untitled Event',
+        title: title,
         date: date.toISOString().split('T')[0],
-        description: item.description || 'No description available',
+        description: description || 'No description available',
         time: time,
         location: item.location || 'TBD',
-        category: category,
-        color: color,
-        googleEventId: item.id // Store original Google Calendar event ID
+        category: categoryInfo.category,
+        color: categoryInfo.color,
+        icon: categoryInfo.icon,
+        googleEventId: item.id
       };
     });
 
@@ -105,8 +168,21 @@ const EventCard = memo(({ event, categories, isHovered, onHover, onLeave, index,
   return (
     <div id={eventId} className={`card-custom event-item ${isHovered ? 'hovered' : ''} ${isFeatured ? 'featured' : ''}`} onMouseEnter={() => onHover(event.id)} onMouseLeave={onLeave} onFocus={() => onHover(event.id)} onBlur={onLeave} style={{ borderLeftColor: event.color, position: 'relative' }} role="article" aria-labelledby={`${eventId}-title`} tabIndex={0}>
       {isFeatured && (<div style={{ position: 'absolute', top: '12px', right: '12px', display: 'flex', gap: '8px', zIndex: 2 }}><Badge bg="warning" text="dark" className="featured-badge" style={{ fontSize: '0.7rem', fontWeight: '600', padding: '4px 10px', borderRadius: '20px', backgroundColor: '#ff0080', color: 'white' }}>⭐ Featured Event</Badge></div>)}
-      <div className="event-date" style={{ background: `linear-gradient(135deg, ${event.color} 0%, ${event.color}dd 100%)`, minWidth: '60px', height: '60px', borderRadius: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white' }} aria-hidden="true"><span className="day fw-bold" style={{ fontSize: '1.5rem', lineHeight: 1 }}>{day}</span><span className="month small" style={{ fontSize: '0.8rem', opacity: 0.9 }}>{month}</span></div>
-      <div className="event-info" style={{ flex: 1, minWidth: 0 }}><h3 id={`${eventId}-title`} className="card-title-navy h6 fw-bold mb-1">{event.title}</h3><div className="event-meta small d-flex flex-wrap gap-2 mb-1"><span className="text-muted"><i className="far fa-clock me-1" aria-hidden="true"></i> <span className="visually-hidden">Time:</span> {event.time}</span><span className="event-category-badge small px-2 py-1" style={{ backgroundColor: `${event.color}20`, color: event.color, borderRadius: '20px' }}><span aria-hidden="true">{categories.find(c => c.id === event.category)?.icon}</span> <span className="visually-hidden">Category:</span> {event.category}</span>{event.location && event.location !== "TBD" && (<span className="text-muted"><i className="fas fa-map-marker-alt me-1" aria-hidden="true"></i><span className="visually-hidden">Location:</span> {event.location}</span>)}</div>{event.description !== "No description available" && (<p className="event-description small text-muted mb-0">{event.description}</p>)}</div>
+      <div className="event-date" style={{ background: `linear-gradient(135deg, ${event.color} 0%, ${event.color}dd 100%)`, minWidth: '60px', height: '60px', borderRadius: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white' }} aria-hidden="true">
+        <span className="day fw-bold" style={{ fontSize: '1.5rem', lineHeight: 1 }}>{day}</span>
+        <span className="month small" style={{ fontSize: '0.8rem', opacity: 0.9 }}>{month}</span>
+      </div>
+      <div className="event-info" style={{ flex: 1, minWidth: 0 }}>
+        <h3 id={`${eventId}-title`} className="card-title-navy h6 fw-bold mb-1">{event.title}</h3>
+        <div className="event-meta small d-flex flex-wrap gap-2 mb-1">
+          <span className="text-muted"><i className="far fa-clock me-1" aria-hidden="true"></i> <span className="visually-hidden">Time:</span> {event.time}</span>
+          <span className="event-category-badge small px-2 py-1" style={{ backgroundColor: `${event.color}20`, color: event.color, borderRadius: '20px' }}>
+            <span aria-hidden="true">{event.icon || '📅'}</span> <span className="visually-hidden">Category:</span> {event.category}
+          </span>
+          {event.location && event.location !== "TBD" && (<span className="text-muted"><i className="fas fa-map-marker-alt me-1" aria-hidden="true"></i><span className="visually-hidden">Location:</span> {event.location}</span>)}
+        </div>
+        {event.description !== "No description available" && (<p className="event-description small text-muted mb-0">{event.description}</p>)}
+      </div>
     </div>
   );
 });
