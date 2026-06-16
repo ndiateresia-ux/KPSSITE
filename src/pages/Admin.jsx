@@ -310,54 +310,71 @@ const BlogsManager = () => {
   const setDefaultBlogs = () => {
     console.log('Setting default blogs...');
     const defaultBlogs = [
-      { 
-        id: 1, 
-        title: "The Importance of Early Childhood Education", 
-        slug: "importance-of-early-childhood-education",
-        excerpt: "Discover why the early years are crucial for your child's development and how our ECDE program nurtures young minds through play-based learning. Research shows that 90% of brain development happens before age 5.",
-        content: "The early years of a child's life are not just about learning ABCs and 123s. They are about building the neural connections that form the foundation for all future learning. At Kitale Progressive School, we understand that these formative years are critical, and our Early Childhood Development Education (ECDE) program is designed with this understanding at its core.\n\n# Why Early Childhood Education Matters\n\nResearch in neuroscience has shown that a child's brain develops most rapidly in the first five years of life. During this period, up to 90% of brain development occurs. This is when children develop cognitive skills, emotional regulation, social abilities, and the foundational knowledge that will support all future learning.\n\n# Our Approach at Kitale Progressive School\n\nOur ECDE program is built on the understanding that young children learn best through play. We've developed a curriculum that integrates language, mathematics, environmental studies, creative arts, and social-emotional learning through engaging, play-based activities.",
-        fullStory: "Our ECDE program has been recognized by the Ministry of Education as a model for excellence. We regularly host teacher training sessions and parent workshops to share our successful approaches with the wider community. Parents have reported significant improvements in their children's confidence, communication skills, and school readiness.",
-        featuredImage: "/images/childhoodblog.jpg",
-        date: "2025-03-15",
-        author: "Ms. Jane Akinyi",
-        category: "Education"
-      },
-      { 
-        id: 2, 
-        title: "Preparing Your Child for Boarding School", 
-        slug: "preparing-child-for-boarding-school",
-        excerpt: "A comprehensive guide for parents on how to prepare their children for a successful boarding school experience. Expert tips and practical advice for a smooth transition.",
-        content: "Making the transition to boarding school is a significant milestone for both parents and children. At Kitale Progressive School, we've helped hundreds of families navigate this journey successfully.\n\n# Understanding the Boarding Experience\n\nBefore preparing your child, it's helpful to understand what boarding school life actually looks like. Our boarding program is designed to be a home away from home, where students develop independence, build lasting friendships, and grow in confidence.\n\n# Practical Preparation Tips\n\nStart by having open conversations with your child about boarding. Visit the school together, meet the house parents, and help them pack familiar items that will make their room feel like home.",
-        fullStory: "Our boarding program includes structured study time, recreational activities, and pastoral care. We have a dedicated team of house parents who ensure each child feels supported and valued. Parents receive regular updates on their child's progress and wellbeing.",
-        featuredImage: "/images/boardingblog.webp",
-        date: "2025-03-10",
-        author: "Mr. Peter Mwangi",
-        category: "Parenting"
-      },
-      { 
-        id: 3, 
-        title: "Understanding the CBC Curriculum", 
-        slug: "understanding-cbc-curriculum",
-        excerpt: "Everything you need to know about the Competency-Based Curriculum and how it benefits your child's learning journey. A complete breakdown for parents.",
-        content: "Kenya's shift from the 8-4-4 system to the Competency-Based Curriculum (CBC) represents one of the most significant educational reforms in the country's history.\n\n# What is CBC?\n\nThe Competency-Based Curriculum is a modern approach to education that focuses on developing learners' abilities and potential rather than just academic content. It emphasizes practical skills, critical thinking, and character development.\n\n# How CBC Benefits Your Child\n\nCBC prepares learners for the real world by focusing on competencies that are relevant to life and work. Students learn through projects, research, and practical activities that develop problem-solving and collaboration skills.",
-        fullStory: "Our school has been at the forefront of CBC implementation, with our teachers trained by the Kenya Institute of Curriculum Development. We've seen remarkable improvements in student engagement and learning outcomes since adopting the competency-based approach.",
-        featuredImage: "/images/cbc-curriculumblog.jpg",
-        date: "2025-03-05",
-        author: "Mrs. Sarah Wanjiku",
-        category: "Academics"
-      },
-      { 
-        id: 4, 
-        title: "The Benefits of Extracurricular Activities", 
-        slug: "extracurricular-activities-benefits",
-        excerpt: "How sports, arts, and clubs contribute to your child's holistic development beyond the classroom. Discover the transformative power of co-curricular engagement.",
-        content: "Education extends far beyond textbooks and examinations. At Kitale Progressive School, we believe that extracurricular activities are essential for developing well-rounded individuals.\n\n# The Power of Sports\n\nParticipation in sports teaches teamwork, discipline, and resilience. Our students compete in football, basketball, netball, athletics, and more, developing physical fitness and leadership skills.\n\n# Creative Arts and Clubs\n\nFrom music and drama to debate and robotics, our clubs provide opportunities for students to explore their passions, develop new skills, and build confidence.",
-        fullStory: "Our students participate in a wide range of activities including football, basketball, netball, athletics, music, drama, and debate. Many of our students have gone on to represent the county and even the nation in various competitions.",
-        featuredImage: "/images/optimized/gallery/sports2.webp",
-        date: "2025-02-28",
-        author: "Coach James Otieno",
-        category: "Co-Curricular"
-      }
+      {
+    id: 1,
+    slug: "annual-sports-day-2024",
+    title: "Annual Sports Day 2024: A Celebration of Talent",
+    excerpt: "Students showcased exceptional athletic abilities during our annual sports day event with record-breaking performances across all categories.",
+    content: "<p>The annual sports day was a spectacular event filled with excitement and competition. Students from all grades participated in various athletic events including track races, field events, and team sports.</p><p>The day began with a colorful parade followed by the lighting of the torch. Students competed fiercely but with great sportsmanship, making it a memorable day for everyone involved.</p>",
+    fullStory: "<p>Students from all grades participated in various athletic events including 100m sprints, long jump, high jump, relay races, and football matches. The school's sports teams demonstrated exceptional skills and teamwork.</p><p>Special recognition was given to the top performers who broke school records. The event concluded with an awards ceremony where medals and certificates were presented to the winners.</p>",
+    featuredImage: "/images/optimized/gallery/sports1.webp",
+    author: "Mr. Omondi",
+    date: "2024-12-01",
+    category: "School Event",
+    tags: ["sports", "competition", "students"]
+  },
+  {
+    id: 2,
+    slug: "excellence-in-cbc-grade-6",
+    title: "Excellence in CBC: Our Grade 6 Learners Shine",
+    excerpt: "Our Grade 6 learners demonstrated outstanding performance in the recent CBC assessments with remarkable scores in all competency areas.",
+    content: "<p>The Competency-Based Curriculum has transformed how our students learn and grow. Our Grade 6 learners have shown remarkable progress in all competency areas including literacy, numeracy, and life skills.</p><p>Parents and teachers have been impressed with the holistic development of the learners, who are now better prepared for higher education and life challenges.</p>",
+    fullStory: "<p>Our Grade 6 learners have shown remarkable progress in all competency areas including literacy, numeracy, creativity, and critical thinking. The CBC approach has fostered independent learning and problem-solving skills.</p><p>The school has invested in modern teaching resources and teacher training to ensure effective implementation of the curriculum. Regular assessments and feedback help track learner progress and identify areas for improvement.</p>",
+    featuredImage: "/images/optimized/academics1.webp",
+    author: "Madam Sarah",
+    date: "2024-11-15",
+    category: "Academic Achievement",
+    tags: ["CBC", "education", "achievement"]
+  },
+  {
+    id: 3,
+    slug: "student-council-elections-2024",
+    title: "Building Future Leaders: Student Council Elections",
+    excerpt: "Democracy in action as our students participated in the annual student council elections with great enthusiasm and civic awareness.",
+    content: "<p>The student council elections provide valuable leadership experience for our learners. Candidates presented their manifestos and campaigned across the school, showcasing their leadership qualities.</p><p>Students exercised their democratic rights by voting for their preferred candidates, making this a practical lesson in democracy and civic responsibility.</p>",
+    fullStory: "<p>Candidates presented their manifestos and campaigned across the school, sharing their vision for improving student welfare and school activities. The election process was conducted with transparency and fairness.</p><p>The newly elected student council will work closely with the school administration to implement student-led initiatives and represent student interests. This experience helps develop essential leadership and communication skills.</p>",
+    featuredImage: "/images/optimized/gallery/events3.webp",
+    author: "Mr. Kipchoge",
+    date: "2024-10-20",
+    category: "Student Leadership",
+    tags: ["leadership", "democracy", "students"]
+  },
+  {
+    id: 4,
+    slug: "science-fair-2024",
+    title: "Innovation Showcase: Annual Science Fair 2024",
+    excerpt: "Young scientists impressed everyone with their innovative projects addressing real-world challenges through creative scientific solutions.",
+    content: "<p>The annual science fair showcased the creativity and scientific thinking of our students. Projects ranged from environmental conservation to technology solutions for everyday problems.</p><p>Students demonstrated their research skills and presented their findings to judges and visitors, showing how science can solve real-world problems.</p>",
+    fullStory: "<p>Projects ranged from environmental conservation to technology solutions for everyday problems. Winners received special recognition and will represent the school at the regional science competition.</p><p>The science fair has become a platform for nurturing young scientists and innovators. Students are encouraged to think critically and apply scientific principles to address community challenges.</p>",
+    featuredImage: "/images/optimized/gallery/science1.webp",
+    author: "Dr. Mwangi",
+    date: "2024-09-28",
+    category: "STEM",
+    tags: ["science", "innovation", "STEM"]
+  },
+  {
+    id: 5,
+    slug: "culture-day-celebration",
+    title: "Celebrating Diversity: Cultural Day 2024",
+    excerpt: "Students showcased Kenya's rich cultural heritage through music, dance, traditional cuisine, and colorful attire from various communities.",
+    content: "<p>Cultural Day was a vibrant celebration of Kenya's diverse cultural heritage. Students and staff dressed in traditional attire representing various Kenyan communities.</p><p>The event featured traditional dances, music performances, storytelling, and a food fair where parents and students shared traditional dishes.</p>",
+    fullStory: "<p>The event featured traditional dances, music performances, storytelling, and a food fair where parents and students shared traditional dishes. This celebration promotes cultural understanding and national unity.</p><p>Parents were invited to participate and share their cultural knowledge with students. The event was a powerful reminder of the beauty in diversity and the importance of preserving cultural heritage.</p>",
+    featuredImage: "/images/optimized/gallery/culture1.webp",
+    author: "Madam Grace",
+    date: "2024-09-15",
+    category: "Cultural Event",
+    tags: ["culture", "diversity", "celebration"]
+  }
     ];
     
     setBlogs(defaultBlogs);
