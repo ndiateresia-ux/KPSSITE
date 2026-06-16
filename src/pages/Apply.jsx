@@ -1,4 +1,4 @@
-// pages/Apply.jsx - With Proper Theme Font Sizes and Complete Medical Information (No Medications)
+// pages/Apply.jsx - With Proper Google OAuth Configuration
 import { Helmet } from "react-helmet-async";
 import { Container, Row, Col, Form, Button, Card, Alert } from "react-bootstrap";
 import { useState, useEffect, useCallback, memo, lazy, Suspense } from "react";
@@ -10,7 +10,7 @@ import parsePhoneNumber from 'libphonenumber-js';
 
 const GetInTouch = lazy(() => import("../components/GetInTouch"));
 
-// Helper function for Unicode-safe base64 encoding
+// ==================== HELPER FUNCTIONS ====================
 const utf8ToBase64 = (str) => {
   const utf8Bytes = new TextEncoder().encode(str);
   let binaryString = '';
@@ -20,7 +20,6 @@ const utf8ToBase64 = (str) => {
   return btoa(binaryString);
 };
 
-// Helper function to convert image to base64
 const getImageBase64 = (imagePath) => {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -39,7 +38,7 @@ const getImageBase64 = (imagePath) => {
   });
 };
 
-// Memoized form input component
+// ==================== FORM INPUT COMPONENT ====================
 const FormInput = memo(({ 
   label, type = "text", name, value, onChange, placeholder, required = false,
   feedback, as, options, describedBy, autoComplete, max, min
@@ -99,7 +98,7 @@ const FormInput = memo(({
 
 FormInput.displayName = 'FormInput';
 
-// Phone input component
+// ==================== PHONE INPUT FIELD ====================
 const PhoneInputField = memo(({ phone, onChange, error, validated }) => {
   const id = "phone-input-field";
   const errorId = `${id}-error`;
@@ -143,7 +142,7 @@ const PhoneInputField = memo(({ phone, onChange, error, validated }) => {
 
 PhoneInputField.displayName = 'PhoneInputField';
 
-// Progress indicator component
+// ==================== PROGRESS INDICATOR ====================
 const ProgressIndicator = memo(({ currentStep, totalSteps = 4 }) => {
   const steps = [
     { number: 1, label: "Parent Info" },
@@ -183,7 +182,7 @@ const ProgressIndicator = memo(({ currentStep, totalSteps = 4 }) => {
 
 ProgressIndicator.displayName = 'ProgressIndicator';
 
-// Simple checkbox component
+// ==================== SIMPLE CHECKBOX ====================
 const SimpleCheckbox = memo(({ label, name, checked, onChange, id }) => {
   const checkboxId = id || `checkbox-${name}`;
   
@@ -208,7 +207,7 @@ const SimpleCheckbox = memo(({ label, name, checked, onChange, id }) => {
 
 SimpleCheckbox.displayName = 'SimpleCheckbox';
 
-// Terms checkbox component
+// ==================== TERMS CHECKBOX ====================
 const TermsCheckbox = memo(({ checked, onChange, required = false }) => {
   const checkboxId = "agreeToTerms";
   const errorId = `${checkboxId}-error`;
@@ -257,7 +256,7 @@ const TermsCheckbox = memo(({ checked, onChange, required = false }) => {
 
 TermsCheckbox.displayName = 'TermsCheckbox';
 
-// Status alert component
+// ==================== STATUS ALERT ====================
 const StatusAlert = memo(({ show, success, message, onClose }) => {
   if (!show) return null;
   
@@ -280,7 +279,7 @@ const StatusAlert = memo(({ show, success, message, onClose }) => {
 
 StatusAlert.displayName = 'StatusAlert';
 
-// Initial form state
+// ==================== INITIAL FORM STATE ====================
 const INITIAL_FORM_STATE = {
   parentName: "", email: "", phone: "", address: "", relationship: "",
   childName: "", dateOfBirth: "", gender: "", nationality: "", otherNationality: "",
@@ -302,11 +301,22 @@ function Apply() {
   const [currentStep, setCurrentStep] = useState(1);
   const [dateError, setDateError] = useState("");
 
-  const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_GMAIL_CLIENT_ID;
+  // ==================== ENVIRONMENT VARIABLES ====================
+  const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
   const ADMISSIONS_EMAIL = import.meta.env.VITE_ADMISSIONS_EMAIL || 'ndiateresia@gmail.com';
   const GMAIL_SCOPES = import.meta.env.VITE_GMAIL_SCOPES || 'https://www.googleapis.com/auth/gmail.send';
-  const SITE_URL = import.meta.env.VITE_SITE_URL || 'http://localhost:5173';
+  const SITE_URL = import.meta.env.VITE_SITE_URL || window.location.origin;
 
+  // Validate Google Client ID
+  useEffect(() => {
+    if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID === '') {
+      console.warn('⚠️ Google Client ID is not configured. Please add VITE_GOOGLE_CLIENT_ID to your .env file.');
+    } else {
+      console.log('✅ Google Client ID is configured');
+    }
+  }, [GOOGLE_CLIENT_ID]);
+
+  // ==================== HELPER FUNCTIONS ====================
   const getTodayDate = () => {
     const today = new Date();
     return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
@@ -332,6 +342,7 @@ function Apply() {
     return true;
   }, []);
 
+  // ==================== LOAD LOGO ====================
   useEffect(() => {
     const loadLogo = async () => {
       try {
@@ -353,6 +364,7 @@ function Apply() {
     }
   }, []);
 
+  // ==================== HANDLERS ====================
   const handleChange = useCallback((e) => {
     const { name, value, type, checked } = e.target;
     if (name === 'dateOfBirth') validateDateOfBirth(value);
@@ -393,7 +405,7 @@ function Apply() {
   const validateStep = useCallback((step) => {
     if (step === 1) return formData.parentName && formData.email && formData.phone && formData.relationship;
     if (step === 2) return formData.childName && formData.dateOfBirth && !dateError && formData.gender && formData.gradeApplying;
-    if (step === 3) return true; // Medical info is optional
+    if (step === 3) return true;
     return true;
   }, [formData, dateError]);
 
@@ -413,6 +425,7 @@ function Apply() {
     setCurrentStep(prev => Math.max(prev - 1, 1));
   }, []);
 
+  // ==================== GENERATE PDF ====================
   const generatePDF = useCallback(async () => {
     const jsPDFModule = await import("jspdf");
     const jsPDF = jsPDFModule.default;
@@ -498,6 +511,7 @@ function Apply() {
     return doc;
   }, [formData, applicationCounter, logoBase64]);
 
+  // ==================== SEND EMAIL ====================
   const sendEmailViaGmail = useCallback(async (accessToken, pdfDoc) => {
     const pdfOutput = pdfDoc.output('datauristring');
     const pdfBase64 = pdfOutput.split(',')[1];
@@ -550,9 +564,13 @@ function Apply() {
       headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ raw: utf8ToBase64(emailData) })
     });
-    if (!response.ok) throw new Error('Failed to send email');
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error?.message || 'Failed to send email');
+    }
   }, [formData, applicationCounter, ADMISSIONS_EMAIL]);
 
+  // ==================== GOOGLE LOGIN ====================
   const login = useGoogleLogin({
     clientId: GOOGLE_CLIENT_ID,
     scope: GMAIL_SCOPES,
@@ -578,20 +596,35 @@ function Apply() {
     onError: (errorResponse) => {
       console.error('Login Failed:', errorResponse);
       let errorMessage = "Google sign-in failed. ";
+      
       if (errorResponse?.error === 'popup_blocked_by_browser') {
         errorMessage += "Please allow popups for this site.";
       } else if (errorResponse?.error === 'access_denied') {
         errorMessage += "You denied access to your account.";
+      } else if (errorResponse?.error === 'invalid_client') {
+        errorMessage += "The application is not properly configured. Please contact support.";
       } else {
         errorMessage += "Please try again.";
       }
+      
       setSubmitStatus({ show: true, success: false, message: errorMessage });
       setSubmitting(false);
     }
   });
 
+  // ==================== HANDLE FORM SUBMIT ====================
   const handleSubmit = useCallback((e) => {
     e.preventDefault();
+    
+    if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID === '') {
+      setSubmitStatus({ 
+        show: true, 
+        success: false, 
+        message: "Google sign-in is not configured. Please contact the school directly at +254 736 756 595." 
+      });
+      return;
+    }
+    
     if (!formData.agreeToTerms) {
       setSubmitStatus({ show: true, success: false, message: "Please agree to the terms and conditions." });
       return;
@@ -600,13 +633,11 @@ function Apply() {
       setSubmitStatus({ show: true, success: false, message: phoneError || "Phone number is required." });
       return;
     }
-    if (!GOOGLE_CLIENT_ID) {
-      setSubmitStatus({ show: true, success: false, message: "Configuration error. Please contact support." });
-      return;
-    }
+    
     login();
   }, [formData.agreeToTerms, phoneError, phone, login, GOOGLE_CLIENT_ID]);
 
+  // ==================== GRADE OPTIONS ====================
   const gradeOptions = [
     { value: "Playgroup", label: "Playgroup" },
     { value: "PP1", label: "PP1" },
@@ -621,6 +652,7 @@ function Apply() {
     { icon: "fa-futbol", text: "Balanced academic and co-curricular development" }
   ];
 
+  // ==================== RENDER ====================
   return (
     <>
       <Helmet>
@@ -749,24 +781,24 @@ function Apply() {
                           <h3 className="text-navy fw-bold mb-3 pb-2 border-bottom" style={{ fontSize: '1rem' }}>Child's Information</h3>
                           <Row className="g-3">
                             <Col md={12}>
-                              <FormInput label="Full Name" name="childName" value={formData.childName} onChange={handleChange} required feedback="Please enter child's name" />
+                              <FormInput label="Full Name" name="childName" value={formData.childName} onChange={handleFormChange} required feedback="Please enter child's name" />
                             </Col>
                           </Row>
                           <Row className="g-3">
                             <Col md={4}>
-                              <FormInput label="Date of Birth" type="date" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleChange} required max={getTodayDate()} min={getMinDate()} feedback={dateError || "Please enter date of birth"} />
+                              <FormInput label="Date of Birth" type="date" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleFormChange} required max={getTodayDate()} min={getMinDate()} feedback={dateError || "Please enter date of birth"} />
                               {dateError && dateError.includes("future") && (
                                 <Form.Text className="text-danger small">{dateError}</Form.Text>
                               )}
                             </Col>
                             <Col md={4}>
-                              <FormInput label="Gender" as="select" name="gender" value={formData.gender} onChange={handleChange} required options={[
+                              <FormInput label="Gender" as="select" name="gender" value={formData.gender} onChange={handleFormChange} required options={[
                                 { value: "Male", label: "Male" }, 
                                 { value: "Female", label: "Female" }
                               ]} feedback="Please select gender" />
                             </Col>
                             <Col md={4}>
-                              <FormInput label="Nationality" as="select" name="nationality" value={formData.nationality} onChange={handleChange} options={[
+                              <FormInput label="Nationality" as="select" name="nationality" value={formData.nationality} onChange={handleFormChange} options={[
                                 { value: "Kenyan", label: "Kenyan" },
                                 { value: "Ugandan", label: "Ugandan" },
                                 { value: "Tanzanian", label: "Tanzanian" },
@@ -779,35 +811,34 @@ function Apply() {
                           {formData.nationality === "Other" && (
                             <Row>
                               <Col md={4}>
-                                <FormInput label="Specify Nationality" name="otherNationality" value={formData.otherNationality} onChange={handleChange} placeholder="Enter nationality" />
+                                <FormInput label="Specify Nationality" name="otherNationality" value={formData.otherNationality} onChange={handleFormChange} placeholder="Enter nationality" />
                               </Col>
                             </Row>
                           )}
                           <Row className="g-3">
                             <Col md={6}>
-                              <FormInput label="Previous School/Nursery" name="previousSchool" value={formData.previousSchool} onChange={handleChange} placeholder="Enter previous school" />
+                              <FormInput label="Previous School/Nursery" name="previousSchool" value={formData.previousSchool} onChange={handleFormChange} placeholder="Enter previous school" />
                             </Col>
                             <Col md={6}>
-                              <FormInput label="Grade Applying For" as="select" name="gradeApplying" value={formData.gradeApplying} onChange={handleChange} required options={gradeOptions} feedback="Please select grade" />
+                              <FormInput label="Grade Applying For" as="select" name="gradeApplying" value={formData.gradeApplying} onChange={handleFormChange} required options={gradeOptions} feedback="Please select grade" />
                             </Col>
                           </Row>
                           {getStayStatusOptions().length > 0 && (
                             <Row>
                               <Col md={6}>
-                                <FormInput label="Stay Status" as="select" name="stayStatus" value={formData.stayStatus} onChange={handleChange} required={formData.gradeApplying === "Playgroup"} options={getStayStatusOptions()} feedback="Please select stay status" />
+                                <FormInput label="Stay Status" as="select" name="stayStatus" value={formData.stayStatus} onChange={handleFormChange} required={formData.gradeApplying === "Playgroup"} options={getStayStatusOptions()} feedback="Please select stay status" />
                               </Col>
                             </Row>
                           )}
                         </div>
                       )}
 
-                      {/* Step 3: Medical Information - WITHOUT Medications */}
+                      {/* Step 3: Medical Information */}
                       {currentStep === 3 && (
                         <div>
                           <h3 className="text-navy fw-bold mb-3 pb-2 border-bottom" style={{ fontSize: '1rem' }}>Medical Information</h3>
                           <p className="text-muted small mb-3">This information helps us ensure your child receives the best possible care while at school.</p>
                           
-                          {/* Allergies Section */}
                           <div className="mb-4 p-3 rounded-3" style={{ background: 'var(--gray-light)' }}>
                             <SimpleCheckbox 
                               label="Does your child have any allergies?"
@@ -830,7 +861,6 @@ function Apply() {
                             )}
                           </div>
 
-                          {/* Medical Conditions */}
                           <div className="mb-4">
                             <FormInput
                               label="Medical Conditions"
@@ -845,10 +875,9 @@ function Apply() {
                             </Form.Text>
                           </div>
 
-                          {/* Emergency Contact Note */}
                           <div className="alert alert-info small p-3 mt-3" role="alert" style={{ background: '#e6f0ff', border: 'none', borderRadius: '12px' }}>
                             <i className="fas fa-info-circle me-2 text-navy" aria-hidden="true"></i>
-                            <strong>Note:</strong> This information is confidential and will only be shared with relevant school staff (class teacher and sports coaches) to ensure your child's safety and well-being.
+                            <strong>Note:</strong> This information is confidential and will only be shared with relevant school staff to ensure your child's safety and well-being.
                           </div>
                         </div>
                       )}
@@ -976,20 +1005,20 @@ function Apply() {
                   <div className="d-flex align-items-center gap-2">
                     <i className="fas fa-tachometer-alt text-white" aria-hidden="true"></i>
                     <span className="text-white small">Still having questions?</span>
-                 <div>
-                  <Link to="/contact" className="btn-light-navy" style={{ 
-                    background: 'white', 
-                    color: '#0d65fb', 
-                    border: 'none',
-                    padding: '8px 24px',
-                    fontWeight: '600',
-                    borderRadius: '40px',
-                    textDecoration: 'none',
-                    fontSize: '0.85rem'
-                  }}>
-                    <i className="fas fa-envelope me-2" aria-hidden="true"></i>
-                    Contact Admissions
-                  </Link>
+                  <div>
+                    <Link to="/contact" className="btn-light-navy" style={{ 
+                      background: 'white', 
+                      color: '#0d65fb', 
+                      border: 'none',
+                      padding: '8px 24px',
+                      fontWeight: '600',
+                      borderRadius: '40px',
+                      textDecoration: 'none',
+                      fontSize: '0.85rem'
+                    }}>
+                      <i className="fas fa-envelope me-2" aria-hidden="true"></i>
+                      Contact Admissions
+                    </Link>
                   </div>
                    </div>
                 </div>
