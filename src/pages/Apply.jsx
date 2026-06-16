@@ -56,7 +56,7 @@ const FormInput = memo(({
         <Form.Select 
           required={required}
           name={name}
-          value={value}
+          value={value || ''}
           onChange={onChange}
           className="form-control-custom"
           aria-describedby={required && !value ? errorId : undefined}
@@ -73,7 +73,7 @@ const FormInput = memo(({
           type={type}
           required={required}
           name={name}
-          value={value}
+          value={value || ''}
           onChange={onChange}
           placeholder={placeholder}
           className="form-control-custom"
@@ -190,7 +190,7 @@ const SimpleCheckbox = memo(({ label, name, checked, onChange, id }) => {
           type="checkbox"
           id={checkboxId}
           name={name}
-          checked={checked}
+          checked={checked || false}
           onChange={onChange}
           className="terms-checkbox-input"
         />
@@ -218,7 +218,7 @@ const TermsCheckbox = memo(({ checked, onChange, required = false }) => {
           type="checkbox"
           id={checkboxId}
           name="agreeToTerms"
-          checked={checked}
+          checked={checked || false}
           onChange={onChange}
           onBlur={() => setTouched(true)}
           required={required}
@@ -411,20 +411,41 @@ function Apply() {
     return [];
   }, [formData.gradeApplying]);
 
+  // FIXED: Validate step with proper return values
   const validateStep = useCallback((step) => {
-    if (step === 1) return formData.parentName && formData.email && formData.phone && formData.relationship;
-    if (step === 2) return formData.childName && formData.dateOfBirth && !dateError && formData.gender && formData.gradeApplying;
-    if (step === 3) return true;
+    if (step === 1) {
+      const isValid = formData.parentName && formData.email && formData.phone && formData.relationship;
+      console.log('Step 1 validation:', { isValid, parentName: formData.parentName, email: formData.email, phone: formData.phone, relationship: formData.relationship });
+      return isValid;
+    }
+    if (step === 2) {
+      const isValid = formData.childName && formData.dateOfBirth && !dateError && formData.gender && formData.gradeApplying;
+      console.log('Step 2 validation:', { isValid, childName: formData.childName, dateOfBirth: formData.dateOfBirth, dateError, gender: formData.gender, gradeApplying: formData.gradeApplying });
+      return isValid;
+    }
+    if (step === 3) {
+      // Step 3 has no required fields, always valid
+      return true;
+    }
+    if (step === 4) {
+      return formData.agreeToTerms;
+    }
     return true;
   }, [formData, dateError]);
 
   // ==================== NAVIGATION HANDLERS - FIXED ====================
   const handleNextStep = useCallback(() => {
+    console.log('Attempting to move to next step. Current step:', currentStep);
+    
     if (validateStep(currentStep)) {
-      setCurrentStep(prev => Math.min(prev + 1, 4));
+      const nextStep = Math.min(currentStep + 1, 4);
+      console.log('Validation passed. Moving to step:', nextStep);
+      setCurrentStep(nextStep);
+      setValidated(false); // Reset validation for next step
       // Scroll to top of form
       window.scrollTo({ top: 300, behavior: 'smooth' });
     } else {
+      console.log('Validation failed for step:', currentStep);
       setValidated(true);
       setSubmitStatus({ 
         show: true, 
@@ -437,6 +458,7 @@ function Apply() {
 
   const handlePrevStep = useCallback(() => {
     setCurrentStep(prev => Math.max(prev - 1, 1));
+    setValidated(false); // Reset validation when going back
     window.scrollTo({ top: 300, behavior: 'smooth' });
   }, []);
 
@@ -782,7 +804,7 @@ function Apply() {
                     <Form noValidate validated={validated} onSubmit={(e) => currentStep === 4 ? handleSubmit(e) : e.preventDefault()}>
                       {/* Step 1: Parent Info */}
                       {currentStep === 1 && (
-                        <div>
+                        <div className="mt-4">
                           <h3 className="text-navy fw-bold mb-3 pb-2 border-bottom" style={{ fontSize: '1rem' }}>Parent/Guardian Information</h3>
                           <Row className="g-3">
                             <Col md={6}>
@@ -816,7 +838,7 @@ function Apply() {
 
                       {/* Step 2: Child Info */}
                       {currentStep === 2 && (
-                        <div>
+                        <div className="mt-4">
                           <h3 className="text-navy fw-bold mb-3 pb-2 border-bottom" style={{ fontSize: '1rem' }}>Child's Information</h3>
                           <Row className="g-3">
                             <Col md={12}>
@@ -850,22 +872,22 @@ function Apply() {
                           {formData.nationality === "Other" && (
                             <Row>
                               <Col md={4}>
-                                <FormInput label="Specify Nationality" name="otherNationality" value={formData.otherNationality} onChange={handleFormChange} placeholder="Enter nationality" />
+                                <FormInput label="Specify Nationality" name="otherNationality" value={formData.otherNationality} onChange={handleChange} placeholder="Enter nationality" />
                               </Col>
                             </Row>
                           )}
                           <Row className="g-3">
                             <Col md={6}>
-                              <FormInput label="Previous School/Nursery" name="previousSchool" value={formData.previousSchool} onChange={handleFormChange} placeholder="Enter previous school" />
+                              <FormInput label="Previous School/Nursery" name="previousSchool" value={formData.previousSchool} onChange={handleChange} placeholder="Enter previous school" />
                             </Col>
                             <Col md={6}>
-                              <FormInput label="Grade Applying For" as="select" name="gradeApplying" value={formData.gradeApplying} onChange={handleFormChange} required options={gradeOptions} feedback="Please select grade" />
+                              <FormInput label="Grade Applying For" as="select" name="gradeApplying" value={formData.gradeApplying} onChange={handleChange} required options={gradeOptions} feedback="Please select grade" />
                             </Col>
                           </Row>
                           {getStayStatusOptions().length > 0 && (
                             <Row>
                               <Col md={6}>
-                                <FormInput label="Stay Status" as="select" name="stayStatus" value={formData.stayStatus} onChange={handleFormChange} required={formData.gradeApplying === "Playgroup"} options={getStayStatusOptions()} feedback="Please select stay status" />
+                                <FormInput label="Stay Status" as="select" name="stayStatus" value={formData.stayStatus} onChange={handleChange} required={formData.gradeApplying === "Playgroup"} options={getStayStatusOptions()} feedback="Please select stay status" />
                               </Col>
                             </Row>
                           )}
@@ -874,7 +896,7 @@ function Apply() {
 
                       {/* Step 3: Medical Information */}
                       {currentStep === 3 && (
-                        <div>
+                        <div className="mt-4">
                           <h3 className="text-navy fw-bold mb-3 pb-2 border-bottom" style={{ fontSize: '1rem' }}>Medical Information</h3>
                           <p className="text-muted small mb-3">This information helps us ensure your child receives the best possible care while at school.</p>
                           
@@ -923,7 +945,7 @@ function Apply() {
 
                       {/* Step 4: Review & Submit */}
                       {currentStep === 4 && (
-                        <div>
+                        <div className="mt-4">
                           <h3 className="text-navy fw-bold mb-3 pb-2 border-bottom" style={{ fontSize: '1rem' }}>Review & Submit</h3>
                           <div className="review-section mb-3">
                             <p className="fw-bold mb-1 text-navy">Parent: {formData.parentName || "Not provided"}</p>
