@@ -1,4 +1,4 @@
-// pages/Apply.jsx - Complete Admissions Application Page
+// pages/Apply.jsx - Fixed navigation and form submission
 import { Helmet } from "react-helmet-async";
 import { Container, Row, Col, Form, Button, Card, Alert } from "react-bootstrap";
 import { useState, useEffect, useCallback, memo, lazy, Suspense } from "react";
@@ -414,24 +414,30 @@ function Apply() {
   const validateStep = useCallback((step) => {
     if (step === 1) return formData.parentName && formData.email && formData.phone && formData.relationship;
     if (step === 2) return formData.childName && formData.dateOfBirth && !dateError && formData.gender && formData.gradeApplying;
-    if (step === 3) return true; // Medical info is optional
+    if (step === 3) return true;
     return true;
   }, [formData, dateError]);
 
-  const handleNextStep = useCallback((e) => {
-    e.preventDefault();
+  // ==================== NAVIGATION HANDLERS - FIXED ====================
+  const handleNextStep = useCallback(() => {
     if (validateStep(currentStep)) {
       setCurrentStep(prev => Math.min(prev + 1, 4));
+      // Scroll to top of form
+      window.scrollTo({ top: 300, behavior: 'smooth' });
     } else {
       setValidated(true);
-      setSubmitStatus({ show: true, success: false, message: "Please complete all required fields before proceeding." });
+      setSubmitStatus({ 
+        show: true, 
+        success: false, 
+        message: "Please complete all required fields before proceeding." 
+      });
       setTimeout(() => setSubmitStatus(prev => ({ ...prev, show: false })), 3000);
     }
   }, [currentStep, validateStep]);
 
-  const handlePrevStep = useCallback((e) => {
-    e.preventDefault();
+  const handlePrevStep = useCallback(() => {
     setCurrentStep(prev => Math.max(prev - 1, 1));
+    window.scrollTo({ top: 300, behavior: 'smooth' });
   }, []);
 
   // ==================== GENERATE PDF ====================
@@ -773,7 +779,7 @@ function Apply() {
                     
                     <ProgressIndicator currentStep={currentStep} totalSteps={4} />
                     
-                    <Form noValidate validated={validated} onSubmit={(e) => currentStep === 4 ? handleSubmit(e) : handleNextStep(e)}>
+                    <Form noValidate validated={validated} onSubmit={(e) => currentStep === 4 ? handleSubmit(e) : e.preventDefault()}>
                       {/* Step 1: Parent Info */}
                       {currentStep === 1 && (
                         <div>
@@ -947,17 +953,39 @@ function Apply() {
                       {/* Navigation Buttons */}
                       <div className="d-flex justify-content-between mt-4">
                         {currentStep > 1 && (
-                          <Button onClick={handlePrevStep} className="btn-outline-navy">
+                          <Button 
+                            type="button"
+                            onClick={handlePrevStep} 
+                            className="btn-outline-navy"
+                            disabled={submitting}
+                          >
                             <i className="fas fa-arrow-left me-2"></i>Back
                           </Button>
                         )}
-                        <Button type="submit" className="btn-navy" disabled={submitting} style={{ marginLeft: currentStep === 1 ? 'auto' : '0' }}>
-                          {submitting ? (
-                            <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Submitting...</>
-                          ) : (
-                            currentStep === 4 ? 'Submit Application' : 'Continue'
-                          )}
-                        </Button>
+                        {currentStep < 4 ? (
+                          <Button 
+                            type="button"
+                            onClick={handleNextStep} 
+                            className="btn-navy" 
+                            disabled={submitting}
+                            style={{ marginLeft: currentStep === 1 ? 'auto' : '0' }}
+                          >
+                            Continue <i className="fas fa-arrow-right ms-2"></i>
+                          </Button>
+                        ) : (
+                          <Button 
+                            type="submit" 
+                            className="btn-navy" 
+                            disabled={submitting}
+                            style={{ marginLeft: 'auto' }}
+                          >
+                            {submitting ? (
+                              <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Submitting...</>
+                            ) : (
+                              'Submit Application'
+                            )}
+                          </Button>
+                        )}
                       </div>
                     </Form>
                   </Card.Body>
