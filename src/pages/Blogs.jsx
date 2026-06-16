@@ -1,10 +1,74 @@
-// pages/Blogs.jsx - Uses JSON Bin (No localStorage)
+// pages/Blogs.jsx - Fetches from JSON Bin, falls back to default data
 import React, { useState, useEffect, useCallback, memo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Container, Row, Col, Spinner, Alert, Modal, Badge, Card } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import { FacebookShareButton, TwitterShareButton, WhatsappShareButton, LinkedinShareButton } from 'react-share';
 import { getBlogs } from '../services/dataService';
+
+// ==================== DEFAULT BLOGS (Fallback) ====================
+const DEFAULT_BLOGS = [
+  {
+    id: 1,
+    slug: "annual-sports-day-2024",
+    title: "Annual Sports Day 2024: A Celebration of Talent",
+    excerpt: "Students showcased exceptional athletic abilities during our annual sports day event with record-breaking performances across all categories.",
+    content: "<p>The annual sports day was a spectacular event filled with excitement and competition. Students from all grades participated in various athletic events including track races, field events, and team sports.</p><p>The day began with a colorful parade followed by the lighting of the torch. Students competed fiercely but with great sportsmanship, making it a memorable day for everyone involved.</p>",
+    fullStory: "<p>Students from all grades participated in various athletic events including 100m sprints, long jump, high jump, relay races, and football matches. The school's sports teams demonstrated exceptional skills and teamwork.</p><p>Special recognition was given to the top performers who broke school records. The event concluded with an awards ceremony where medals and certificates were presented to the winners.</p>",
+    featuredImage: "/images/optimized/gallery/sports1.webp",
+    author: "Mr. Omondi",
+    date: "2024-12-01",
+    category: "School Event"
+  },
+  {
+    id: 2,
+    slug: "excellence-in-cbc-grade-6",
+    title: "Excellence in CBC: Our Grade 6 Learners Shine",
+    excerpt: "Our Grade 6 learners demonstrated outstanding performance in the recent CBC assessments with remarkable scores in all competency areas.",
+    content: "<p>The Competency-Based Curriculum has transformed how our students learn and grow. Our Grade 6 learners have shown remarkable progress in all competency areas including literacy, numeracy, and life skills.</p><p>Parents and teachers have been impressed with the holistic development of the learners, who are now better prepared for higher education and life challenges.</p>",
+    fullStory: "<p>Our Grade 6 learners have shown remarkable progress in all competency areas including literacy, numeracy, creativity, and critical thinking. The CBC approach has fostered independent learning and problem-solving skills.</p><p>The school has invested in modern teaching resources and teacher training to ensure effective implementation of the curriculum. Regular assessments and feedback help track learner progress and identify areas for improvement.</p>",
+    featuredImage: "/images/optimized/gallery/academics3.webp",
+    author: "Madam Sarah",
+    date: "2024-11-15",
+    category: "Academic Achievement"
+  },
+  {
+    id: 3,
+    slug: "student-council-elections-2024",
+    title: "Building Future Leaders: Student Council Elections",
+    excerpt: "Democracy in action as our students participated in the annual student council elections with great enthusiasm and civic awareness.",
+    content: "<p>The student council elections provide valuable leadership experience for our learners. Candidates presented their manifestos and campaigned across the school, showcasing their leadership qualities.</p><p>Students exercised their democratic rights by voting for their preferred candidates, making this a practical lesson in democracy and civic responsibility.</p>",
+    fullStory: "<p>Candidates presented their manifestos and campaigned across the school, sharing their vision for improving student welfare and school activities. The election process was conducted with transparency and fairness.</p><p>The newly elected student council will work closely with the school administration to implement student-led initiatives and represent student interests. This experience helps develop essential leadership and communication skills.</p>",
+    featuredImage: "/images/optimized/gallery/events4.webp",
+    author: "Mr. Kipchoge",
+    date: "2024-10-20",
+    category: "Student Leadership"
+  },
+  {
+    id: 4,
+    slug: "science-fair-2024",
+    title: "Innovation Showcase: Annual Science Fair 2024",
+    excerpt: "Young scientists impressed everyone with their innovative projects addressing real-world challenges through creative scientific solutions.",
+    content: "<p>The annual science fair showcased the creativity and scientific thinking of our students. Projects ranged from environmental conservation to technology solutions for everyday problems.</p><p>Students demonstrated their research skills and presented their findings to judges and visitors, showing how science can solve real-world problems.</p>",
+    fullStory: "<p>Projects ranged from environmental conservation to technology solutions for everyday problems. Winners received special recognition and will represent the school at the regional science competition.</p><p>The science fair has become a platform for nurturing young scientists and innovators. Students are encouraged to think critically and apply scientific principles to address community challenges.</p>",
+    featuredImage: "/images/optimized/gallery/academics1.webp",
+    author: "Dr. Mwangi",
+    date: "2024-09-28",
+    category: "STEM"
+  },
+  {
+    id: 5,
+    slug: "culture-day-celebration",
+    title: "Celebrating Diversity: Cultural Day 2024",
+    excerpt: "Students showcased Kenya's rich cultural heritage through music, dance, traditional cuisine, and colorful attire from various communities.",
+    content: "<p>Cultural Day was a vibrant celebration of Kenya's diverse cultural heritage. Students and staff dressed in traditional attire representing various Kenyan communities.</p><p>The event featured traditional dances, music performances, storytelling, and a food fair where parents and students shared traditional dishes.</p>",
+    fullStory: "<p>The event featured traditional dances, music performances, storytelling, and a food fair where parents and students shared traditional dishes. This celebration promotes cultural understanding and national unity.</p><p>Parents were invited to participate and share their cultural knowledge with students. The event was a powerful reminder of the beauty in diversity and the importance of preserving cultural heritage.</p>",
+    featuredImage: "/images/optimized/gallery/cultural4.webp",
+    author: "Madam Grace",
+    date: "2024-09-15",
+    category: "Cultural Event"
+  }
+];
 
 // ==================== UTILITY FUNCTIONS ====================
 const getReadingTime = (content) => {
@@ -566,14 +630,28 @@ export const BlogSection = ({ limit = 3, showViewAll = true, variant = 'gold' })
   const loadPosts = useCallback(async () => {
     setLoading(true);
     try {
+      // Try to fetch from JSON Bin first
       const posts = await getBlogs();
-      const limitedPosts = limit ? posts.slice(0, limit) : posts;
-      setBlogPosts(limitedPosts);
-      setError(null);
-      console.log('BlogSection loaded:', limitedPosts.length, 'posts');
+      
+      // If we got data and it's not empty, use it
+      if (posts && posts.length > 0) {
+        const limitedPosts = limit ? posts.slice(0, limit) : posts;
+        setBlogPosts(limitedPosts);
+        setError(null);
+        console.log('BlogSection loaded from JSON Bin:', limitedPosts.length, 'posts');
+      } else {
+        // If JSON Bin returned empty, use default blogs
+        const defaultPosts = limit ? DEFAULT_BLOGS.slice(0, limit) : DEFAULT_BLOGS;
+        setBlogPosts(defaultPosts);
+        setError(null);
+        console.log('BlogSection using default blogs:', defaultPosts.length, 'posts');
+      }
     } catch (err) {
-      console.error('Error loading blog posts:', err);
-      setError('Unable to load blog posts. Please try again later.');
+      console.error('Error loading blog posts, using defaults:', err);
+      // On error, use default blogs
+      const defaultPosts = limit ? DEFAULT_BLOGS.slice(0, limit) : DEFAULT_BLOGS;
+      setBlogPosts(defaultPosts);
+      setError(null);
     } finally {
       setLoading(false);
     }
@@ -607,16 +685,6 @@ export const BlogSection = ({ limit = 3, showViewAll = true, variant = 'gold' })
             <Spinner animation="border" variant="primary" style={{ width: '3rem', height: '3rem' }} />
             <p className="mt-3 text-muted">Loading latest posts...</p>
           </div>
-        </Container>
-      </section>
-    );
-  }
-
-  if (error) {
-    return (
-      <section className="section-padding bg-light-custom">
-        <Container>
-          <Alert variant="warning" className="text-center">{error}</Alert>
         </Container>
       </section>
     );
@@ -730,13 +798,25 @@ const Blogs = () => {
   const loadPosts = useCallback(async () => {
     setLoading(true);
     try {
+      // Try to fetch from JSON Bin first
       const posts = await getBlogs();
-      setBlogPosts(posts);
-      setError(null);
-      console.log('Blogs page loaded:', posts.length, 'posts');
+      
+      // If we got data and it's not empty, use it
+      if (posts && posts.length > 0) {
+        setBlogPosts(posts);
+        setError(null);
+        console.log('Blogs page loaded from JSON Bin:', posts.length, 'posts');
+      } else {
+        // If JSON Bin returned empty, use default blogs
+        setBlogPosts(DEFAULT_BLOGS);
+        setError(null);
+        console.log('Blogs page using default blogs:', DEFAULT_BLOGS.length, 'posts');
+      }
     } catch (err) {
-      console.error('Error loading blog posts:', err);
-      setError("Unable to load blog posts. Please try again later.");
+      console.error('Error loading blog posts, using defaults:', err);
+      // On error, use default blogs
+      setBlogPosts(DEFAULT_BLOGS);
+      setError(null);
     } finally {
       setLoading(false);
     }
