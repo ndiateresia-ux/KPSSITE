@@ -312,7 +312,7 @@ function Apply() {
   const [debugInfo, setDebugInfo] = useState("");
 
   // ==================== ENVIRONMENT VARIABLES ====================
-  const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+  const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_GMAIL_CLIENT_ID;
   const ADMISSIONS_EMAIL = import.meta.env.VITE_ADMISSIONS_EMAIL || 'ndiateresia@gmail.com';
   const GMAIL_SCOPES = import.meta.env.VITE_GMAIL_SCOPES || 'https://www.googleapis.com/auth/gmail.send';
   const SITE_URL = import.meta.env.VITE_SITE_URL || window.location.origin;
