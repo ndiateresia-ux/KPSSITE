@@ -1,64 +1,9 @@
-// pages/Events.jsx - Reads from Google Calendar API
+// pages/Events.jsx - Reads from Google Calendar API only
 import { Helmet } from "react-helmet-async";
 import { Container, Row, Col, Spinner, Alert, Badge } from "react-bootstrap";
 import { useState, useEffect, useMemo, useCallback, lazy, Suspense, memo } from "react";
-import { getEvents } from '../services/dataService';
 
 const GetInTouch = lazy(() => import("../components/GetInTouch"));
-
-// ==================== DEFAULT EVENTS (Fallback) ====================
-const DEFAULT_EVENTS = [
-  { 
-    id: 1, 
-    title: "Term 1 Opening Day", 
-    date: `${new Date().getFullYear()}-01-08`, 
-    description: "School opens for Term 1. All students are expected to report by 8:00 AM.", 
-    time: "8:00 AM", 
-    location: "School Assembly Ground", 
-    category: "academic", 
-    color: "#0d65fb" 
-  },
-  { 
-    id: 2, 
-    title: "Sports Day", 
-    date: `${new Date().getFullYear()}-02-15`, 
-    description: "Annual inter-house sports competitions featuring athletics, ball games, and fun activities for all students.", 
-    time: "9:00 AM - 4:00 PM", 
-    location: "School Sports Ground", 
-    category: "sports", 
-    color: "#48bb78" 
-  },
-  { 
-    id: 3, 
-    title: "Parents-Teachers Conference", 
-    date: `${new Date().getFullYear()}-03-10`, 
-    description: "Meet your child's teachers and discuss academic progress, challenges, and strategies for improvement.", 
-    time: "2:00 PM - 6:00 PM", 
-    location: "Various Classrooms", 
-    category: "meeting", 
-    color: "#ed8936" 
-  },
-  { 
-    id: 4, 
-    title: "Graduation Ceremony", 
-    date: `${new Date().getFullYear()}-11-20`, 
-    description: "Celebration of our graduating students' achievements and their transition to the next level of their academic journey.", 
-    time: "10:00 AM", 
-    location: "School Hall", 
-    category: "ceremony", 
-    color: "#ff0080" 
-  },
-  { 
-    id: 5, 
-    title: "Cultural Day", 
-    date: `${new Date().getFullYear()}-09-15`, 
-    description: "Celebration of Kenya's rich cultural diversity through music, dance, and traditional cuisine from various communities.", 
-    time: "9:00 AM - 3:00 PM", 
-    location: "School Grounds", 
-    category: "cultural", 
-    color: "#9f7aea" 
-  }
-];
 
 // ==================== GOOGLE CALENDAR CONFIG ====================
 // Your Google Calendar API Key
@@ -70,8 +15,7 @@ const CALENDAR_ID = import.meta.env.VITE_GOOGLE_CALENDAR_ID;
 const fetchGoogleCalendarEvents = async () => {
   try {
     if (!GOOGLE_CALENDAR_API_KEY || !CALENDAR_ID) {
-      console.warn('Google Calendar API key or Calendar ID not configured');
-      return null;
+      throw new Error('Google Calendar API key or Calendar ID not configured');
     }
 
     // Get current date and date 3 months from now
@@ -94,8 +38,7 @@ const fetchGoogleCalendarEvents = async () => {
     const data = await response.json();
     
     if (!data.items || data.items.length === 0) {
-      console.log('No upcoming events found in Google Calendar');
-      return null;
+      return []; // No events found, return empty array
     }
 
     // Transform Google Calendar events to our event format
@@ -148,7 +91,7 @@ const fetchGoogleCalendarEvents = async () => {
     return transformedEvents;
   } catch (error) {
     console.error('Error fetching from Google Calendar:', error);
-    return null;
+    throw error;
   }
 };
 
@@ -196,7 +139,7 @@ function Events() {
   const [hoveredEvent, setHoveredEvent] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
   const [featuredEventIds] = useState([1, 2]);
-  const [usingGoogleCalendar, setUsingGoogleCalendar] = useState(false);
+  const [connectionError, setConnectionError] = useState(null);
 
   const months = useMemo(() => ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"], []);
   const monthAbbr = useMemo(() => ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], []);
@@ -212,50 +155,23 @@ function Events() {
     { id: "ceremony", name: "Ceremonies", icon: "🏆", color: "#ff0080" }
   ], []);
 
-  // Load events from Google Calendar with fallback
+  // Load events from Google Calendar only
   useEffect(() => {
     const loadEvents = async () => {
       setLoading(true);
+      setConnectionError(null);
       try {
-        // Try to fetch from Google Calendar first
         const googleEvents = await fetchGoogleCalendarEvents();
-        
-        if (googleEvents && googleEvents.length > 0) {
-          setEvents(googleEvents);
-          setUsingGoogleCalendar(true);
-          console.log(`Events loaded from Google Calendar: ${googleEvents.length} events`);
-        } else {
-          // Fallback to JSON Bin if Google Calendar returns nothing
-          const data = await getEvents();
-          if (data && data.length > 0) {
-            setEvents(data);
-            setUsingGoogleCalendar(false);
-            console.log('Events loaded from JSON Bin:', data.length);
-          } else {
-            // Final fallback to defaults
-            setEvents(DEFAULT_EVENTS);
-            setUsingGoogleCalendar(false);
-            console.log('Events using defaults:', DEFAULT_EVENTS.length);
-          }
-        }
+        setEvents(googleEvents || []);
+        console.log(`Events loaded from Google Calendar: ${googleEvents?.length || 0} events`);
       } catch (error) {
-        console.error('Error loading events, trying fallback:', error);
-        // Try JSON Bin as fallback
-        try {
-          const data = await getEvents();
-          if (data && data.length > 0) {
-            setEvents(data);
-            setUsingGoogleCalendar(false);
-            console.log('Events loaded from JSON Bin (fallback):', data.length);
-          } else {
-            setEvents(DEFAULT_EVENTS);
-            setUsingGoogleCalendar(false);
-          }
-        } catch (fallbackError) {
-          console.error('All sources failed, using defaults:', fallbackError);
-          setEvents(DEFAULT_EVENTS);
-          setUsingGoogleCalendar(false);
-        }
+        console.error('Failed to connect to Google Calendar:', error);
+        setConnectionError({
+          title: 'Unable to Connect to Calendar',
+          message: 'We are currently unable to fetch events from Google Calendar. Please check your internet connection and try again later.',
+          details: error.message
+        });
+        setEvents([]);
       } finally {
         setLoading(false);
       }
@@ -307,32 +223,219 @@ function Events() {
 
       <section className="py-5"><Container><div className="quote-block p-3 text-center" style={{ background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(5px)', borderRadius: '16px', borderLeft: '5px solid var(--secondary)', boxShadow: '0 8px 20px rgba(0,0,0,0.05)' }}><p className="lead mb-0" style={{ fontSize: '1.1rem', color: 'var(--text-dark)', fontStyle: 'italic', fontWeight: '500', lineHeight: 1.5 }}>Stay updated on academic calendars, events and key school activities throughout the term</p></div></Container></section>
 
-      <section className="py-4" aria-labelledby="events-heading"><Container><h1 id="events-heading" className="section-heading mb-3 text-center">School Calendar & Events</h1>
-        <p className="lead text-center mb-4 px-3 px-md-5" style={{ maxWidth: "900px", margin: "0 auto 2rem", color: 'var(--text-dark)', fontSize: '1rem' }}>Filter events by category to quickly find academic, sports, and school activities relevant to your child.</p>
-        
-        {/* Source indicator */}
-        {!loading && (
-          <div className="text-center mb-3">
-            <span className="badge" style={{ 
-              backgroundColor: usingGoogleCalendar ? '#1a73e8' : '#050265', 
-              color: 'white',
-              padding: '6px 16px',
-              borderRadius: '50px',
-              fontSize: '0.75rem'
-            }}>
-              {usingGoogleCalendar ? '📅 Synced with Google Calendar' : '📋 Using School Calendar'}
-            </span>
-          </div>
-        )}
+      <section className="py-4" aria-labelledby="events-heading">
+        <Container>
+          <h1 id="events-heading" className="section-heading mb-3 text-center">School Calendar & Events</h1>
+          <p className="lead text-center mb-4 px-3 px-md-5" style={{ maxWidth: "900px", margin: "0 auto 2rem", color: 'var(--text-dark)', fontSize: '1rem' }}>Filter events by category to quickly find academic, sports, and school activities relevant to your child.</p>
+          
+          {/* Connection Status Badge */}
+          {!loading && (
+            <div className="text-center mb-3">
+              <span className="badge" style={{ 
+                backgroundColor: connectionError ? '#dc3545' : '#1a73e8', 
+                color: 'white',
+                padding: '6px 16px',
+                borderRadius: '50px',
+                fontSize: '0.75rem'
+              }}>
+                {connectionError ? '⚠️ Calendar Disconnected' : '📅 Synced with Google Calendar'}
+              </span>
+            </div>
+          )}
 
-        <div className="d-flex flex-wrap justify-content-center gap-2 mb-4" role="group" aria-label="Event categories">{categories.map(category => (<CategoryButton key={category.id} category={category} isActive={selectedCategory === category.id} onClick={handleCategoryChange} />))}</div>
-        <Row className="g-4">
-          <Col lg={8}><div className="upcoming-header d-flex justify-content-between align-items-center mb-3"><h2 className="card-title-navy h5 fw-bold mb-0">{selectedCategory === 'all' ? 'All Events' : `${categories.find(c => c.id === selectedCategory)?.name} Events`}<span className="ms-2 small text-muted">({monthAbbr[selectedMonth]} {selectedYear})</span></h2></div>
-            {loading ? (<div className="text-center py-4" role="status" aria-live="polite"><Spinner animation="border" variant="primary" /><p className="mt-2 text-muted">Loading events...</p></div>) : (<>{filteredEvents.length > 0 ? (<div className="d-flex flex-column gap-3" role="list" aria-label="Events list">{filteredEvents.map((event, index) => (<EventCard key={event.id || index} event={event} categories={categories} isHovered={hoveredEvent === event.id} onHover={handleHover} onLeave={handleLeave} index={index} isFeatured={featuredEventIds.includes(event.id)} />))}</div>) : (<div className="text-center py-4 bg-light-custom rounded-3" role="status"><i className="fas fa-calendar-times fs-1 text-muted mb-2" aria-hidden="true"></i><h3 className="h6 fw-bold text-navy">No events found</h3><p className="small text-muted mb-0">Try a different month or category</p></div>)}</>)}</Col>
-          <Col lg={4}><div className="calendar-card bg-white p-3 rounded-4 shadow-sm" style={{ position: 'sticky', top: '100px' }}><div className="d-flex justify-content-between align-items-center mb-2"><h2 className="card-title-navy h6 fw-bold mb-0">{months[selectedMonth]} {selectedYear}</h2><span className="small text-muted" aria-live="polite" aria-atomic="true"><i className="far fa-calendar-check me-1" aria-hidden="true"></i>{monthEventCount} {monthEventCount === 1 ? 'event' : 'events'}</span></div><div className="d-flex gap-2 mb-3"><select className="form-control-custom form-select-sm" value={selectedMonth} onChange={(e) => { setSelectedMonth(parseInt(e.target.value)); setSelectedDate(null); }} style={{ borderRadius: '20px' }} aria-label="Select month">{months.map((month, index) => (<option key={month} value={index}>{month}</option>))}</select><select className="form-control-custom form-select-sm" value={selectedYear} onChange={(e) => { setSelectedYear(parseInt(e.target.value)); setSelectedDate(null); }} style={{ borderRadius: '20px' }} aria-label="Select year">{years.map(year => (<option key={year} value={year}>{year}</option>))}</select></div><div className="calendar-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px', marginBottom: '1rem' }} role="grid" aria-label="Calendar">{['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, i) => (<div key={day} className="text-center small fw-bold text-muted py-1" role="columnheader">{day.slice(0, 1)}<span className="visually-hidden">{day}</span></div>))}{calendarDays.map((day, index) => (<CalendarDay key={index} day={day} onClick={handleDateClick} categories={categories} selectedCategory={selectedCategory} index={index} months={monthAbbr} selectedMonth={selectedMonth} selectedYear={selectedYear} />))}</div><div className="d-flex flex-wrap gap-2 small"><div className="d-flex align-items-center gap-1"><span className="cal-day has-event" style={{ width: '14px', height: '14px', borderRadius: '50%', backgroundColor: '#ebf8ff' }} aria-hidden="true"></span><span className="text-muted">Has events</span></div><div className="d-flex align-items-center gap-1"><span className="cal-day today" style={{ width: '14px', height: '14px', borderRadius: '50%', border: '2px solid var(--navy)' }} aria-hidden="true"></span><span className="text-muted">Today</span></div><div className="d-flex align-items-center gap-1"><span className="cal-day selected" style={{ width: '14px', height: '14px', borderRadius: '50%', backgroundColor: 'var(--gold)' }} aria-hidden="true"></span><span className="text-muted">Selected</span></div></div><div className="mt-3 pt-2 border-top" aria-live="polite" aria-atomic="true"><div className="d-flex justify-content-between align-items-center small"><span className="text-muted">Total events:</span><span className="fw-bold text-navy" aria-label={`Total events: ${monthEventCount}`}>{monthEventCount}</span></div><div className="d-flex justify-content-between align-items-center small mt-1"><span className="text-muted">Categories:</span><span className="fw-bold text-navy" aria-label={`Categories: ${new Set(filteredEvents.map(e => e.category)).size}`}>{new Set(filteredEvents.map(e => e.category)).size}</span></div>{selectedDate && (<div className="d-flex justify-content-between align-items-center small mt-1"><span className="text-muted">Events on {selectedDate}:</span><span className="fw-bold text-navy" aria-label={`Events on ${selectedDate}: ${getEventsForDate(selectedDate).length}`}>{getEventsForDate(selectedDate).length}</span></div>)}</div></div></Col>
-        </Row></Container></section>
+          {/* Connection Error Alert */}
+          {connectionError && (
+            <Alert variant="danger" className="text-center" style={{ borderRadius: '16px' }}>
+              <Alert.Heading className="h5">{connectionError.title}</Alert.Heading>
+              <p>{connectionError.message}</p>
+              <hr />
+              <div className="d-flex justify-content-center gap-3 flex-wrap">
+                <button 
+                  onClick={() => window.location.reload()} 
+                  className="btn-navy"
+                  style={{ minHeight: '44px' }}
+                >
+                  <i className="fas fa-sync-alt me-2"></i> Retry Connection
+                </button>
+                <a 
+                  href="/contact" 
+                  className="btn-outline-navy"
+                  style={{ 
+                    minHeight: '44px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '0.5rem 1.5rem',
+                    borderRadius: '40px',
+                    border: '2px solid #050265',
+                    color: '#050265',
+                    textDecoration: 'none',
+                    fontWeight: '600'
+                  }}
+                >
+                  <i className="fas fa-envelope me-2"></i> Contact School
+                </a>
+              </div>
+              <p className="mt-3 small text-muted">Error details: {connectionError.details}</p>
+            </Alert>
+          )}
 
-      <section className="statistics-section py-4" aria-labelledby="why-matters-heading"><Container><Row className="justify-content-center text-center"><Col lg={8}><h2 id="why-matters-heading" className="h5 mb-3 text-white">Why This Matters for You as a Parent</h2><p className="text-white">Keeping track of school events helps you stay involved in your child's education, support their activities, and plan effectively throughout the school term.</p></Col></Row></Container></section>
+          {!connectionError && (
+            <>
+              <div className="d-flex flex-wrap justify-content-center gap-2 mb-4" role="group" aria-label="Event categories">
+                {categories.map(category => (
+                  <CategoryButton 
+                    key={category.id} 
+                    category={category} 
+                    isActive={selectedCategory === category.id} 
+                    onClick={handleCategoryChange} 
+                  />
+                ))}
+              </div>
+              <Row className="g-4">
+                <Col lg={8}>
+                  <div className="upcoming-header d-flex justify-content-between align-items-center mb-3">
+                    <h2 className="card-title-navy h5 fw-bold mb-0">
+                      {selectedCategory === 'all' ? 'All Events' : `${categories.find(c => c.id === selectedCategory)?.name} Events`}
+                      <span className="ms-2 small text-muted">({monthAbbr[selectedMonth]} {selectedYear})</span>
+                    </h2>
+                  </div>
+                  {loading ? (
+                    <div className="text-center py-4" role="status" aria-live="polite">
+                      <Spinner animation="border" variant="primary" />
+                      <p className="mt-2 text-muted">Loading events from Google Calendar...</p>
+                    </div>
+                  ) : (
+                    <>
+                      {filteredEvents.length > 0 ? (
+                        <div className="d-flex flex-column gap-3" role="list" aria-label="Events list">
+                          {filteredEvents.map((event, index) => (
+                            <EventCard 
+                              key={event.id || index} 
+                              event={event} 
+                              categories={categories} 
+                              isHovered={hoveredEvent === event.id} 
+                              onHover={handleHover} 
+                              onLeave={handleLeave} 
+                              index={index} 
+                              isFeatured={featuredEventIds.includes(event.id)} 
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-4 bg-light-custom rounded-3" role="status">
+                          <i className="fas fa-calendar-check fs-1 text-muted mb-2" aria-hidden="true"></i>
+                          <h3 className="h6 fw-bold text-navy">No events found</h3>
+                          <p className="small text-muted mb-0">No events scheduled for this period. Check back later!</p>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </Col>
+                <Col lg={4}>
+                  <div className="calendar-card bg-white p-3 rounded-4 shadow-sm" style={{ position: 'sticky', top: '100px' }}>
+                    <div className="d-flex justify-content-between align-items-center mb-2">
+                      <h2 className="card-title-navy h6 fw-bold mb-0">{months[selectedMonth]} {selectedYear}</h2>
+                      <span className="small text-muted" aria-live="polite" aria-atomic="true">
+                        <i className="far fa-calendar-check me-1" aria-hidden="true"></i>
+                        {monthEventCount} {monthEventCount === 1 ? 'event' : 'events'}
+                      </span>
+                    </div>
+                    <div className="d-flex gap-2 mb-3">
+                      <select 
+                        className="form-control-custom form-select-sm" 
+                        value={selectedMonth} 
+                        onChange={(e) => { setSelectedMonth(parseInt(e.target.value)); setSelectedDate(null); }} 
+                        style={{ borderRadius: '20px' }} 
+                        aria-label="Select month"
+                      >
+                        {months.map((month, index) => (
+                          <option key={month} value={index}>{month}</option>
+                        ))}
+                      </select>
+                      <select 
+                        className="form-control-custom form-select-sm" 
+                        value={selectedYear} 
+                        onChange={(e) => { setSelectedYear(parseInt(e.target.value)); setSelectedDate(null); }} 
+                        style={{ borderRadius: '20px' }} 
+                        aria-label="Select year"
+                      >
+                        {years.map(year => (
+                          <option key={year} value={year}>{year}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="calendar-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px', marginBottom: '1rem' }} role="grid" aria-label="Calendar">
+                      {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, i) => (
+                        <div key={day} className="text-center small fw-bold text-muted py-1" role="columnheader">
+                          {day.slice(0, 1)}
+                          <span className="visually-hidden">{day}</span>
+                        </div>
+                      ))}
+                      {calendarDays.map((day, index) => (
+                        <CalendarDay 
+                          key={index} 
+                          day={day} 
+                          onClick={handleDateClick} 
+                          categories={categories} 
+                          selectedCategory={selectedCategory} 
+                          index={index} 
+                          months={monthAbbr} 
+                          selectedMonth={selectedMonth} 
+                          selectedYear={selectedYear} 
+                        />
+                      ))}
+                    </div>
+                    <div className="d-flex flex-wrap gap-2 small">
+                      <div className="d-flex align-items-center gap-1">
+                        <span className="cal-day has-event" style={{ width: '14px', height: '14px', borderRadius: '50%', backgroundColor: '#ebf8ff' }} aria-hidden="true"></span>
+                        <span className="text-muted">Has events</span>
+                      </div>
+                      <div className="d-flex align-items-center gap-1">
+                        <span className="cal-day today" style={{ width: '14px', height: '14px', borderRadius: '50%', border: '2px solid var(--navy)' }} aria-hidden="true"></span>
+                        <span className="text-muted">Today</span>
+                      </div>
+                      <div className="d-flex align-items-center gap-1">
+                        <span className="cal-day selected" style={{ width: '14px', height: '14px', borderRadius: '50%', backgroundColor: 'var(--gold)' }} aria-hidden="true"></span>
+                        <span className="text-muted">Selected</span>
+                      </div>
+                    </div>
+                    <div className="mt-3 pt-2 border-top" aria-live="polite" aria-atomic="true">
+                      <div className="d-flex justify-content-between align-items-center small">
+                        <span className="text-muted">Total events:</span>
+                        <span className="fw-bold text-navy" aria-label={`Total events: ${monthEventCount}`}>{monthEventCount}</span>
+                      </div>
+                      <div className="d-flex justify-content-between align-items-center small mt-1">
+                        <span className="text-muted">Categories:</span>
+                        <span className="fw-bold text-navy" aria-label={`Categories: ${new Set(filteredEvents.map(e => e.category)).size}`}>{new Set(filteredEvents.map(e => e.category)).size}</span>
+                      </div>
+                      {selectedDate && (
+                        <div className="d-flex justify-content-between align-items-center small mt-1">
+                          <span className="text-muted">Events on {selectedDate}:</span>
+                          <span className="fw-bold text-navy" aria-label={`Events on ${selectedDate}: ${getEventsForDate(selectedDate).length}`}>{getEventsForDate(selectedDate).length}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </Col>
+              </Row>
+            </>
+          )}
+        </Container>
+      </section>
+
+      {!connectionError && (
+        <section className="statistics-section py-4" aria-labelledby="why-matters-heading">
+          <Container>
+            <Row className="justify-content-center text-center">
+              <Col lg={8}>
+                <h2 id="why-matters-heading" className="h5 mb-3 text-white">Why This Matters for You as a Parent</h2>
+                <p className="text-white">Keeping track of school events helps you stay involved in your child's education, support their activities, and plan effectively throughout the school term.</p>
+              </Col>
+            </Row>
+          </Container>
+        </section>
+      )}
 
       <Suspense fallback={null}><GetInTouch /></Suspense>
 
