@@ -1,10 +1,156 @@
-// pages/Events.jsx - Modified to use localStorage data
+// pages/Events.jsx - Reads from Google Calendar API
 import { Helmet } from "react-helmet-async";
 import { Container, Row, Col, Spinner, Alert, Badge } from "react-bootstrap";
 import { useState, useEffect, useMemo, useCallback, lazy, Suspense, memo } from "react";
-import { getEvents, getSettings } from '../services/dataService';
+import { getEvents } from '../services/dataService';
 
 const GetInTouch = lazy(() => import("../components/GetInTouch"));
+
+// ==================== DEFAULT EVENTS (Fallback) ====================
+const DEFAULT_EVENTS = [
+  { 
+    id: 1, 
+    title: "Term 1 Opening Day", 
+    date: `${new Date().getFullYear()}-01-08`, 
+    description: "School opens for Term 1. All students are expected to report by 8:00 AM.", 
+    time: "8:00 AM", 
+    location: "School Assembly Ground", 
+    category: "academic", 
+    color: "#0d65fb" 
+  },
+  { 
+    id: 2, 
+    title: "Sports Day", 
+    date: `${new Date().getFullYear()}-02-15`, 
+    description: "Annual inter-house sports competitions featuring athletics, ball games, and fun activities for all students.", 
+    time: "9:00 AM - 4:00 PM", 
+    location: "School Sports Ground", 
+    category: "sports", 
+    color: "#48bb78" 
+  },
+  { 
+    id: 3, 
+    title: "Parents-Teachers Conference", 
+    date: `${new Date().getFullYear()}-03-10`, 
+    description: "Meet your child's teachers and discuss academic progress, challenges, and strategies for improvement.", 
+    time: "2:00 PM - 6:00 PM", 
+    location: "Various Classrooms", 
+    category: "meeting", 
+    color: "#ed8936" 
+  },
+  { 
+    id: 4, 
+    title: "Graduation Ceremony", 
+    date: `${new Date().getFullYear()}-11-20`, 
+    description: "Celebration of our graduating students' achievements and their transition to the next level of their academic journey.", 
+    time: "10:00 AM", 
+    location: "School Hall", 
+    category: "ceremony", 
+    color: "#ff0080" 
+  },
+  { 
+    id: 5, 
+    title: "Cultural Day", 
+    date: `${new Date().getFullYear()}-09-15`, 
+    description: "Celebration of Kenya's rich cultural diversity through music, dance, and traditional cuisine from various communities.", 
+    time: "9:00 AM - 3:00 PM", 
+    location: "School Grounds", 
+    category: "cultural", 
+    color: "#9f7aea" 
+  }
+];
+
+// ==================== GOOGLE CALENDAR CONFIG ====================
+// Your Google Calendar API Key
+const GOOGLE_CALENDAR_API_KEY = import.meta.env.VITE_GOOGLE_CALENDAR_API_KEY;
+// Your Google Calendar ID (found in calendar settings)
+const CALENDAR_ID = import.meta.env.VITE_GOOGLE_CALENDAR_ID;
+
+// ==================== FETCH EVENTS FROM GOOGLE CALENDAR ====================
+const fetchGoogleCalendarEvents = async () => {
+  try {
+    if (!GOOGLE_CALENDAR_API_KEY || !CALENDAR_ID) {
+      console.warn('Google Calendar API key or Calendar ID not configured');
+      return null;
+    }
+
+    // Get current date and date 3 months from now
+    const now = new Date();
+    const threeMonthsLater = new Date(now);
+    threeMonthsLater.setMonth(threeMonthsLater.getMonth() + 3);
+
+    const timeMin = now.toISOString();
+    const timeMax = threeMonthsLater.toISOString();
+
+    // Fetch events from Google Calendar API
+    const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID)}/events?key=${GOOGLE_CALENDAR_API_KEY}&timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime`;
+
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    if (!data.items || data.items.length === 0) {
+      console.log('No upcoming events found in Google Calendar');
+      return null;
+    }
+
+    // Transform Google Calendar events to our event format
+    const transformedEvents = data.items.map((item, index) => {
+      const start = item.start?.dateTime || item.start?.date;
+      const end = item.end?.dateTime || item.end?.date;
+      const date = start ? new Date(start) : new Date();
+      
+      // Parse description for category and color
+      const description = item.description || '';
+      let category = 'academic';
+      let color = '#0d65fb';
+      
+      if (description.toLowerCase().includes('sports') || description.toLowerCase().includes('football') || description.toLowerCase().includes('athletics')) {
+        category = 'sports';
+        color = '#48bb78';
+      } else if (description.toLowerCase().includes('cultural') || description.toLowerCase().includes('music') || description.toLowerCase().includes('dance')) {
+        category = 'cultural';
+        color = '#9f7aea';
+      } else if (description.toLowerCase().includes('meeting') || description.toLowerCase().includes('conference') || description.toLowerCase().includes('parent')) {
+        category = 'meeting';
+        color = '#ed8936';
+      } else if (description.toLowerCase().includes('graduation') || description.toLowerCase().includes('ceremony') || description.toLowerCase().includes('award')) {
+        category = 'ceremony';
+        color = '#ff0080';
+      }
+
+      // Extract time from start and end
+      let time = 'All day';
+      if (item.start?.dateTime && item.end?.dateTime) {
+        const startTime = new Date(item.start.dateTime);
+        const endTime = new Date(item.end.dateTime);
+        time = `${startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+      }
+
+      return {
+        id: index + 1,
+        title: item.summary || 'Untitled Event',
+        date: date.toISOString().split('T')[0],
+        description: item.description || 'No description available',
+        time: time,
+        location: item.location || 'TBD',
+        category: category,
+        color: color,
+        googleEventId: item.id // Store original Google Calendar event ID
+      };
+    });
+
+    console.log(`Loaded ${transformedEvents.length} events from Google Calendar`);
+    return transformedEvents;
+  } catch (error) {
+    console.error('Error fetching from Google Calendar:', error);
+    return null;
+  }
+};
 
 // Memoized event card component
 const EventCard = memo(({ event, categories, isHovered, onHover, onLeave, index, isFeatured }) => {
@@ -50,6 +196,7 @@ function Events() {
   const [hoveredEvent, setHoveredEvent] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
   const [featuredEventIds] = useState([1, 2]);
+  const [usingGoogleCalendar, setUsingGoogleCalendar] = useState(false);
 
   const months = useMemo(() => ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"], []);
   const monthAbbr = useMemo(() => ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], []);
@@ -65,22 +212,55 @@ function Events() {
     { id: "ceremony", name: "Ceremonies", icon: "🏆", color: "#ff0080" }
   ], []);
 
-  // Load events from localStorage
+  // Load events from Google Calendar with fallback
   useEffect(() => {
-    const loadEvents = () => {
-      const savedEvents = getEvents();
-      setEvents(savedEvents);
-      setLoading(false);
-    };
-    loadEvents();
-    
-    const handleStorageChange = (e) => {
-      if (e.key === 'admin_events') {
-        loadEvents();
+    const loadEvents = async () => {
+      setLoading(true);
+      try {
+        // Try to fetch from Google Calendar first
+        const googleEvents = await fetchGoogleCalendarEvents();
+        
+        if (googleEvents && googleEvents.length > 0) {
+          setEvents(googleEvents);
+          setUsingGoogleCalendar(true);
+          console.log(`Events loaded from Google Calendar: ${googleEvents.length} events`);
+        } else {
+          // Fallback to JSON Bin if Google Calendar returns nothing
+          const data = await getEvents();
+          if (data && data.length > 0) {
+            setEvents(data);
+            setUsingGoogleCalendar(false);
+            console.log('Events loaded from JSON Bin:', data.length);
+          } else {
+            // Final fallback to defaults
+            setEvents(DEFAULT_EVENTS);
+            setUsingGoogleCalendar(false);
+            console.log('Events using defaults:', DEFAULT_EVENTS.length);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading events, trying fallback:', error);
+        // Try JSON Bin as fallback
+        try {
+          const data = await getEvents();
+          if (data && data.length > 0) {
+            setEvents(data);
+            setUsingGoogleCalendar(false);
+            console.log('Events loaded from JSON Bin (fallback):', data.length);
+          } else {
+            setEvents(DEFAULT_EVENTS);
+            setUsingGoogleCalendar(false);
+          }
+        } catch (fallbackError) {
+          console.error('All sources failed, using defaults:', fallbackError);
+          setEvents(DEFAULT_EVENTS);
+          setUsingGoogleCalendar(false);
+        }
+      } finally {
+        setLoading(false);
       }
     };
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    loadEvents();
   }, []);
 
   const filteredEvents = useMemo(() => {
@@ -129,6 +309,22 @@ function Events() {
 
       <section className="py-4" aria-labelledby="events-heading"><Container><h1 id="events-heading" className="section-heading mb-3 text-center">School Calendar & Events</h1>
         <p className="lead text-center mb-4 px-3 px-md-5" style={{ maxWidth: "900px", margin: "0 auto 2rem", color: 'var(--text-dark)', fontSize: '1rem' }}>Filter events by category to quickly find academic, sports, and school activities relevant to your child.</p>
+        
+        {/* Source indicator */}
+        {!loading && (
+          <div className="text-center mb-3">
+            <span className="badge" style={{ 
+              backgroundColor: usingGoogleCalendar ? '#1a73e8' : '#050265', 
+              color: 'white',
+              padding: '6px 16px',
+              borderRadius: '50px',
+              fontSize: '0.75rem'
+            }}>
+              {usingGoogleCalendar ? '📅 Synced with Google Calendar' : '📋 Using School Calendar'}
+            </span>
+          </div>
+        )}
+
         <div className="d-flex flex-wrap justify-content-center gap-2 mb-4" role="group" aria-label="Event categories">{categories.map(category => (<CategoryButton key={category.id} category={category} isActive={selectedCategory === category.id} onClick={handleCategoryChange} />))}</div>
         <Row className="g-4">
           <Col lg={8}><div className="upcoming-header d-flex justify-content-between align-items-center mb-3"><h2 className="card-title-navy h5 fw-bold mb-0">{selectedCategory === 'all' ? 'All Events' : `${categories.find(c => c.id === selectedCategory)?.name} Events`}<span className="ms-2 small text-muted">({monthAbbr[selectedMonth]} {selectedYear})</span></h2></div>
