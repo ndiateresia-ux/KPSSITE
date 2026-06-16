@@ -1,4 +1,4 @@
-// pages/Apply.jsx - Fixed navigation and form submission
+// pages/Apply.jsx - Fixed navigation, Google sign-in, and form submission
 import { Helmet } from "react-helmet-async";
 import { Container, Row, Col, Form, Button, Card, Alert } from "react-bootstrap";
 import { useState, useEffect, useCallback, memo, lazy, Suspense } from "react";
@@ -316,15 +316,6 @@ function Apply() {
   const GMAIL_SCOPES = import.meta.env.VITE_GMAIL_SCOPES || 'https://www.googleapis.com/auth/gmail.send';
   const SITE_URL = import.meta.env.VITE_SITE_URL || window.location.origin;
 
-  // Validate Google Client ID on mount
-  useEffect(() => {
-    if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID === '') {
-      console.warn('⚠️ Google Client ID is not configured. Please add VITE_GOOGLE_CLIENT_ID to your .env file.');
-    } else {
-      console.log('✅ Google Client ID is configured');
-    }
-  }, [GOOGLE_CLIENT_ID]);
-
   // ==================== HELPER FUNCTIONS ====================
   const getTodayDate = () => {
     const today = new Date();
@@ -411,20 +402,15 @@ function Apply() {
     return [];
   }, [formData.gradeApplying]);
 
-  // FIXED: Validate step with proper return values
+  // ==================== VALIDATE STEP ====================
   const validateStep = useCallback((step) => {
     if (step === 1) {
-      const isValid = formData.parentName && formData.email && formData.phone && formData.relationship;
-      console.log('Step 1 validation:', { isValid, parentName: formData.parentName, email: formData.email, phone: formData.phone, relationship: formData.relationship });
-      return isValid;
+      return !!(formData.parentName && formData.email && formData.phone && formData.relationship);
     }
     if (step === 2) {
-      const isValid = formData.childName && formData.dateOfBirth && !dateError && formData.gender && formData.gradeApplying;
-      console.log('Step 2 validation:', { isValid, childName: formData.childName, dateOfBirth: formData.dateOfBirth, dateError, gender: formData.gender, gradeApplying: formData.gradeApplying });
-      return isValid;
+      return !!(formData.childName && formData.dateOfBirth && !dateError && formData.gender && formData.gradeApplying);
     }
     if (step === 3) {
-      // Step 3 has no required fields, always valid
       return true;
     }
     if (step === 4) {
@@ -433,19 +419,13 @@ function Apply() {
     return true;
   }, [formData, dateError]);
 
-  // ==================== NAVIGATION HANDLERS - FIXED ====================
+  // ==================== NAVIGATION HANDLERS - FIXED (NO SCROLL) ====================
   const handleNextStep = useCallback(() => {
-    console.log('Attempting to move to next step. Current step:', currentStep);
-    
     if (validateStep(currentStep)) {
-      const nextStep = Math.min(currentStep + 1, 4);
-      console.log('Validation passed. Moving to step:', nextStep);
-      setCurrentStep(nextStep);
-      setValidated(false); // Reset validation for next step
-      // Scroll to top of form
-      window.scrollTo({ top: 300, behavior: 'smooth' });
+      setCurrentStep(prev => Math.min(prev + 1, 4));
+      setValidated(false);
+      // REMOVED: window.scrollTo - stay in same position
     } else {
-      console.log('Validation failed for step:', currentStep);
       setValidated(true);
       setSubmitStatus({ 
         show: true, 
@@ -458,8 +438,8 @@ function Apply() {
 
   const handlePrevStep = useCallback(() => {
     setCurrentStep(prev => Math.max(prev - 1, 1));
-    setValidated(false); // Reset validation when going back
-    window.scrollTo({ top: 300, behavior: 'smooth' });
+    setValidated(false);
+    // REMOVED: window.scrollTo - stay in same position
   }, []);
 
   // ==================== GENERATE PDF ====================
@@ -677,11 +657,13 @@ function Apply() {
   const handleSubmit = useCallback((e) => {
     e.preventDefault();
     
-    if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID === '') {
+    // Check if Google Client ID is configured
+    if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID === '' || GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID') {
+      // Show a more helpful message with alternative contact method
       setSubmitStatus({ 
         show: true, 
         success: false, 
-        message: "Google sign-in is not configured. Please contact the school directly at +254 736 756 595." 
+        message: "Online application is temporarily unavailable. Please contact our admissions office directly at +254 736 756 595 or email admissions@kitaleprogressiveschool.com to complete your application." 
       });
       return;
     }
@@ -789,7 +771,7 @@ function Apply() {
       </section>
 
       {!formSubmitted && (
-        <section className="section-padding">
+        <section className="section-padding" id="application-form">
           <Container>
             <Row className="justify-content-center">
               <Col lg={11}>
