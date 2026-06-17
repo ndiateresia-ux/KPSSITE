@@ -1,4 +1,4 @@
-// pages/Apply.jsx - COMPLETE FIXED VERSION
+// pages/Apply.jsx - With Proper Theme Font Sizes and Complete Medical Information (No Medications)
 import { Helmet } from "react-helmet-async";
 import { Container, Row, Col, Form, Button, Card, Alert } from "react-bootstrap";
 import { useState, useEffect, useCallback, memo, lazy, Suspense } from "react";
@@ -10,7 +10,7 @@ import parsePhoneNumber from 'libphonenumber-js';
 
 const GetInTouch = lazy(() => import("../components/GetInTouch"));
 
-// ==================== HELPER FUNCTIONS ====================
+// Helper function for Unicode-safe base64 encoding
 const utf8ToBase64 = (str) => {
   const utf8Bytes = new TextEncoder().encode(str);
   let binaryString = '';
@@ -20,6 +20,7 @@ const utf8ToBase64 = (str) => {
   return btoa(binaryString);
 };
 
+// Helper function to convert image to base64
 const getImageBase64 = (imagePath) => {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -38,13 +39,14 @@ const getImageBase64 = (imagePath) => {
   });
 };
 
-// ==================== FORM INPUT COMPONENT ====================
+// Memoized form input component
 const FormInput = memo(({ 
   label, type = "text", name, value, onChange, placeholder, required = false,
   feedback, as, options, describedBy, autoComplete, max, min
 }) => {
   const id = `input-${name}`;
   const errorId = `${id}-error`;
+  const descriptionId = describedBy || (required ? errorId : undefined);
   
   return (
     <Form.Group controlId={id} className="mb-3">
@@ -56,10 +58,11 @@ const FormInput = memo(({
         <Form.Select 
           required={required}
           name={name}
-          value={value || ''}
+          value={value}
           onChange={onChange}
           className="form-control-custom"
-          aria-describedby={required && !value ? errorId : undefined}
+          aria-invalid={required && !value ? "true" : "false"}
+          aria-describedby={descriptionId}
           autoComplete={autoComplete}
         >
           <option value="">Select</option>
@@ -73,12 +76,13 @@ const FormInput = memo(({
           type={type}
           required={required}
           name={name}
-          value={value || ''}
+          value={value}
           onChange={onChange}
           placeholder={placeholder}
           className="form-control-custom"
           rows={as === 'textarea' ? 3 : undefined}
-          aria-describedby={required && !value ? errorId : undefined}
+          aria-invalid={required && !value ? "true" : "false"}
+          aria-describedby={descriptionId}
           autoComplete={autoComplete}
           max={max}
           min={min}
@@ -95,7 +99,7 @@ const FormInput = memo(({
 
 FormInput.displayName = 'FormInput';
 
-// ==================== PHONE INPUT FIELD ====================
+// Phone input component
 const PhoneInputField = memo(({ phone, onChange, error, validated }) => {
   const id = "phone-input-field";
   const errorId = `${id}-error`;
@@ -139,7 +143,7 @@ const PhoneInputField = memo(({ phone, onChange, error, validated }) => {
 
 PhoneInputField.displayName = 'PhoneInputField';
 
-// ==================== PROGRESS INDICATOR ====================
+// Progress indicator component
 const ProgressIndicator = memo(({ currentStep, totalSteps = 4 }) => {
   const steps = [
     { number: 1, label: "Parent Info" },
@@ -179,7 +183,7 @@ const ProgressIndicator = memo(({ currentStep, totalSteps = 4 }) => {
 
 ProgressIndicator.displayName = 'ProgressIndicator';
 
-// ==================== SIMPLE CHECKBOX ====================
+// Simple checkbox component
 const SimpleCheckbox = memo(({ label, name, checked, onChange, id }) => {
   const checkboxId = id || `checkbox-${name}`;
   
@@ -190,7 +194,7 @@ const SimpleCheckbox = memo(({ label, name, checked, onChange, id }) => {
           type="checkbox"
           id={checkboxId}
           name={name}
-          checked={checked || false}
+          checked={checked}
           onChange={onChange}
           className="terms-checkbox-input"
         />
@@ -204,7 +208,7 @@ const SimpleCheckbox = memo(({ label, name, checked, onChange, id }) => {
 
 SimpleCheckbox.displayName = 'SimpleCheckbox';
 
-// ==================== TERMS CHECKBOX ====================
+// Terms checkbox component
 const TermsCheckbox = memo(({ checked, onChange, required = false }) => {
   const checkboxId = "agreeToTerms";
   const errorId = `${checkboxId}-error`;
@@ -218,7 +222,7 @@ const TermsCheckbox = memo(({ checked, onChange, required = false }) => {
           type="checkbox"
           id={checkboxId}
           name="agreeToTerms"
-          checked={checked || false}
+          checked={checked}
           onChange={onChange}
           onBlur={() => setTouched(true)}
           required={required}
@@ -253,7 +257,7 @@ const TermsCheckbox = memo(({ checked, onChange, required = false }) => {
 
 TermsCheckbox.displayName = 'TermsCheckbox';
 
-// ==================== STATUS ALERT ====================
+// Status alert component
 const StatusAlert = memo(({ show, success, message, onClose }) => {
   if (!show) return null;
   
@@ -276,24 +280,12 @@ const StatusAlert = memo(({ show, success, message, onClose }) => {
 
 StatusAlert.displayName = 'StatusAlert';
 
-// ==================== INITIAL FORM STATE ====================
+// Initial form state
 const INITIAL_FORM_STATE = {
-  parentName: "", 
-  email: "", 
-  phone: "", 
-  address: "", 
-  relationship: "",
-  childName: "", 
-  dateOfBirth: "", 
-  gender: "", 
-  nationality: "", 
-  otherNationality: "",
-  previousSchool: "", 
-  gradeApplying: "", 
-  stayStatus: "", 
-  hasAllergies: false, 
-  allergyDetails: "", 
-  medicalConditions: "",
+  parentName: "", email: "", phone: "", address: "", relationship: "",
+  childName: "", dateOfBirth: "", gender: "", nationality: "", otherNationality: "",
+  previousSchool: "", gradeApplying: "", stayStatus: "", 
+  hasAllergies: false, allergyDetails: "", medicalConditions: "",
   agreeToTerms: false
 };
 
@@ -309,37 +301,12 @@ function Apply() {
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [dateError, setDateError] = useState("");
-  const [debugInfo, setDebugInfo] = useState("");
 
-  // ==================== ENVIRONMENT VARIABLES ====================
   const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_GMAIL_CLIENT_ID;
   const ADMISSIONS_EMAIL = import.meta.env.VITE_ADMISSIONS_EMAIL || 'ndiateresia@gmail.com';
   const GMAIL_SCOPES = import.meta.env.VITE_GMAIL_SCOPES || 'https://www.googleapis.com/auth/gmail.send';
-  const SITE_URL = import.meta.env.VITE_SITE_URL || window.location.origin;
+  const SITE_URL = import.meta.env.VITE_SITE_URL || 'http://localhost:5173';
 
-  // ==================== DIAGNOSTIC LOGGING ====================
-  useEffect(() => {
-    console.log('🔍 === GOOGLE OAUTH DIAGNOSTIC ===');
-    console.log('📌 GOOGLE_CLIENT_ID:', GOOGLE_CLIENT_ID);
-    console.log('📌 Client ID valid?', GOOGLE_CLIENT_ID?.endsWith('.apps.googleusercontent.com'));
-    console.log('📌 Current Origin:', window.location.origin);
-    console.log('📌 SITE_URL:', SITE_URL);
-    console.log('📌 GMAIL_SCOPES:', GMAIL_SCOPES);
-    console.log('📌 ADMISSIONS_EMAIL:', ADMISSIONS_EMAIL);
-    
-    // Check if origin matches
-    const origin = window.location.origin;
-    const expectedOrigins = ['http://localhost:5173', 'http://localhost:3000', 'https://kpssite-t36u.vercel.app'];
-    const isOriginValid = expectedOrigins.some(expected => origin === expected);
-    console.log('📌 Origin valid?', isOriginValid);
-    
-    if (!isOriginValid) {
-      console.warn('⚠️ Current origin not in authorized list!');
-      console.warn(`Add "${origin}" to Authorized JavaScript Origins`);
-    }
-  }, [GOOGLE_CLIENT_ID, SITE_URL, GMAIL_SCOPES, ADMISSIONS_EMAIL]);
-
-  // ==================== HELPER FUNCTIONS ====================
   const getTodayDate = () => {
     const today = new Date();
     return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
@@ -365,7 +332,6 @@ function Apply() {
     return true;
   }, []);
 
-  // ==================== LOAD LOGO ====================
   useEffect(() => {
     const loadLogo = async () => {
       try {
@@ -387,7 +353,6 @@ function Apply() {
     }
   }, []);
 
-  // ==================== HANDLERS ====================
   const handleChange = useCallback((e) => {
     const { name, value, type, checked } = e.target;
     if (name === 'dateOfBirth') validateDateOfBirth(value);
@@ -425,293 +390,208 @@ function Apply() {
     return [];
   }, [formData.gradeApplying]);
 
-  // ==================== VALIDATE STEP ====================
   const validateStep = useCallback((step) => {
-    if (step === 1) {
-      return !!(formData.parentName && formData.email && formData.phone && formData.relationship);
-    }
-    if (step === 2) {
-      return !!(formData.childName && formData.dateOfBirth && !dateError && formData.gender && formData.gradeApplying);
-    }
-    if (step === 3) {
-      return true;
-    }
-    if (step === 4) {
-      return formData.agreeToTerms;
-    }
+    if (step === 1) return formData.parentName && formData.email && formData.phone && formData.relationship;
+    if (step === 2) return formData.childName && formData.dateOfBirth && !dateError && formData.gender && formData.gradeApplying;
+    if (step === 3) return true; // Medical info is optional
     return true;
   }, [formData, dateError]);
 
-  // ==================== NAVIGATION HANDLERS ====================
-  const handleNextStep = useCallback(() => {
+  const handleNextStep = useCallback((e) => {
+    e.preventDefault();
     if (validateStep(currentStep)) {
       setCurrentStep(prev => Math.min(prev + 1, 4));
-      setValidated(false);
     } else {
       setValidated(true);
-      setSubmitStatus({ 
-        show: true, 
-        success: false, 
-        message: "Please complete all required fields before proceeding." 
-      });
+      setSubmitStatus({ show: true, success: false, message: "Please complete all required fields before proceeding." });
       setTimeout(() => setSubmitStatus(prev => ({ ...prev, show: false })), 3000);
     }
   }, [currentStep, validateStep]);
 
-  const handlePrevStep = useCallback(() => {
+  const handlePrevStep = useCallback((e) => {
+    e.preventDefault();
     setCurrentStep(prev => Math.max(prev - 1, 1));
-    setValidated(false);
   }, []);
 
-  // ==================== GENERATE PDF ====================
   const generatePDF = useCallback(async () => {
-    try {
-      const jsPDFModule = await import("jspdf");
-      const jsPDF = jsPDFModule.default;
-      const doc = new jsPDF();
-      
-      if (logoBase64) doc.addImage(logoBase64, 'JPEG', 14, 10, 40, 40);
-      doc.setFontSize(20);
-      doc.setTextColor(13, 101, 251);
-      doc.text('Kitale Progressive School', 60, 25);
-      doc.setFontSize(12);
-      doc.setTextColor(100, 100, 100);
-      doc.text('Admission Application Form', 60, 35);
-      doc.setFontSize(10);
-      doc.setTextColor(0, 0, 0);
-      doc.text(`Application #: KPS/${new Date().getFullYear()}/${String(applicationCounter).padStart(4, '0')}`, 14, 55);
-      doc.text(`Date: ${new Date().toLocaleDateString()}`, 14, 62);
-      
-      let yPos = 75;
-      doc.setFontSize(12);
-      doc.setTextColor(13, 101, 251);
-      doc.text('Parent/Guardian Information', 14, yPos);
-      yPos += 8;
-      doc.setFontSize(10);
-      doc.setTextColor(0, 0, 0);
-      doc.text(`Name: ${formData.parentName || 'Not provided'}`, 14, yPos);
+    const jsPDFModule = await import("jspdf");
+    const jsPDF = jsPDFModule.default;
+    const doc = new jsPDF();
+    
+    if (logoBase64) doc.addImage(logoBase64, 'JPEG', 14, 10, 40, 40);
+    doc.setFontSize(20);
+    doc.setTextColor(13, 101, 251);
+    doc.text('Kitale Progressive School', 60, 25);
+    doc.setFontSize(12);
+    doc.setTextColor(100, 100, 100);
+    doc.text('Admission Application Form', 60, 35);
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0);
+    doc.text(`Application #: KPS/${new Date().getFullYear()}/${String(applicationCounter).padStart(4, '0')}`, 14, 55);
+    doc.text(`Date: ${new Date().toLocaleDateString()}`, 14, 62);
+    
+    let yPos = 75;
+    doc.setFontSize(12);
+    doc.setTextColor(13, 101, 251);
+    doc.text('Parent/Guardian Information', 14, yPos);
+    yPos += 8;
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0);
+    doc.text(`Name: ${formData.parentName || 'Not provided'}`, 14, yPos);
+    yPos += 6;
+    doc.text(`Email: ${formData.email || 'Not provided'}`, 14, yPos);
+    yPos += 6;
+    doc.text(`Phone: ${formData.phone || 'Not provided'}`, 14, yPos);
+    yPos += 6;
+    doc.text(`Relationship: ${formData.relationship || 'Not provided'}`, 14, yPos);
+    yPos += 6;
+    doc.text(`Address: ${formData.address || 'Not provided'}`, 14, yPos);
+    
+    yPos += 12;
+    doc.setFontSize(12);
+    doc.setTextColor(13, 101, 251);
+    doc.text('Child Information', 14, yPos);
+    yPos += 8;
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0);
+    doc.text(`Name: ${formData.childName || 'Not provided'}`, 14, yPos);
+    yPos += 6;
+    doc.text(`Date of Birth: ${formData.dateOfBirth || 'Not provided'}`, 14, yPos);
+    yPos += 6;
+    doc.text(`Gender: ${formData.gender || 'Not provided'}`, 14, yPos);
+    yPos += 6;
+    doc.text(`Nationality: ${formData.nationality === 'Other' ? formData.otherNationality : formData.nationality || 'Not provided'}`, 14, yPos);
+    yPos += 6;
+    doc.text(`Previous School: ${formData.previousSchool || 'Not provided'}`, 14, yPos);
+    yPos += 6;
+    doc.text(`Grade Applying: ${formData.gradeApplying || 'Not provided'}`, 14, yPos);
+    yPos += 6;
+    if (formData.stayStatus) {
+      const statusMap = { 'full-day': 'Full Day', 'half-day': 'Half Day', 'boarding': 'Boarding', 'day': 'Day Scholar' };
+      doc.text(`Stay Status: ${statusMap[formData.stayStatus] || formData.stayStatus}`, 14, yPos);
       yPos += 6;
-      doc.text(`Email: ${formData.email || 'Not provided'}`, 14, yPos);
-      yPos += 6;
-      doc.text(`Phone: ${formData.phone || 'Not provided'}`, 14, yPos);
-      yPos += 6;
-      doc.text(`Relationship: ${formData.relationship || 'Not provided'}`, 14, yPos);
-      yPos += 6;
-      doc.text(`Address: ${formData.address || 'Not provided'}`, 14, yPos);
-      
-      yPos += 12;
-      doc.setFontSize(12);
-      doc.setTextColor(13, 101, 251);
-      doc.text('Child Information', 14, yPos);
-      yPos += 8;
-      doc.setFontSize(10);
-      doc.setTextColor(0, 0, 0);
-      doc.text(`Name: ${formData.childName || 'Not provided'}`, 14, yPos);
-      yPos += 6;
-      doc.text(`Date of Birth: ${formData.dateOfBirth || 'Not provided'}`, 14, yPos);
-      yPos += 6;
-      doc.text(`Gender: ${formData.gender || 'Not provided'}`, 14, yPos);
-      yPos += 6;
-      doc.text(`Nationality: ${formData.nationality === 'Other' ? formData.otherNationality : formData.nationality || 'Not provided'}`, 14, yPos);
-      yPos += 6;
-      doc.text(`Previous School: ${formData.previousSchool || 'Not provided'}`, 14, yPos);
-      yPos += 6;
-      doc.text(`Grade Applying: ${formData.gradeApplying || 'Not provided'}`, 14, yPos);
-      yPos += 6;
-      if (formData.stayStatus) {
-        const statusMap = { 'full-day': 'Full Day', 'half-day': 'Half Day', 'boarding': 'Boarding', 'day': 'Day Scholar' };
-        doc.text(`Stay Status: ${statusMap[formData.stayStatus] || formData.stayStatus}`, 14, yPos);
-        yPos += 6;
-      }
-      
-      yPos += 12;
-      doc.setFontSize(12);
-      doc.setTextColor(13, 101, 251);
-      doc.text('Medical Information', 14, yPos);
-      yPos += 8;
-      doc.setFontSize(10);
-      doc.setTextColor(0, 0, 0);
-      doc.text(`Allergies: ${formData.hasAllergies ? 'Yes' : 'No'}`, 14, yPos);
-      yPos += 6;
-      if (formData.hasAllergies && formData.allergyDetails) {
-        doc.text(`Allergy Details: ${formData.allergyDetails}`, 14, yPos);
-        yPos += 6;
-      }
-      if (formData.medicalConditions) {
-        doc.text(`Medical Conditions: ${formData.medicalConditions}`, 14, yPos);
-        yPos += 6;
-      }
-      
-      doc.setFontSize(8);
-      doc.setTextColor(150, 150, 150);
-      doc.text('This is an automatically generated application confirmation.', 14, 280);
-      doc.text('Please keep this for your records.', 14, 286);
-      
-      return doc;
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      throw new Error('Could not generate PDF. Please try again.');
     }
+    
+    yPos += 12;
+    doc.setFontSize(12);
+    doc.setTextColor(13, 101, 251);
+    doc.text('Medical Information', 14, yPos);
+    yPos += 8;
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0);
+    doc.text(`Allergies: ${formData.hasAllergies ? 'Yes' : 'No'}`, 14, yPos);
+    yPos += 6;
+    if (formData.hasAllergies && formData.allergyDetails) {
+      doc.text(`Allergy Details: ${formData.allergyDetails}`, 14, yPos);
+      yPos += 6;
+    }
+    if (formData.medicalConditions) {
+      doc.text(`Medical Conditions: ${formData.medicalConditions}`, 14, yPos);
+      yPos += 6;
+    }
+    
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150);
+    doc.text('This is an automatically generated application confirmation.', 14, 280);
+    doc.text('Please keep this for your records.', 14, 286);
+    
+    return doc;
   }, [formData, applicationCounter, logoBase64]);
 
-  // ==================== SEND EMAIL ====================
   const sendEmailViaGmail = useCallback(async (accessToken, pdfDoc) => {
-    try {
-      console.log('📧 Starting email send process...');
-      
-      const pdfOutput = pdfDoc.output('datauristring');
-      const pdfBase64 = pdfOutput.split(',')[1];
-      const applicationRef = `KPS/${new Date().getFullYear()}/${String(applicationCounter).padStart(4, '0')}`;
-      
-      console.log('📝 Application Reference:', applicationRef);
-      console.log('📧 Sending to:', formData.email);
-      console.log('📧 CC:', ADMISSIONS_EMAIL);
-      
-      const emailContent = `
-        <html><body>
-          <h2 style="color:#0d65fb;">Application Received</h2>
-          <p>Dear ${formData.parentName},</p>
-          <p>Thank you for submitting an application for <strong>${formData.childName}</strong> to Kitale Progressive School.</p>
-          <p><strong>Application Reference:</strong> ${applicationRef}</p>
-          <p><strong>Grade Applying For:</strong> ${formData.gradeApplying}</p>
-          <h3>Next Steps:</h3>
-          <ol>
-            <li>Our team will review your application within 2-3 business days.</li>
-            <li>You will receive a follow-up call or email to discuss the next steps.</li>
-            <li>We may invite you for a school tour or assessment.</li>
-          </ol>
-          <p>Please find attached a copy of your application for your records.</p>
-          <p>Warm regards,<br>Admissions Office<br>Kitale Progressive School</p>
-        </body></html>
-      `;
-      
-      const emailBoundary = `boundary_${Date.now()}`;
-      const emailData = [
-        `From: Kitale Progressive School <${ADMISSIONS_EMAIL}>`,
-        `To: ${formData.email}`,
-        `Cc: ${ADMISSIONS_EMAIL}`,
-        `Subject: Application Received - ${formData.childName} - ${applicationRef}`,
-        'MIME-Version: 1.0',
-        `Content-Type: multipart/mixed; boundary="${emailBoundary}"`,
-        '',
-        `--${emailBoundary}`,
-        'Content-Type: text/html; charset="UTF-8"',
-        '',
-        emailContent,
-        '',
-        `--${emailBoundary}`,
-        'Content-Type: application/pdf; name="application_form.pdf"',
-        'Content-Transfer-Encoding: base64',
-        'Content-Disposition: attachment; filename="application_form.pdf"',
-        '',
-        pdfBase64,
-        '',
-        `--${emailBoundary}--`
-      ].join('\r\n');
-      
-      console.log('📤 Sending email via Gmail API...');
-      
-      const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
-        method: 'POST',
-        headers: { 
-          'Authorization': `Bearer ${accessToken}`, 
-          'Content-Type': 'application/json' 
-        },
-        body: JSON.stringify({ raw: utf8ToBase64(emailData) })
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('❌ Gmail API Error:', errorData);
-        throw new Error(errorData.error?.message || 'Failed to send email');
-      }
-      
-      console.log('✅ Email sent successfully!');
-      return true;
-    } catch (error) {
-      console.error('❌ Error sending email:', error);
-      throw error;
-    }
+    const pdfOutput = pdfDoc.output('datauristring');
+    const pdfBase64 = pdfOutput.split(',')[1];
+    const applicationRef = `KPS/${new Date().getFullYear()}/${String(applicationCounter).padStart(4, '0')}`;
+    
+    const emailContent = `
+      <html><body>
+        <h2 style="color:#0d65fb;">Application Received</h2>
+        <p>Dear ${formData.parentName},</p>
+        <p>Thank you for submitting an application for <strong>${formData.childName}</strong> to Kitale Progressive School.</p>
+        <p><strong>Application Reference:</strong> ${applicationRef}</p>
+        <p><strong>Grade Applying For:</strong> ${formData.gradeApplying}</p>
+        <h3>Next Steps:</h3>
+        <ol>
+          <li>Our team will review your application within 2-3 business days.</li>
+          <li>You will receive a follow-up call or email to discuss the next steps.</li>
+          <li>We may invite you for a school tour or assessment.</li>
+        </ol>
+        <p>Please find attached a copy of your application for your records.</p>
+        <p>Warm regards,<br>Admissions Office<br>Kitale Progressive School</p>
+      </body></html>
+    `;
+    
+    const emailBoundary = `boundary_${Date.now()}`;
+    const emailData = [
+      `From: Kitale Progressive School <${ADMISSIONS_EMAIL}>`,
+      `To: ${formData.email}`,
+      `Cc: ${ADMISSIONS_EMAIL}`,
+      `Subject: Application Received - ${formData.childName} - ${applicationRef}`,
+      'MIME-Version: 1.0',
+      `Content-Type: multipart/mixed; boundary="${emailBoundary}"`,
+      '',
+      `--${emailBoundary}`,
+      'Content-Type: text/html; charset="UTF-8"',
+      '',
+      emailContent,
+      '',
+      `--${emailBoundary}`,
+      'Content-Type: application/pdf; name="application_form.pdf"',
+      'Content-Transfer-Encoding: base64',
+      'Content-Disposition: attachment; filename="application_form.pdf"',
+      '',
+      pdfBase64,
+      '',
+      `--${emailBoundary}--`
+    ].join('\r\n');
+    
+    const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ raw: utf8ToBase64(emailData) })
+    });
+    if (!response.ok) throw new Error('Failed to send email');
   }, [formData, applicationCounter, ADMISSIONS_EMAIL]);
 
-  // ==================== GOOGLE LOGIN - FIXED ====================
   const login = useGoogleLogin({
+    clientId: GOOGLE_CLIENT_ID,
+    scope: GMAIL_SCOPES,
+    redirectUri: `${SITE_URL}/auth/callback`,
     onSuccess: async (tokenResponse) => {
-      console.log('✅ Google Login Success:', tokenResponse);
       setSubmitting(true);
-      setDebugInfo("Google login successful, processing application...");
-      
       try {
         localStorage.setItem('lastApplicationNumber', applicationCounter.toString());
-        setDebugInfo("Generating PDF...");
         const pdfDoc = await generatePDF();
-        setDebugInfo("PDF generated, sending email...");
         await sendEmailViaGmail(tokenResponse.access_token, pdfDoc);
-        setDebugInfo("Email sent successfully!");
-        
         setFormSubmitted(true);
-        setSubmitStatus({ 
-          show: true, 
-          success: true, 
-          message: "Application submitted successfully! Check your email for confirmation." 
-        });
+        setSubmitStatus({ show: true, success: true, message: "Application submitted successfully! Check your email for confirmation." });
         setFormData(INITIAL_FORM_STATE);
         setPhone("");
         setCurrentStep(1);
       } catch (error) {
-        console.error('❌ Submission error:', error);
-        setDebugInfo(`Error: ${error.message}`);
-        setSubmitStatus({ 
-          show: true, 
-          success: false, 
-          message: `Error: ${error.message}. Please try again or contact the school directly.` 
-        });
+        console.error('Submission error:', error);
+        setSubmitStatus({ show: true, success: false, message: error.message || "Failed to submit application. Please try again." });
       } finally {
         setSubmitting(false);
       }
     },
     onError: (errorResponse) => {
-      console.error('❌ Login Failed:', errorResponse);
-      console.error('Full error:', JSON.stringify(errorResponse, null, 2));
-      
+      console.error('Login Failed:', errorResponse);
       let errorMessage = "Google sign-in failed. ";
-      
       if (errorResponse?.error === 'popup_blocked_by_browser') {
         errorMessage += "Please allow popups for this site.";
       } else if (errorResponse?.error === 'access_denied') {
         errorMessage += "You denied access to your account.";
-      } else if (errorResponse?.error === 'invalid_client') {
-        errorMessage += "The OAuth client was not found. Please check your Client ID.";
-      } else if (errorResponse?.error === 'idpiframe_initialization_failed') {
-        errorMessage += "Google login configuration error.";
       } else {
-        errorMessage += `Error: ${errorResponse?.error || 'Unknown error'}`;
+        errorMessage += "Please try again.";
       }
-      
-      setDebugInfo(`Login Error: ${errorMessage}`);
       setSubmitStatus({ show: true, success: false, message: errorMessage });
       setSubmitting(false);
-    },
-    // CRITICAL FIX: Set the redirect_uri explicitly
-    redirect_uri: window.location.origin + '/',
-    flow: 'implicit',
-    scope: GMAIL_SCOPES,
+    }
   });
 
-  // ==================== HANDLE FORM SUBMIT ====================
   const handleSubmit = useCallback((e) => {
     e.preventDefault();
-    console.log('📝 Form submitted');
-    
-    if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID === '' || GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID') {
-      setSubmitStatus({ 
-        show: true, 
-        success: false, 
-        message: "Google sign-in is not configured. Please contact the school directly." 
-      });
-      return;
-    }
-    
     if (!formData.agreeToTerms) {
       setSubmitStatus({ show: true, success: false, message: "Please agree to the terms and conditions." });
       return;
@@ -720,13 +600,13 @@ function Apply() {
       setSubmitStatus({ show: true, success: false, message: phoneError || "Phone number is required." });
       return;
     }
-    
-    console.log('🔄 Initiating Google login...');
-    setDebugInfo("Initiating Google login...");
+    if (!GOOGLE_CLIENT_ID) {
+      setSubmitStatus({ show: true, success: false, message: "Configuration error. Please contact support." });
+      return;
+    }
     login();
   }, [formData.agreeToTerms, phoneError, phone, login, GOOGLE_CLIENT_ID]);
 
-  // ==================== GRADE OPTIONS ====================
   const gradeOptions = [
     { value: "Playgroup", label: "Playgroup" },
     { value: "PP1", label: "PP1" },
@@ -741,7 +621,6 @@ function Apply() {
     { icon: "fa-futbol", text: "Balanced academic and co-curricular development" }
   ];
 
-  // ==================== RENDER ====================
   return (
     <>
       <Helmet>
@@ -817,19 +696,11 @@ function Apply() {
       </section>
 
       {!formSubmitted && (
-        <section className="section-padding" id="application-form">
+        <section className="section-padding">
           <Container>
             <Row className="justify-content-center">
               <Col lg={11}>
                 <StatusAlert show={submitStatus.show} success={submitStatus.success} message={submitStatus.message} onClose={handleDismissAlert} />
-                
-                {debugInfo && (
-                  <Alert variant="info" className="mb-3 small">
-                    <i className="fas fa-spinner fa-spin me-2"></i>
-                    {debugInfo}
-                  </Alert>
-                )}
-                
                 <Card className="card-custom shadow-lg border-0">
                   <Card.Body className="p-4 p-lg-5">
                     <h2 className="section-heading mb-4">Complete Your Application</h2>
@@ -837,10 +708,10 @@ function Apply() {
                     
                     <ProgressIndicator currentStep={currentStep} totalSteps={4} />
                     
-                    <Form noValidate validated={validated} onSubmit={(e) => currentStep === 4 ? handleSubmit(e) : e.preventDefault()}>
+                    <Form noValidate validated={validated} onSubmit={(e) => currentStep === 4 ? handleSubmit(e) : handleNextStep(e)}>
                       {/* Step 1: Parent Info */}
                       {currentStep === 1 && (
-                        <div className="mt-4">
+                        <div>
                           <h3 className="text-navy fw-bold mb-3 pb-2 border-bottom" style={{ fontSize: '1rem' }}>Parent/Guardian Information</h3>
                           <Row className="g-3">
                             <Col md={6}>
@@ -874,7 +745,7 @@ function Apply() {
 
                       {/* Step 2: Child Info */}
                       {currentStep === 2 && (
-                        <div className="mt-4">
+                        <div>
                           <h3 className="text-navy fw-bold mb-3 pb-2 border-bottom" style={{ fontSize: '1rem' }}>Child's Information</h3>
                           <Row className="g-3">
                             <Col md={12}>
@@ -930,12 +801,13 @@ function Apply() {
                         </div>
                       )}
 
-                      {/* Step 3: Medical Information */}
+                      {/* Step 3: Medical Information - WITHOUT Medications */}
                       {currentStep === 3 && (
-                        <div className="mt-4">
+                        <div>
                           <h3 className="text-navy fw-bold mb-3 pb-2 border-bottom" style={{ fontSize: '1rem' }}>Medical Information</h3>
                           <p className="text-muted small mb-3">This information helps us ensure your child receives the best possible care while at school.</p>
                           
+                          {/* Allergies Section */}
                           <div className="mb-4 p-3 rounded-3" style={{ background: 'var(--gray-light)' }}>
                             <SimpleCheckbox 
                               label="Does your child have any allergies?"
@@ -958,6 +830,7 @@ function Apply() {
                             )}
                           </div>
 
+                          {/* Medical Conditions */}
                           <div className="mb-4">
                             <FormInput
                               label="Medical Conditions"
@@ -972,16 +845,17 @@ function Apply() {
                             </Form.Text>
                           </div>
 
+                          {/* Emergency Contact Note */}
                           <div className="alert alert-info small p-3 mt-3" role="alert" style={{ background: '#e6f0ff', border: 'none', borderRadius: '12px' }}>
                             <i className="fas fa-info-circle me-2 text-navy" aria-hidden="true"></i>
-                            <strong>Note:</strong> This information is confidential and will only be shared with relevant school staff to ensure your child's safety and well-being.
+                            <strong>Note:</strong> This information is confidential and will only be shared with relevant school staff (class teacher and sports coaches) to ensure your child's safety and well-being.
                           </div>
                         </div>
                       )}
 
                       {/* Step 4: Review & Submit */}
                       {currentStep === 4 && (
-                        <div className="mt-4">
+                        <div>
                           <h3 className="text-navy fw-bold mb-3 pb-2 border-bottom" style={{ fontSize: '1rem' }}>Review & Submit</h3>
                           <div className="review-section mb-3">
                             <p className="fw-bold mb-1 text-navy">Parent: {formData.parentName || "Not provided"}</p>
@@ -1011,39 +885,17 @@ function Apply() {
                       {/* Navigation Buttons */}
                       <div className="d-flex justify-content-between mt-4">
                         {currentStep > 1 && (
-                          <Button 
-                            type="button"
-                            onClick={handlePrevStep} 
-                            className="btn-outline-navy"
-                            disabled={submitting}
-                          >
+                          <Button onClick={handlePrevStep} className="btn-outline-navy">
                             <i className="fas fa-arrow-left me-2"></i>Back
                           </Button>
                         )}
-                        {currentStep < 4 ? (
-                          <Button 
-                            type="button"
-                            onClick={handleNextStep} 
-                            className="btn-navy" 
-                            disabled={submitting}
-                            style={{ marginLeft: currentStep === 1 ? 'auto' : '0' }}
-                          >
-                            Continue <i className="fas fa-arrow-right ms-2"></i>
-                          </Button>
-                        ) : (
-                          <Button 
-                            type="submit" 
-                            className="btn-navy" 
-                            disabled={submitting}
-                            style={{ marginLeft: 'auto' }}
-                          >
-                            {submitting ? (
-                              <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Submitting...</>
-                            ) : (
-                              'Submit Application'
-                            )}
-                          </Button>
-                        )}
+                        <Button type="submit" className="btn-navy" disabled={submitting} style={{ marginLeft: currentStep === 1 ? 'auto' : '0' }}>
+                          {submitting ? (
+                            <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Submitting...</>
+                          ) : (
+                            currentStep === 4 ? 'Submit Application' : 'Continue'
+                          )}
+                        </Button>
                       </div>
                     </Form>
                   </Card.Body>
@@ -1124,20 +976,22 @@ function Apply() {
                   <div className="d-flex align-items-center gap-2">
                     <i className="fas fa-tachometer-alt text-white" aria-hidden="true"></i>
                     <span className="text-white small">Still having questions?</span>
-                    <Link to="/contact" className="btn-light-navy" style={{ 
-                      background: 'white', 
-                      color: '#0d65fb', 
-                      border: 'none',
-                      padding: '8px 24px',
-                      fontWeight: '600',
-                      borderRadius: '40px',
-                      textDecoration: 'none',
-                      fontSize: '0.85rem'
-                    }}>
-                      <i className="fas fa-envelope me-2" aria-hidden="true"></i>
-                      Contact Admissions
-                    </Link>
+                 <div>
+                  <Link to="/contact" className="btn-light-navy" style={{ 
+                    background: 'white', 
+                    color: '#0d65fb', 
+                    border: 'none',
+                    padding: '8px 24px',
+                    fontWeight: '600',
+                    borderRadius: '40px',
+                    textDecoration: 'none',
+                    fontSize: '0.85rem'
+                  }}>
+                    <i className="fas fa-envelope me-2" aria-hidden="true"></i>
+                    Contact Admissions
+                  </Link>
                   </div>
+                   </div>
                 </div>
               </div>
             </Col>
