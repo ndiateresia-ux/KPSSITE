@@ -1,4 +1,4 @@
-// pages/Admin.jsx - Complete Admin Panel with JSON Bin Storage (No localStorage)
+// pages/Admin.jsx - Updated with Gallery-Style Behavior for Blogs and FAQs
 import { Helmet } from "react-helmet-async";
 import { Row, Col, Card, Button, Form, Table, Modal, Alert, Spinner } from "react-bootstrap";
 import { useState, useEffect, useCallback } from "react";
@@ -18,7 +18,183 @@ import {
 } from "../services/dataService";
 
 // ============================================================
-// ADMIN AUTHENTICATION HOOK (Uses localStorage for session only)
+// HARDCODED DATA - Default content that always shows
+// ============================================================
+const HARDCODED_BLOGS = [
+  {
+    id: 1,
+    title: "Exciting New Academic Year Begins at Kitale Progressive School",
+    slug: "exciting-new-academic-year-begins",
+    excerpt: "We are thrilled to welcome students back for an exciting academic year filled with learning, growth, and new opportunities.",
+    content: "The new academic year at Kitale Progressive School has officially begun! Students and staff gathered for an inspiring opening ceremony...",
+    fullStory: "Our dedicated teachers have prepared engaging lesson plans that incorporate the Competency-Based Curriculum (CBE) approved by KICD...",
+    featuredImage: "/images/optimized/gallery/academics1.jpg",
+    date: "2026-01-15",
+    author: "Admin",
+    category: "Education",
+    isHardcoded: true
+  },
+  {
+    id: 2,
+    title: "KPS Students Shine in National Sports Competition",
+    slug: "kps-students-shine-national-sports",
+    excerpt: "Our talented athletes brought home trophies and accolades from the National Schools Sports Competition.",
+    content: "Kitale Progressive School students demonstrated exceptional skill and sportsmanship at the National Schools Sports Competition...",
+    fullStory: "The football team reached the semi-finals, while our athletics team won multiple gold medals in track and field events...",
+    featuredImage: "/images/optimized/gallery/sports1.jpg",
+    date: "2026-01-10",
+    author: "Admin",
+    category: "Sports",
+    isHardcoded: true
+  },
+  {
+    id: 3,
+    title: "Cultural Day 2026: Celebrating Diversity and Talent",
+    slug: "cultural-day-2026-celebrating-diversity",
+    excerpt: "Students showcased their cultural heritage through music, dance, art, and traditional cuisine.",
+    content: "The annual Cultural Day at Kitale Progressive School was a vibrant celebration of Kenya's rich cultural diversity...",
+    fullStory: "Students from different backgrounds presented traditional dances, songs, and skits that highlighted the beauty of our cultural heritage...",
+    featuredImage: "/images/optimized/gallery/cultural1.jpg",
+    date: "2026-01-05",
+    author: "Admin",
+    category: "Cultural",
+    isHardcoded: true
+  },
+  {
+    id: 4,
+    title: "New Library and Learning Resource Center Opens",
+    slug: "new-library-learning-resource-center-opens",
+    excerpt: "Students now have access to a state-of-the-art library and learning resource center with modern facilities.",
+    content: "Kitale Progressive School celebrated the opening of its new Library and Learning Resource Center, a modern facility designed to enhance learning...",
+    fullStory: "The center features a wide collection of books, digital resources, study areas, and a computer lab for research and learning...",
+    featuredImage: "/images/optimized/gallery/facilities1.jpg",
+    date: "2025-12-20",
+    author: "Admin",
+    category: "Facilities",
+    isHardcoded: true
+  }
+];
+
+const HARDCODED_FAQ = [
+  {
+    category: "Admissions",
+    icon: "📋",
+    color: "#4299e1",
+    isHardcoded: true,
+    questions: [
+      {
+        id: 1,
+        question: "What are the admission requirements?",
+        answer: "Admission to Kitale Progressive School requires a completed application form, birth certificate, previous school records, and a parent/guardian interview."
+      },
+      {
+        id: 2,
+        question: "What documents are needed for registration?",
+        answer: "Parents need to provide a birth certificate, passport-size photo of the child, previous school reports (if applicable), and completed registration forms."
+      },
+      {
+        id: 3,
+        question: "Is there a placement assessment?",
+        answer: "Yes, we conduct a placement assessment to determine the appropriate grade level and learning support needed for each student."
+      },
+      {
+        id: 4,
+        question: "How do I schedule a school tour?",
+        answer: "Contact our admissions office at +254 736 756 595 or email kitaleprogressivesocial@gmail.com to schedule a school tour."
+      }
+    ]
+  },
+  {
+    category: "Academics & Co-curricular",
+    icon: "🏆",
+    color: "#48bb78",
+    isHardcoded: true,
+    questions: [
+      {
+        id: 5,
+        question: "What curriculum does KPS follow?",
+        answer: "We follow the Competency-Based Education (CBE) curriculum approved by the Kenya Institute of Curriculum Development (KICD)."
+      },
+      {
+        id: 6,
+        question: "What extracurricular activities are offered?",
+        answer: "Students can participate in sports, music, drama, art, debate, clubs, and societies including Scouts, Wildlife Club, and Journalism Club."
+      },
+      {
+        id: 7,
+        question: "How are students assessed?",
+        answer: "Students are assessed through continuous assessment tests (CATs), projects, assignments, and end-of-term examinations as per the CBE framework."
+      }
+    ]
+  },
+  {
+    category: "Boarding & Student Life",
+    icon: "🏡",
+    color: "#9f7aea",
+    isHardcoded: true,
+    questions: [
+      {
+        id: 8,
+        question: "What are the boarding facilities like?",
+        answer: "Our boarding facilities offer comfortable dormitories with separate wings for boys and girls, supervised study time, nutritious meals, and recreational activities."
+      },
+      {
+        id: 9,
+        question: "What is the daily routine for boarders?",
+        answer: "Boarders follow a structured daily routine including morning study time, classes, afternoon sports/activities, evening prep, and supervised bedtime."
+      },
+      {
+        id: 10,
+        question: "What meals are provided?",
+        answer: "We provide three balanced meals daily - breakfast, lunch, and dinner - along with mid-day snacks and evening tea."
+      }
+    ]
+  },
+  {
+    category: "Fees & Payments",
+    icon: "💰",
+    color: "#f56565",
+    isHardcoded: true,
+    questions: [
+      {
+        id: 11,
+        question: "What is the fee structure?",
+        answer: "Our fee structure varies by grade level and boarding status. Please view our Fee Structure page or contact the accounts office for detailed information."
+      },
+      {
+        id: 12,
+        question: "How can I pay school fees?",
+        answer: "Fees can be paid via bank transfer, M-Pesa Paybill, or directly at the school accounts office. Payment plans are available upon request."
+      },
+      {
+        id: 13,
+        question: "Are there scholarships available?",
+        answer: "Yes, we offer merit-based and need-based scholarships. Contact the admissions office for more information on scholarship opportunities."
+      }
+    ]
+  },
+  {
+    category: "School Transport",
+    icon: "🚌",
+    color: "#ed8936",
+    isHardcoded: true,
+    questions: [
+      {
+        id: 14,
+        question: "What is the transport schedule?",
+        answer: "School transport operates on designated routes covering major areas within Kitale and surrounding locations. The schedule is available upon request."
+      },
+      {
+        id: 15,
+        question: "Is school transport safe?",
+        answer: "Our school transport meets all safety standards with licensed drivers, vehicle maintenance, and supervision during pick-up and drop-off."
+      }
+    ]
+  }
+];
+
+// ============================================================
+// ADMIN AUTHENTICATION HOOK
 // ============================================================
 const useAdminAuth = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -273,7 +449,7 @@ const DashboardOverview = ({ stats }) => {
 };
 
 // ============================================================
-// BLOGS MANAGER - No localStorage
+// BLOGS MANAGER - Gallery Style (Hardcoded + Uploaded)
 // ============================================================
 const BlogsManager = () => {
   const [blogs, setBlogs] = useState([]);
@@ -308,18 +484,56 @@ const BlogsManager = () => {
     return new Date().toISOString().split('T')[0];
   };
 
+  const getHardcodedBlogIds = () => new Set(HARDCODED_BLOGS.map(b => b.id));
+
   const loadBlogs = useCallback(async () => {
     setLoading(true);
     try {
       const data = await getBlogs();
-      setBlogs(Array.isArray(data) ? data : []);
+      const hardcodedIds = getHardcodedBlogIds();
+      
+      // Start with all hardcoded blogs
+      let allBlogs = HARDCODED_BLOGS.map(b => ({ ...b, isHardcoded: true }));
+      
+      // Add uploaded blogs that aren't hardcoded duplicates
+      if (data && data.length > 0) {
+        data.forEach((blog) => {
+          // Check if this blog is hardcoded (by ID or title/slug match)
+          const isHardcoded = hardcodedIds.has(blog.id) || 
+                             HARDCODED_BLOGS.some(hb => hb.slug === blog.slug);
+          
+          if (!isHardcoded) {
+            allBlogs.push({
+              ...blog,
+              isHardcoded: false,
+              id: blog.id || Date.now() + Math.random()
+            });
+          }
+        });
+      }
+      
+      setBlogs(allBlogs);
+      console.log('Blogs loaded:', allBlogs.length, 'total (', HARDCODED_BLOGS.length, 'hardcoded,', allBlogs.length - HARDCODED_BLOGS.length, 'uploaded)');
     } catch (error) {
       console.error('Error loading blogs:', error);
-      setAlert({ show: true, type: 'danger', message: 'Failed to load blogs.' });
+      // Fallback to hardcoded blogs only
+      setBlogs(HARDCODED_BLOGS.map(b => ({ ...b, isHardcoded: true })));
     } finally {
       setLoading(false);
     }
   }, []);
+
+  const saveBlogsToJsonBin = async (allBlogs) => {
+    try {
+      // Only save non-hardcoded blogs to JSON Bin
+      const uploadedBlogs = allBlogs.filter(b => !b.isHardcoded);
+      await saveBlogs(uploadedBlogs);
+      console.log('Uploaded blogs saved to JSON Bin:', uploadedBlogs.length);
+    } catch (error) {
+      console.error('Error saving blogs:', error);
+      throw error;
+    }
+  };
 
   const handleSaveBlog = async () => {
     if (!formData.title || !formData.excerpt || !formData.content) {
@@ -333,6 +547,7 @@ const BlogsManager = () => {
       let slug = formData.slug || generateSlug(formData.title);
 
       const blogData = {
+        id: formData.id || Date.now(),
         title: formData.title,
         slug: slug,
         excerpt: formData.excerpt,
@@ -341,26 +556,30 @@ const BlogsManager = () => {
         featuredImage: formData.featuredImage || '/images/placeholder.jpg',
         date: formData.date || getTodayDate(),
         author: formData.author || 'Admin',
-        category: formData.category || 'General'
+        category: formData.category || 'General',
+        isHardcoded: false
       };
 
-      let result;
+      let newBlogs;
       if (editingBlog) {
-        result = await updateBlog(editingBlog.id, blogData);
+        // Update existing blog
+        newBlogs = blogs.map(b => 
+          b.id === editingBlog.id ? { ...blogData, id: b.id } : b
+        );
       } else {
-        result = await addBlog(blogData);
+        // Add new blog
+        newBlogs = [...blogs, blogData];
       }
 
-      if (result) {
-        await loadBlogs();
-        handleCloseModal();
-        setAlert({ 
-          show: true, 
-          type: 'success', 
-          message: `Blog ${editingBlog ? 'updated' : 'added'} successfully!` 
-        });
-        setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
-      }
+      await saveBlogsToJsonBin(newBlogs);
+      setBlogs(newBlogs);
+      handleCloseModal();
+      setAlert({ 
+        show: true, 
+        type: 'success', 
+        message: `Blog ${editingBlog ? 'updated' : 'added'} successfully!` 
+      });
+      setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
     } catch (error) {
       console.error('Error saving blog:', error);
       setAlert({ show: true, type: 'danger', message: 'Failed to save blog: ' + error.message });
@@ -370,15 +589,27 @@ const BlogsManager = () => {
   };
 
   const handleDeleteBlog = async (id) => {
+    const blogToDelete = blogs.find(b => b.id === id);
+    if (!blogToDelete) {
+      setAlert({ show: true, type: 'warning', message: 'Blog not found.' });
+      setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
+      return;
+    }
+
+    if (blogToDelete.isHardcoded) {
+      setAlert({ show: true, type: 'warning', message: 'Hardcoded blogs cannot be deleted. They are always displayed.' });
+      setTimeout(() => setAlert({ show: false, type: '', message: '' }), 5000);
+      return;
+    }
+
     if (!window.confirm('Are you sure you want to delete this blog post?')) return;
     
     try {
-      const result = await deleteBlog(id);
-      if (result) {
-        await loadBlogs();
-        setAlert({ show: true, type: 'success', message: 'Blog deleted successfully!' });
-        setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
-      }
+      const newBlogs = blogs.filter(b => b.id !== id);
+      await saveBlogsToJsonBin(newBlogs);
+      setBlogs(newBlogs);
+      setAlert({ show: true, type: 'success', message: 'Blog deleted successfully!' });
+      setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
     } catch (error) {
       console.error('Error deleting blog:', error);
       setAlert({ show: true, type: 'danger', message: 'Failed to delete blog.' });
@@ -459,10 +690,18 @@ const BlogsManager = () => {
     return <div className="text-center py-5"><Spinner animation="border" variant="primary" /></div>;
   }
 
+  const hardcodedCount = blogs.filter(b => b.isHardcoded).length;
+  const uploadedCount = blogs.filter(b => !b.isHardcoded).length;
+
   return (
     <div>
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h3 className="h5 fw-bold mb-0">Manage Blog Posts ({blogs.length})</h3>
+      <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+          <h3 className="h5 fw-bold mb-0">Manage Blog Posts ({blogs.length})</h3>
+          <span className="text-muted small">
+            {hardcodedCount} default + {uploadedCount} uploaded
+          </span>
+        </div>
         <Button className="btn-navy" size="sm" onClick={() => handleOpenModal()}>
           <i className="fas fa-plus me-1"></i> Add New Blog
         </Button>
@@ -484,7 +723,7 @@ const BlogsManager = () => {
               <th>Category</th>
               <th>Author</th>
               <th>Date</th>
-              <th>Featured Image</th>
+              <th>Type</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -492,7 +731,7 @@ const BlogsManager = () => {
             {blogs.length === 0 ? (
               <tr>
                 <td colSpan="8" className="text-center text-muted py-4">
-                  No blog posts found. Click "Add New Blog" to create your first post.
+                  No blog posts found.
                 </td>
               </tr>
             ) : (
@@ -505,13 +744,10 @@ const BlogsManager = () => {
                   <td>{blog.author || 'Admin'}</td>
                   <td>{blog.date}</td>
                   <td>
-                    {blog.featuredImage && (
-                      <img 
-                        src={blog.featuredImage} 
-                        alt="thumb" 
-                        style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '4px' }} 
-                        onError={(e) => { e.target.src = ''; }} 
-                      />
+                    {blog.isHardcoded ? (
+                      <span className="badge bg-secondary">Default</span>
+                    ) : (
+                      <span className="badge bg-success">Uploaded</span>
                     )}
                   </td>
                   <td>
@@ -1595,7 +1831,7 @@ const TestimonialsManager = () => {
 };
 
 // ============================================================
-// FAQ MANAGER - No localStorage
+// FAQ MANAGER - Gallery Style (Hardcoded + Uploaded)
 // ============================================================
 const FAQManager = () => {
   const [faqCategories, setFaqCategories] = useState([]);
@@ -1615,22 +1851,104 @@ const FAQManager = () => {
     { id: "School Transport", name: "School Transport", icon: "🚌", color: "#ed8936" },
   ];
 
+  const getHardcodedCategoryIds = () => new Set(HARDCODED_FAQ.map(c => c.category));
+
   const loadFAQ = useCallback(async () => {
     setLoading(true);
     try {
       const data = await getFAQ();
+      const hardcodedCategoryIds = getHardcodedCategoryIds();
+      
+      // Start with all hardcoded FAQs
+      let allFaqs = HARDCODED_FAQ.map(cat => ({
+        ...cat,
+        isHardcoded: true,
+        questions: cat.questions.map(q => ({ ...q, isHardcoded: true }))
+      }));
+      
+      // Add uploaded FAQs
       if (data && data.length > 0) {
-        setFaqCategories(data);
-      } else {
-        setFaqCategories([]);
+        data.forEach((category) => {
+          const isHardcoded = hardcodedCategoryIds.has(category.category);
+          
+          if (!isHardcoded) {
+            allFaqs.push({
+              ...category,
+              isHardcoded: false,
+              questions: category.questions.map(q => ({ ...q, isHardcoded: false }))
+            });
+          } else {
+            // Merge uploaded questions into existing hardcoded category
+            const existingCat = allFaqs.find(c => c.category === category.category);
+            if (existingCat) {
+              category.questions.forEach(q => {
+                // Check if this question already exists in hardcoded
+                const exists = existingCat.questions.some(hq => hq.id === q.id || hq.question === q.question);
+                if (!exists) {
+                  existingCat.questions.push({
+                    ...q,
+                    isHardcoded: false,
+                    id: q.id || Date.now() + Math.random()
+                  });
+                }
+              });
+            }
+          }
+        });
       }
+      
+      setFaqCategories(allFaqs);
+      console.log('FAQs loaded:', allFaqs.length, 'categories (', HARDCODED_FAQ.length, 'hardcoded,', allFaqs.length - HARDCODED_FAQ.length, 'uploaded)');
     } catch (error) {
-      console.error('Error loading FAQ:', error);
-      setAlert({ show: true, type: 'danger', message: 'Failed to load FAQ.' });
+      console.error('Error loading FAQs:', error);
+      setFaqCategories(HARDCODED_FAQ.map(cat => ({
+        ...cat,
+        isHardcoded: true,
+        questions: cat.questions.map(q => ({ ...q, isHardcoded: true }))
+      })));
     } finally {
       setLoading(false);
     }
   }, []);
+
+  const saveFAQToJsonBin = async (allFaqs) => {
+    try {
+      // Only save non-hardcoded categories and their non-hardcoded questions
+      const uploadedFaqs = allFaqs
+        .filter(cat => !cat.isHardcoded)
+        .map(cat => ({
+          ...cat,
+          questions: cat.questions.filter(q => !q.isHardcoded)
+        }))
+        .filter(cat => cat.questions.length > 0);
+      
+      // Also include hardcoded categories that have uploaded questions
+      allFaqs
+        .filter(cat => cat.isHardcoded)
+        .forEach(cat => {
+          const uploadedQuestions = cat.questions.filter(q => !q.isHardcoded);
+          if (uploadedQuestions.length > 0) {
+            const existingCat = uploadedFaqs.find(c => c.category === cat.category);
+            if (existingCat) {
+              existingCat.questions = [...existingCat.questions, ...uploadedQuestions];
+            } else {
+              uploadedFaqs.push({
+                category: cat.category,
+                icon: cat.icon,
+                color: cat.color,
+                questions: uploadedQuestions
+              });
+            }
+          }
+        });
+      
+      await saveFAQ(uploadedFaqs);
+      console.log('Uploaded FAQs saved to JSON Bin:', uploadedFaqs.length, 'categories');
+    } catch (error) {
+      console.error('Error saving FAQs:', error);
+      throw error;
+    }
+  };
 
   const handleSaveFAQ = async () => {
     if (!formData.question || !formData.answer) {
@@ -1641,50 +1959,53 @@ const FAQManager = () => {
 
     setSaving(true);
     try {
-      let newFaq = [...faqCategories];
-      let catIndex = newFaq.findIndex(c => c.category === formData.category);
+      let newFaqs = [...faqCategories];
+      let catIndex = newFaqs.findIndex(c => c.category === formData.category);
       
       if (catIndex === -1) {
         const catInfo = categoriesList.find(c => c.id === formData.category);
-        newFaq.push({
+        newFaqs.push({
           category: formData.category,
           icon: catInfo?.icon || "📋",
           color: catInfo?.color || "#4299e1",
+          isHardcoded: false,
           questions: []
         });
-        catIndex = newFaq.length - 1;
+        catIndex = newFaqs.length - 1;
       }
 
       if (editingItem) {
-        const qIndex = newFaq[catIndex].questions.findIndex(q => q.id === editingItem.id);
+        // Update existing question
+        const qIndex = newFaqs[catIndex].questions.findIndex(q => q.id === editingItem.id);
         if (qIndex !== -1) {
-          newFaq[catIndex].questions[qIndex] = {
+          newFaqs[catIndex].questions[qIndex] = {
             ...editingItem,
             question: formData.question,
-            answer: formData.answer
+            answer: formData.answer,
+            isHardcoded: false
           };
         }
       } else {
-        const allIds = newFaq.flatMap(c => c.questions.map(q => q.id));
+        // Add new question
+        const allIds = newFaqs.flatMap(c => c.questions.map(q => q.id));
         const newId = allIds.length > 0 ? Math.max(...allIds) + 1 : 1;
-        newFaq[catIndex].questions.push({
+        newFaqs[catIndex].questions.push({
           id: newId,
           question: formData.question,
-          answer: formData.answer
+          answer: formData.answer,
+          isHardcoded: false
         });
       }
 
-      const result = await saveFAQ(newFaq);
-      if (result) {
-        await loadFAQ();
-        handleCloseModal();
-        setAlert({
-          show: true,
-          type: 'success',
-          message: `FAQ ${editingItem ? 'updated' : 'added'} successfully!`
-        });
-        setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
-      }
+      await saveFAQToJsonBin(newFaqs);
+      setFaqCategories(newFaqs);
+      handleCloseModal();
+      setAlert({
+        show: true,
+        type: 'success',
+        message: `FAQ ${editingItem ? 'updated' : 'added'} successfully!`
+      });
+      setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
     } catch (error) {
       console.error('Error saving FAQ:', error);
       setAlert({ show: true, type: 'danger', message: 'Failed to save FAQ: ' + error.message });
@@ -1693,22 +2014,40 @@ const FAQManager = () => {
     }
   };
 
-  const handleDeleteFAQ = async (category, id) => {
-    if (!window.confirm('Are you sure you want to delete this FAQ?')) return;
+  const handleDeleteFAQ = async (categoryName, id) => {
+    const category = faqCategories.find(c => c.category === categoryName);
+    if (!category) {
+      setAlert({ show: true, type: 'warning', message: 'Category not found.' });
+      setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
+      return;
+    }
+
+    const questionToDelete = category.questions.find(q => q.id === id);
+    if (!questionToDelete) {
+      setAlert({ show: true, type: 'warning', message: 'Question not found.' });
+      setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
+      return;
+    }
+
+    if (questionToDelete.isHardcoded) {
+      setAlert({ show: true, type: 'warning', message: 'Hardcoded FAQ questions cannot be deleted. They are always displayed.' });
+      setTimeout(() => setAlert({ show: false, type: '', message: '' }), 5000);
+      return;
+    }
+
+    if (!window.confirm('Are you sure you want to delete this FAQ question?')) return;
 
     try {
-      const newFaq = faqCategories.map(cat =>
-        cat.category === category
+      const newFaqs = faqCategories.map(cat =>
+        cat.category === categoryName
           ? { ...cat, questions: cat.questions.filter(q => q.id !== id) }
           : cat
-      ).filter(cat => cat.questions.length > 0);
+      ).filter(cat => cat.questions.length > 0 || cat.isHardcoded);
 
-      const result = await saveFAQ(newFaq);
-      if (result) {
-        await loadFAQ();
-        setAlert({ show: true, type: 'success', message: 'FAQ deleted successfully!' });
-        setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
-      }
+      await saveFAQToJsonBin(newFaqs);
+      setFaqCategories(newFaqs);
+      setAlert({ show: true, type: 'success', message: 'FAQ deleted successfully!' });
+      setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
     } catch (error) {
       console.error('Error deleting FAQ:', error);
       setAlert({ show: true, type: 'danger', message: 'Failed to delete FAQ.' });
@@ -1721,7 +2060,7 @@ const FAQManager = () => {
       setFormData({
         question: item.question || '',
         answer: item.answer || '',
-        category: item.category || category
+        category: category || item.category || categoriesList[0].id
       });
     } else {
       setEditingItem(null);
@@ -1753,11 +2092,20 @@ const FAQManager = () => {
   }
 
   const totalQuestions = faqCategories.reduce((acc, cat) => acc + (cat.questions?.length || 0), 0);
+  const hardcodedQuestions = faqCategories.reduce((acc, cat) => 
+    acc + (cat.questions?.filter(q => q.isHardcoded).length || 0), 0
+  );
+  const uploadedQuestions = totalQuestions - hardcodedQuestions;
 
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-        <h3 className="h5 fw-bold mb-0">Manage FAQs ({totalQuestions} questions)</h3>
+        <div>
+          <h3 className="h5 fw-bold mb-0">Manage FAQs ({totalQuestions} questions)</h3>
+          <span className="text-muted small">
+            {hardcodedQuestions} default + {uploadedQuestions} uploaded
+          </span>
+        </div>
         <div className="d-flex gap-2">
           <Form.Select size="sm" style={{ width: '200px' }} value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)}>
             {categoriesList.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
@@ -1784,6 +2132,12 @@ const FAQManager = () => {
                 <span className="badge" style={{ backgroundColor: category.color || "#4299e1", color: 'white' }}>
                   {category.questions?.length || 0} questions
                 </span>
+                {category.isHardcoded && (
+                  <span className="badge bg-secondary" style={{ fontSize: '0.6rem' }}>Default</span>
+                )}
+                {!category.isHardcoded && (
+                  <span className="badge bg-success" style={{ fontSize: '0.6rem' }}>Uploaded</span>
+                )}
               </div>
             </div>
             <div className="admin-table-wrapper">
@@ -1800,7 +2154,12 @@ const FAQManager = () => {
                   {category.questions && category.questions.map((q, idx) => (
                     <tr key={q.id}>
                       <td>{idx + 1}</td>
-                      <td className="fw-semibold">{q.question}</td>
+                      <td className="fw-semibold">
+                        {q.question}
+                        {q.isHardcoded && (
+                          <span className="badge bg-secondary ms-2" style={{ fontSize: '0.6rem' }}>Default</span>
+                        )}
+                      </td>
                       <td>
                         <div
                           dangerouslySetInnerHTML={{
@@ -3421,18 +3780,50 @@ function Admin() {
       const faq = await getFAQ();
       const partners = await getPartners();
       
-      const faqCount = faq ? faq.reduce((sum, cat) => sum + (cat.questions?.length || 0), 0) : 0;
+      // Count hardcoded items
+      const hardcodedBlogCount = HARDCODED_BLOGS.length;
+      const hardcodedFaqCount = HARDCODED_FAQ.reduce((sum, cat) => sum + (cat.questions?.length || 0), 0);
+      
+      // Count uploaded items
+      const uploadedBlogs = Array.isArray(blogs) ? blogs.filter(b => !HARDCODED_BLOGS.some(hb => hb.slug === b.slug)).length : 0;
+      
+      let faqCount = 0;
+      if (faq && faq.length > 0) {
+        faq.forEach(cat => {
+          if (cat.questions) {
+            cat.questions.forEach(q => {
+              // Check if this question is not hardcoded
+              const isHardcoded = HARDCODED_FAQ.some(hc => 
+                hc.questions.some(hq => hq.id === q.id || hq.question === q.question)
+              );
+              if (!isHardcoded) faqCount++;
+            });
+          }
+        });
+      }
+      
+      // Total FAQ count = hardcoded + uploaded
+      const totalFaqCount = hardcodedFaqCount + faqCount;
       
       setStats({
-        blogs: Array.isArray(blogs) ? blogs.length : 0,
+        blogs: hardcodedBlogCount + uploadedBlogs,
         events: Array.isArray(events) ? events.length : 0,
         gallery: Array.isArray(gallery) ? gallery.length : 0,
         testimonials: Array.isArray(testimonials) ? testimonials.length : 0,
-        faq: faqCount,
+        faq: totalFaqCount,
         partners: Array.isArray(partners) ? partners.length : 0
       });
     } catch (error) {
       console.error('Error updating stats:', error);
+      // Use hardcoded counts as fallback
+      setStats({
+        blogs: HARDCODED_BLOGS.length,
+        events: 0,
+        gallery: 0,
+        testimonials: 0,
+        faq: HARDCODED_FAQ.reduce((sum, cat) => sum + (cat.questions?.length || 0), 0),
+        partners: 0
+      });
     }
   }, []);
 
