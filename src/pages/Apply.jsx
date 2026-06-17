@@ -1,4 +1,4 @@
-// pages/Apply.jsx - Fixed for your Google OAuth configuration
+// pages/Apply.jsx - Complete Fixed Version
 import { Helmet } from "react-helmet-async";
 import { Container, Row, Col, Form, Button, Card, Alert } from "react-bootstrap";
 import { useState, useEffect, useCallback, memo, lazy, Suspense } from "react";
@@ -317,16 +317,31 @@ function Apply() {
   const GMAIL_SCOPES = import.meta.env.VITE_GMAIL_SCOPES || 'https://www.googleapis.com/auth/gmail.send';
   const SITE_URL = import.meta.env.VITE_SITE_URL || window.location.origin;
 
-  // Log environment variables for debugging
+  // ==================== DIAGNOSTIC LOGGING ====================
   useEffect(() => {
-    console.log('🔍 Environment Variables:');
-    console.log('VITE_GOOGLE_CLIENT_ID:', GOOGLE_CLIENT_ID);
-    console.log('VITE_ADMISSIONS_EMAIL:', ADMISSIONS_EMAIL);
-    console.log('VITE_SITE_URL:', SITE_URL);
-    console.log('VITE_GMAIL_SCOPES:', GMAIL_SCOPES);
+    console.log('🔍 Apply Page Debug Info:');
+    console.log('🔍 GOOGLE_CLIENT_ID:', GOOGLE_CLIENT_ID);
+    console.log('🔍 SITE_URL:', SITE_URL);
+    console.log('🔍 GMAIL_SCOPES:', GMAIL_SCOPES);
+    console.log('🔍 ADMISSIONS_EMAIL:', ADMISSIONS_EMAIL);
+    console.log('🔍 Window Origin:', window.location.origin);
+    console.log('🔍 Full URL:', window.location.href);
     
-    if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID === '') {
-      console.error('❌ Google Client ID is missing!');
+    // Check if the origin matches what's in Google Cloud Console
+    const origin = window.location.origin;
+    // These should match what's in your Google Cloud Console
+    const expectedOrigins = ['http://localhost:5173', 'http://localhost:3000', 'https://kpssite-t36u.vercel.app'];
+    const isOriginValid = expectedOrigins.some(expected => origin === expected);
+    
+    console.log('🔑 Origin validation:', { origin, isOriginValid, expectedOrigins });
+    
+    if (!isOriginValid) {
+      console.warn('⚠️ Current origin does NOT match any authorized origins!');
+      console.warn(`Please add "${origin}" to Authorized JavaScript Origins in Google Cloud Console.`);
+    }
+    
+    if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID === '' || GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID') {
+      console.error('❌ Google Client ID is missing or not configured!');
     } else {
       console.log('✅ Google Client ID is configured');
     }
@@ -551,6 +566,7 @@ function Apply() {
   const sendEmailViaGmail = useCallback(async (accessToken, pdfDoc) => {
     try {
       console.log('📧 Starting email send process...');
+      console.log('🔑 Access Token:', accessToken ? 'Present' : 'Missing');
       
       const pdfOutput = pdfDoc.output('datauristring');
       const pdfBase64 = pdfOutput.split(',')[1];
@@ -603,6 +619,7 @@ function Apply() {
       ].join('\r\n');
       
       console.log('📤 Sending email via Gmail API...');
+      console.log('📤 Email size:', emailData.length, 'bytes');
       
       const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
         method: 'POST',
@@ -615,11 +632,12 @@ function Apply() {
       
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('❌ Gmail API Error:', errorData);
+        console.error('❌ Gmail API Error Response:', errorData);
         throw new Error(errorData.error?.message || 'Failed to send email');
       }
       
-      console.log('✅ Email sent successfully!');
+      const result = await response.json();
+      console.log('✅ Email sent successfully!', result);
       return true;
     } catch (error) {
       console.error('❌ Error sending email:', error);
@@ -631,6 +649,7 @@ function Apply() {
   const login = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       console.log('✅ Google Login Success:', tokenResponse);
+      console.log('🔑 Access Token received:', tokenResponse.access_token ? 'Yes' : 'No');
       setSubmitting(true);
       setDebugInfo("Google login successful, processing application...");
       
@@ -671,6 +690,8 @@ function Apply() {
     },
     onError: (errorResponse) => {
       console.error('❌ Login Failed:', errorResponse);
+      console.error('Full error details:', JSON.stringify(errorResponse, null, 2));
+      
       let errorMessage = "Google sign-in failed. ";
       
       if (errorResponse?.error === 'popup_blocked_by_browser') {
@@ -678,18 +699,27 @@ function Apply() {
       } else if (errorResponse?.error === 'access_denied') {
         errorMessage += "You denied access to your account.";
       } else if (errorResponse?.error === 'invalid_client') {
-        errorMessage += "The application is not properly configured. Please contact support.";
+        errorMessage += "The application is not properly configured. Please check your Client ID and Authorized Origins in the Google Cloud Console.";
       } else if (errorResponse?.error === 'idpiframe_initialization_failed') {
-        errorMessage += "Google login configuration error. Please check your Client ID.";
+        errorMessage += "Google login configuration error. Please check your Client ID and Authorized Origins in the Google Cloud Console.";
+      } else if (errorResponse?.error === 'origin_mismatch') {
+        errorMessage += "The application origin doesn't match the authorized origins. Please check your Google Cloud Console configuration.";
+      } else if (errorResponse?.error === 'unauthorized_client') {
+        errorMessage += "The client is not authorized. Please check your OAuth consent screen configuration.";
       } else {
-        errorMessage += `Error: ${errorResponse?.error || 'Unknown error'}`;
+        errorMessage += `Error: ${errorResponse?.error || errorResponse?.error_description || 'Unknown error'}`;
       }
       
       setDebugInfo(`Login Error: ${errorMessage}`);
       setSubmitStatus({ show: true, success: false, message: errorMessage });
       setSubmitting(false);
     },
-    // Removed redirectUri and clientId from here as they're handled by the GoogleOAuthProvider
+    // Use implicit flow for Gmail API
+    flow: 'implicit',
+    // Make sure scope is included
+    scope: GMAIL_SCOPES,
+    // Do NOT include redirect_uri - it's handled by the provider
+    // This is the key fix - removing redirect_uri
   });
 
   // ==================== HANDLE FORM SUBMIT ====================
@@ -716,10 +746,26 @@ function Apply() {
       return;
     }
     
+    // Validate all required fields
+    if (!formData.parentName || !formData.email || !formData.relationship || 
+        !formData.childName || !formData.dateOfBirth || !formData.gender || !formData.gradeApplying) {
+      setSubmitStatus({ 
+        show: true, 
+        success: false, 
+        message: "Please complete all required fields before submitting." 
+      });
+      return;
+    }
+    
     console.log('🔄 Initiating Google login...');
+    console.log('🔍 Current origin:', window.location.origin);
+    console.log('🔍 Client ID:', GOOGLE_CLIENT_ID);
+    console.log('🔍 Scopes:', GMAIL_SCOPES);
     setDebugInfo("Initiating Google login...");
     login();
-  }, [formData.agreeToTerms, phoneError, phone, login, GOOGLE_CLIENT_ID]);
+  }, [formData.agreeToTerms, formData.parentName, formData.email, formData.relationship, 
+      formData.childName, formData.dateOfBirth, formData.gender, formData.gradeApplying,
+      phoneError, phone, login, GOOGLE_CLIENT_ID, GMAIL_SCOPES]);
 
   // ==================== GRADE OPTIONS ====================
   const gradeOptions = [
